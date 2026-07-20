@@ -528,13 +528,28 @@
     URL.revokeObjectURL(url);
   }
   let currentEventNameForExport = '';
+  let currentModalMode = 'event'; // 'event' = users registered for an event, 'user' = events a user registered for
   document.getElementById('regsModalExport').addEventListener('click', () => {
-    const rows = [['#', 'Registration No', 'Name']];
-    currentRegsForCopy.forEach((r, i) => rows.push([i + 1, r.regNo, r.name]));
+    let rows;
+    if (currentModalMode === 'user') {
+      rows = [['#', 'Event', 'Category', 'Timestamp']];
+      currentRegsForCopy.forEach((r, i) => rows.push([i + 1, r.eventName, r.category, r.timestamp]));
+    } else {
+      rows = [['#', 'Registration No', 'Name', 'Timestamp']];
+      currentRegsForCopy.forEach((r, i) => rows.push([i + 1, r.regNo, r.name, r.timestamp || '']));
+    }
     const csv = rows.map(row => row.map(csvEscape).join(',')).join('\n');
-    const safeName = (currentEventNameForExport || 'event').replace(/[^a-z0-9]+/gi, '_');
-    downloadCSV(`${safeName}_registrations.csv`, csv);
+    const safeName = (currentEventNameForExport || 'export').replace(/[^a-z0-9]+/gi, '_');
+    downloadCSV(`${safeName}_${currentModalMode === 'user' ? 'registrations' : 'registrations'}.csv`, csv);
   });
+  async function exportSingleEventCSV(eventId, eventName) {
+    const data = await api('adminListRegistrations', { eventId });
+    const rows = [['#', 'Registration No', 'Name', 'Timestamp']];
+    data.registrations.forEach((r, i) => rows.push([i + 1, r.regNo, r.name, r.timestamp]));
+    const csv = rows.map(row => row.map(csvEscape).join(',')).join('\n');
+    const safeName = (eventName || 'event').replace(/[^a-z0-9]+/gi, '_');
+    downloadCSV(`${safeName}_registrations.csv`, csv);
+  }
   document.getElementById('exportAllRegsBtn').addEventListener('click', withLoading(document.getElementById('exportAllRegsBtn'), async () => {
     const eventsData = await api('listEvents', {});
     const rows = [['Event', 'Category', '#', 'Registration No', 'Name', 'Timestamp']];
@@ -555,6 +570,7 @@
   // ---------- REGISTRATIONS MODAL ----------
   let currentRegsForCopy = [];
   function showRegsModal(eventName, registrations) {
+    currentModalMode = 'event';
     currentRegsForCopy = registrations;
     currentEventNameForExport = eventName;
     document.getElementById('regsModalTitle').textContent = eventName;
@@ -574,6 +590,27 @@
     }
     document.getElementById('regsModal').classList.remove('hidden');
   }
+  function showUserRegsModal(userName, registrations) {
+    currentModalMode = 'user';
+    currentRegsForCopy = registrations;
+    currentEventNameForExport = userName;
+    document.getElementById('regsModalTitle').textContent = userName;
+    document.getElementById('regsModalCount').textContent = registrations.length + (registrations.length === 1 ? ' event' : ' events');
+    const body = document.getElementById('regsModalBody');
+    if (!registrations.length) {
+      body.innerHTML = '<div class="modal-empty">Not registered for any events.</div>';
+    } else {
+      body.innerHTML = registrations.map((r, i) => `
+        <div class="modal-row">
+          <div class="idx mono">${String(i + 1).padStart(2, '0')}</div>
+          <div>
+            <div class="rname">${escapeHtml(r.eventName)} ${!r.active ? '<span class="pill closed" style="margin-left:6px;">Closed</span>' : ''}</div>
+            <div class="rreg">${escapeHtml(r.category || '')}</div>
+          </div>
+        </div>`).join('');
+    }
+    document.getElementById('regsModal').classList.remove('hidden');
+  }
   function hideRegsModal() {
     document.getElementById('regsModal').classList.add('hidden');
   }
@@ -582,7 +619,9 @@
     if (e.target.id === 'regsModal') hideRegsModal();
   });
   document.getElementById('regsModalCopy').addEventListener('click', async () => {
-    const text = currentRegsForCopy.map((r, i) => `${i + 1}. ${r.name} (${r.regNo})`).join('\n') || 'No one registered yet.';
+    const text = currentModalMode === 'user'
+      ? (currentRegsForCopy.map((r, i) => `${i + 1}. ${r.eventName} (${r.category})`).join('\n') || 'Not registered for any events.')
+      : (currentRegsForCopy.map((r, i) => `${i + 1}. ${r.name} (${r.regNo})`).join('\n') || 'No one registered yet.');
     const btn = document.getElementById('regsModalCopy');
     try {
       await navigator.clipboard.writeText(text);
@@ -645,6 +684,7 @@
             ${!isEditing ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}">View regs</button>
+            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-export-event="${ev.eventId}">Export CSV</button>
             <button class="btn btn-danger btn-small" data-delete="${ev.eventId}">Delete</button>
           </div>
         </div>`;
@@ -668,6 +708,12 @@
           const eventName = btn.closest('.event-row').querySelector('.event-name').textContent;
           const data = await api('adminListRegistrations', { eventId: btn.dataset.viewRegs });
           showRegsModal(eventName, data.registrations);
+        }));
+      });
+      container.querySelectorAll('[data-export-event]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          const eventName = btn.closest('.event-row').querySelector('.event-name').textContent;
+          await exportSingleEventCSV(btn.dataset.exportEvent, eventName);
         }));
       });
       container.querySelectorAll('[data-edit-deadline]').forEach(btn => {
@@ -732,10 +778,18 @@
           <td class="mono">${escapeHtml(u.email || '—')}</td>
           <td>${u.isAdmin ? 'Yes' : 'No'}</td>
           <td style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-user-regs="${u.regNo}" data-user-name="${escapeHtml(u.name)}">View regs</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-reset="${u.regNo}">Reset pwd</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-admin="${u.regNo}" data-is-admin="${u.isAdmin}">${u.isAdmin ? 'Remove admin' : 'Make admin'}</button>
           </td>
         </tr>`).join('');
+
+      tbody.querySelectorAll('[data-view-user-regs]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          const data = await api('adminListUserRegistrations', { regNo: btn.dataset.viewUserRegs });
+          showUserRegsModal(btn.dataset.userName || data.user.name, data.registrations);
+        }));
+      });
 
       tbody.querySelectorAll('[data-reset]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {

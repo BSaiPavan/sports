@@ -170,7 +170,7 @@
       </div>
       <button class="btn btn-orange" style="width:100%;" id="loginBtn">Log in</button>
       <div class="msg" id="loginMsg"></div>
-      <p class="mono" style="font-size:11px;color:var(--muted);margin-top:18px;">Forgot your password? See the sports coordinator in person — He can reset it for you.</p>
+      <p class="mono" style="font-size:11px;color:var(--muted);margin-top:18px;">Forgot your password? See the sports coordinator in person — they can reset it for you.</p>
     </div>
   </div>
 
@@ -531,12 +531,12 @@
         }
         const deadlineText = ev.deadline ? fmtDate(new Date(ev.deadline), true) : 'No deadline set';
         const compDateText = ev.competitionDate
-          ? fmtDate(new Date(ev.competitionDate + 'T00:00:00'))
+          ? fmtDate(parseDateOnly(ev.competitionDate))
           : 'To be decided';
         return `<div class="event-row">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
-            <div class="event-meta">Deadline: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>
+            <div class="event-meta">Register by: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>
             <div class="event-meta">Event day: ${compDateText}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${catPill}${statusPill}${actionBtn}</div>
@@ -567,10 +567,20 @@
   // Formats dates consistently as "20 Jul 2026" (optionally with time, "20 Jul 2026, 3:45 PM")
   const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   function fmtDate(d, withTime) {
+    if (!(d instanceof Date) || isNaN(d.getTime())) return '—';
     const datePart = `${d.getDate()} ${MONTH_ABBR[d.getMonth()]} ${d.getFullYear()}`;
     if (!withTime) return datePart;
     const timePart = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
     return `${datePart}, ${timePart}`;
+  }
+  // Parses a plain "YYYY-MM-DD" competition date as a local date. Tolerant
+  // of already-corrupted values (e.g. one that already has a time/zone
+  // suffix on it) so we never end up appending a second "T00:00:00".
+  function parseDateOnly(str) {
+    if (!str) return null;
+    const datePart = String(str).split('T')[0];
+    const d = new Date(datePart + 'T00:00:00');
+    return isNaN(d.getTime()) ? null : d;
   }
 
   // ---------- CSV EXPORT ----------
@@ -716,6 +726,7 @@
   function toDatetimeLocalValue(iso) {
     if (!iso) return '';
     const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
     const pad = n => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
@@ -727,7 +738,7 @@
       const data = await api('listEvents', {});
       container.innerHTML = data.events.map(ev => {
         const deadlineVal = ev.deadline ? fmtDate(new Date(ev.deadline), true) : '—';
-        const compDateVal = ev.competitionDate ? fmtDate(new Date(ev.competitionDate + 'T00:00:00')) : 'To be decided';
+        const compDateVal = ev.competitionDate ? fmtDate(parseDateOnly(ev.competitionDate)) : 'To be decided';
         const cat = String(ev.category || 'OTHER').toUpperCase();
         const isEditingDeadline = editingDeadlineId === ev.eventId;
         const isEditingCompDate = editingCompDateId === ev.eventId;
@@ -744,7 +755,7 @@
               : `<div class="event-meta">Register by: ${deadlineVal}</div>`}
             ${isEditingCompDate
               ? `<div class="event-meta" style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
-                   <input type="date" data-compdate-input="${ev.eventId}" value="${ev.competitionDate || ''}" ${ev.competitionDate ? '' : 'disabled'} style="padding:8px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13px;border-radius:2px;">
+                   <input type="date" data-compdate-input="${ev.eventId}" value="${(ev.competitionDate || '').split('T')[0]}" ${ev.competitionDate ? '' : 'disabled'} style="padding:8px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13px;border-radius:2px;">
                    <label style="display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-transform:none;">
                      <input type="checkbox" data-compdate-tbd="${ev.eventId}" style="width:auto;" ${ev.competitionDate ? '' : 'checked'}> TBD
                    </label>

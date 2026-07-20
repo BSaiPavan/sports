@@ -49,6 +49,9 @@
   .pill.open{background:rgba(47,179,128,.15);color:#1d7d55;}
   .pill.closed{background:rgba(107,114,128,.12);color:var(--muted);}
   .pill.registered{background:rgba(255,90,31,.12);color:#b7401b;}
+  .pill.cat-track{background:rgba(11,37,69,.1);color:var(--court-navy);}
+  .pill.cat-field{background:rgba(47,179,128,.15);color:#1d7d55;}
+  .pill.cat-other{background:rgba(107,114,128,.12);color:var(--muted);}
   .tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:2px solid var(--graphite);}
   .tab{font-family:'IBM Plex Mono',monospace;font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;padding:12px 18px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;}
   .tab.active{color:var(--graphite);border-color:var(--ball-orange);font-weight:600;}
@@ -167,6 +170,7 @@
     <p class="hello">Welcome back</p>
     <h1 class="page-title" id="dashName">—</h1>
 
+    <div class="card mono" id="usageBanner" style="padding:16px 22px;margin-bottom:16px;font-size:12.5px;color:var(--muted);display:none;"></div>
     <div class="card">
       <div id="eventsList"></div>
     </div>
@@ -190,7 +194,13 @@
         <h3>Add event</h3>
         <div class="inline-form">
           <div class="field"><label>Name</label><input id="newEventName" placeholder="Table Tennis — Singles"></div>
-          <div class="field"><label>Category</label><input id="newEventCategory" placeholder="Indoor"></div>
+          <div class="field"><label>Category</label>
+            <select id="newEventCategory" style="width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;">
+              <option value="TRACK">Track</option>
+              <option value="FIELD">Field</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
           <div class="field"><label>Deadline</label><input id="newEventDeadline" type="datetime-local"></div>
           <button class="btn btn-dark" id="addEventBtn">Add</button>
         </div>
@@ -389,9 +399,15 @@
   async function loadEvents() {
     const list = document.getElementById('eventsList');
     const dashMsg = document.getElementById('dashMsg');
+    const banner = document.getElementById('usageBanner');
     list.innerHTML = skeletonRows(3);
     try {
       const data = await api('listEvents', {});
+      const { track, field, total } = data.usage;
+      const { maxPerCategory, maxTotal } = data.limits;
+      banner.style.display = 'block';
+      banner.innerHTML = `TRACK/FIELD USAGE — Track: <strong>${track}/${maxPerCategory}</strong> · Field: <strong>${field}/${maxPerCategory}</strong> · Combined: <strong>${total}/${maxTotal}</strong> &nbsp;·&nbsp; "Other" events don't count toward this.`;
+
       if (!data.events.length) {
         list.innerHTML = '<div class="event-row"><span class="mono" style="color:var(--muted);">No events yet — check back soon.</span></div>';
         return;
@@ -399,10 +415,23 @@
       list.innerHTML = data.events.map(ev => {
         const registered = data.myRegistrations.includes(ev.eventId);
         const deadlinePassed = ev.deadline && new Date() > new Date(ev.deadline);
-        const canAct = ev.active && !deadlinePassed;
+        const cat = String(ev.category || 'OTHER').toUpperCase();
+
+        // Would registering push this student over a cap? (server has final say,
+        // this just avoids letting them click into an obvious rejection)
+        let capBlocked = false, capReason = '';
+        if (!registered && (cat === 'TRACK' || cat === 'FIELD')) {
+          const perCat = cat === 'TRACK' ? track : field;
+          if (perCat >= maxPerCategory) { capBlocked = true; capReason = `Max ${maxPerCategory} ${cat.charAt(0)+cat.slice(1).toLowerCase()} events reached`; }
+          else if (total >= maxTotal) { capBlocked = true; capReason = `Max ${maxTotal} Track/Field events reached`; }
+        }
+
+        const canAct = ev.active && !deadlinePassed && !capBlocked;
         let statusPill = registered
           ? '<span class="pill registered">Registered</span>'
-          : (canAct ? '<span class="pill open">Open</span>' : '<span class="pill closed">Closed</span>');
+          : (ev.active && !deadlinePassed ? (capBlocked ? '<span class="pill closed">Cap reached</span>' : '<span class="pill open">Open</span>') : '<span class="pill closed">Closed</span>');
+        const catPill = `<span class="pill cat-${cat.toLowerCase()}">${cat.charAt(0)+cat.slice(1).toLowerCase()}</span>`;
+
         let actionBtn = '';
         if (registered) {
           actionBtn = `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-action="unregister" data-id="${ev.eventId}">Unregister</button>`;
@@ -413,9 +442,9 @@
         return `<div class="event-row">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
-            <div class="event-meta">${escapeHtml(ev.category || '')} · Deadline: ${deadlineText}</div>
+            <div class="event-meta">${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>
           </div>
-          <div style="display:flex;align-items:center;gap:10px;">${statusPill}${actionBtn}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${catPill}${statusPill}${actionBtn}</div>
         </div>`;
       }).join('');
 
@@ -503,12 +532,14 @@
       const data = await api('listEvents', {});
       container.innerHTML = data.events.map(ev => {
         const deadlineVal = ev.deadline ? new Date(ev.deadline).toLocaleString() : '—';
+        const cat = String(ev.category || 'OTHER').toUpperCase();
         return `<div class="event-row">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
-            <div class="event-meta">${escapeHtml(ev.category||'')} · Deadline: ${deadlineVal}</div>
+            <div class="event-meta">Deadline: ${deadlineVal}</div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span class="pill cat-${cat.toLowerCase()}">${cat.charAt(0)+cat.slice(1).toLowerCase()}</span>
             <span class="pill ${ev.active ? 'open' : 'closed'}">${ev.active ? 'Active' : 'Disabled'}</span>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}">View regs</button>
@@ -551,7 +582,7 @@
     try {
       await api('adminAddEvent', { name, category, deadline: deadline ? new Date(deadline).toISOString() : '' });
       document.getElementById('newEventName').value = '';
-      document.getElementById('newEventCategory').value = '';
+      document.getElementById('newEventCategory').value = 'TRACK';
       document.getElementById('newEventDeadline').value = '';
       setMsg(msg, 'Event added.', true);
       await loadAdminEvents();

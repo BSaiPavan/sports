@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Campus Sports — Season 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --court-navy:#0B2545; --chalk:#F5F3EC; --ball-orange:#FF5A1F;
@@ -97,6 +97,33 @@
   .modal-row .rreg{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-top:2px;}
   .modal-empty{padding:30px 22px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px;text-align:center;}
   .modal-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;}
+
+  /* ---------- Landing ---------- */
+  :root{
+    --maroon-900:#430E1B; --maroon-700:#7E2434; --maroon-600:#96354A; --maroon-100:#F3DFE1;
+    --gold-600:#AD8523; --gold-500:#C9A227; --gold-300:#E7CD7D;
+  }
+  .landing-hero{text-align:center;padding:64px 20px 44px;}
+  .landing-crest{width:96px;height:96px;border-radius:50%;box-shadow:0 10px 30px rgba(67,14,27,.13);margin-bottom:22px;object-fit:cover;}
+  .landing-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-600);font-weight:700;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .landing-title{font-family:'Cormorant Garamond',serif;font-weight:700;text-transform:none;letter-spacing:0;font-size:clamp(30px,5vw,42px);line-height:1.1;color:var(--maroon-900);max-width:680px;margin:0 auto;}
+  .landing-motto{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold-600);font-size:17px;margin-top:12px;}
+  .landing-desc{color:var(--muted);max-width:560px;margin:18px auto 0;font-size:15px;line-height:1.55;}
+  .landing-ribbon{display:inline-flex;align-items:center;gap:8px;margin:22px auto 0;padding:8px 22px;background:linear-gradient(180deg,var(--maroon-600),var(--maroon-900));color:var(--gold-300);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;position:relative;box-shadow:0 2px 8px rgba(67,14,27,.1);}
+  .landing-ribbon::before,.landing-ribbon::after{content:"";position:absolute;top:100%;width:0;height:0;border-style:solid;}
+  .landing-ribbon::before{left:0;border-width:6px 8px 0 0;border-color:var(--maroon-900) transparent transparent transparent;}
+  .landing-ribbon::after{right:0;border-width:6px 0 0 8px;border-color:var(--maroon-900) transparent transparent transparent;}
+  .landing-divider{display:flex;align-items:center;justify-content:center;gap:14px;margin:34px auto;color:var(--gold-600);}
+  .landing-divider .line{height:1px;width:60px;background:var(--line);}
+  .landing-role-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;max-width:680px;margin:0 auto;padding:0 20px 60px;}
+  @media (max-width:640px){.landing-role-grid{grid-template-columns:1fr;}}
+  .landing-role-card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:28px 24px;text-align:left;box-shadow:0 2px 8px rgba(67,14,27,.06);transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;display:flex;flex-direction:column;gap:12px;}
+  .landing-role-card:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(67,14,27,.13);border-color:var(--gold-500);}
+  .landing-role-card .landing-icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--maroon-100);color:var(--maroon-700);font-size:18px;}
+  .landing-role-card h3{font-family:'Cormorant Garamond',serif;text-transform:none;letter-spacing:0;font-size:23px;color:var(--maroon-900);font-weight:700;}
+  .landing-role-card p{color:var(--muted);font-size:13.5px;line-height:1.5;margin:0;flex:1;}
+  .landing-role-card .btn{align-self:flex-start;border-color:var(--maroon-700);color:var(--maroon-700);}
+  .landing-role-card .btn:hover{background:var(--maroon-100);}
 </style>
 </head>
 <body>
@@ -119,7 +146,7 @@
 
 <nav>
   <div class="wrap">
-    <div class="brand" id="navBrand" style="cursor:pointer;">SSSIHL<span>SportSphere</span>2K26</div>
+    <div class="brand" id="navBrand" style="cursor:pointer;">CAMPUS<span>SPORTS</span>26</div>
     <div class="nav-right hidden" id="navUserBox">
       <span id="navName"></span>
       <a class="btn btn-outline btn-small" id="navHomeBtn" href="#">Home</a>
@@ -130,9 +157,37 @@
 </nav>
 
 <main>
+  <!-- LANDING -->
+  <div id="landingView" class="wrap">
+    <div class="landing-hero">
+      <img class="landing-crest" src="logo.png" alt="Sri Sathya Sai Institute of Higher Learning crest">
+      <div class="landing-eyebrow">◎ PRASANTHI NILAYAM</div>
+      <h1 class="landing-title">Sri Sathya Sai Institute<br>Annual Sports Meet</h1>
+      <div class="landing-motto">सत्यं शिवं सुन्दरम्</div>
+      <p class="landing-desc">A single home for event registration, results and the winners' gallery — track &amp; field events, one season.</p>
+      <div class="landing-ribbon">◎ 12–13 SEPTEMBER 2026</div>
+    </div>
+    <div class="landing-divider"><span class="line"></span>◎<span class="line"></span></div>
+    <div class="landing-role-grid">
+      <div class="landing-role-card">
+        <div class="landing-icon">◎</div>
+        <h3>Admin</h3>
+        <p>Review every registration, manage event dates, and export the full list as CSV.</p>
+        <button class="btn btn-outline btn-small" id="landingAdminBtn">Enter as Admin →</button>
+      </div>
+      <div class="landing-role-card">
+        <div class="landing-icon">◎</div>
+        <h3>Students</h3>
+        <p>Sign in with your registration number to sign up for events — up to 5, following the field &amp; track limit.</p>
+        <button class="btn btn-orange btn-small" id="landingStudentBtn">Register for events →</button>
+      </div>
+    </div>
+  </div>
+
   <!-- LOGIN -->
-  <div id="loginView" class="wrap">
+  <div id="loginView" class="wrap hidden">
     <div class="card center-box">
+      <a href="#" id="loginBackHome" class="mono" style="font-size:11px;color:var(--muted);text-decoration:none;display:inline-block;margin-bottom:16px;">← Home</a>
       <h2 style="font-size:24px;margin-bottom:6px;">Log in</h2>
       <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 22px;">Use your registration number</p>
       <div class="field">
@@ -145,7 +200,7 @@
       </div>
       <button class="btn btn-orange" style="width:100%;" id="loginBtn">Log in</button>
       <div class="msg" id="loginMsg"></div>
-      <p class="mono" style="font-size:11px;color:var(--muted);margin-top:18px;">Forgot your password? Contact Sports coordinator in person — he can reset it for you.</p>
+      <p class="mono" style="font-size:11px;color:var(--muted);margin-top:18px;">Forgot your password? See an admin in person — they can reset it for you.</p>
     </div>
   </div>
 
@@ -338,7 +393,7 @@
   }
 
   function showView(id) {
-    ['loginView','forceChangeView','dashboardView','adminView'].forEach(v => {
+    ['landingView','loginView','forceChangeView','dashboardView','adminView'].forEach(v => {
       document.getElementById(v).classList.toggle('hidden', v !== id);
     });
   }
@@ -387,7 +442,7 @@
     e.preventDefault();
     clearSession();
     document.getElementById('navUserBox').classList.add('hidden');
-    showView('loginView');
+    showView('landingView');
   });
   document.getElementById('navAdminBtn').addEventListener('click', (e) => {
     e.preventDefault();
@@ -398,7 +453,7 @@
     if (state.token) {
       enterDashboard();
     } else {
-      showView('loginView');
+      showView('landingView');
     }
   }
   document.getElementById('navHomeBtn').addEventListener('click', (e) => {
@@ -408,6 +463,12 @@
   document.getElementById('navBrand').addEventListener('click', (e) => {
     e.preventDefault();
     goHome();
+  });
+  document.getElementById('landingAdminBtn').addEventListener('click', () => showView('loginView'));
+  document.getElementById('landingStudentBtn').addEventListener('click', () => showView('loginView'));
+  document.getElementById('loginBackHome').addEventListener('click', (e) => {
+    e.preventDefault();
+    showView('landingView');
   });
 
   // ---------- DASHBOARD ----------
@@ -839,9 +900,9 @@
   // ---------- BOOT ----------
   loadSession();
   if (state.token) {
-    enterDashboard().catch(() => { clearSession(); showView('loginView'); });
+    enterDashboard().catch(() => { clearSession(); showView('landingView'); });
   } else {
-    showView('loginView');
+    showView('landingView');
   }
 </script>
 

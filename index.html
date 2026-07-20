@@ -118,9 +118,10 @@
 
 <nav>
   <div class="wrap">
-    <div class="brand">CAMPUS<span>SPORTS</span>26</div>
+    <div class="brand" id="navBrand" style="cursor:pointer;">CAMPUS<span>SPORTS</span>26</div>
     <div class="nav-right hidden" id="navUserBox">
       <span id="navName"></span>
+      <a class="btn btn-outline btn-small" id="navHomeBtn" href="#">Home</a>
       <a class="btn btn-outline btn-small" id="navAdminBtn" href="#" style="display:none;">Admin</a>
       <a class="btn btn-outline btn-small" id="navLogoutBtn" href="#">Log out</a>
     </div>
@@ -386,6 +387,22 @@
     enterAdmin();
   });
 
+  function goHome() {
+    if (state.token) {
+      enterDashboard();
+    } else {
+      showView('loginView');
+    }
+  }
+  document.getElementById('navHomeBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    goHome();
+  });
+  document.getElementById('navBrand').addEventListener('click', (e) => {
+    e.preventDefault();
+    goHome();
+  });
+
   // ---------- DASHBOARD ----------
   async function enterDashboard() {
     document.getElementById('navUserBox').classList.remove('hidden');
@@ -529,6 +546,15 @@
     await Promise.all([loadAdminEvents(), loadAdminUsers()]);
   }
 
+  let editingDeadlineId = null;
+
+  function toDatetimeLocalValue(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
   async function loadAdminEvents() {
     const container = document.getElementById('adminEventsList');
     container.innerHTML = skeletonRows(2);
@@ -537,14 +563,23 @@
       container.innerHTML = data.events.map(ev => {
         const deadlineVal = ev.deadline ? new Date(ev.deadline).toLocaleString() : '—';
         const cat = String(ev.category || 'OTHER').toUpperCase();
+        const isEditing = editingDeadlineId === ev.eventId;
         return `<div class="event-row">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
-            <div class="event-meta">Deadline: ${deadlineVal}</div>
+            ${isEditing
+              ? `<div class="event-meta" style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+                   <input type="datetime-local" data-deadline-input="${ev.eventId}" value="${toDatetimeLocalValue(ev.deadline)}" style="padding:8px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13px;border-radius:2px;">
+                   <button class="btn btn-orange btn-small" data-save-deadline="${ev.eventId}">Save</button>
+                   <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-cancel-deadline="${ev.eventId}">Cancel</button>
+                   <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-clear-deadline="${ev.eventId}">Clear</button>
+                 </div>`
+              : `<div class="event-meta">Deadline: ${deadlineVal}</div>`}
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <span class="pill cat-${cat.toLowerCase()}">${cat.charAt(0)+cat.slice(1).toLowerCase()}</span>
             <span class="pill ${ev.active ? 'open' : 'closed'}">${ev.active ? 'Active' : 'Disabled'}</span>
+            ${!isEditing ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}">View regs</button>
             <button class="btn btn-danger btn-small" data-delete="${ev.eventId}">Delete</button>
@@ -570,6 +605,35 @@
           const eventName = btn.closest('.event-row').querySelector('.event-name').textContent;
           const data = await api('adminListRegistrations', { eventId: btn.dataset.viewRegs });
           showRegsModal(eventName, data.registrations);
+        }));
+      });
+      container.querySelectorAll('[data-edit-deadline]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          editingDeadlineId = btn.dataset.editDeadline;
+          loadAdminEvents();
+        });
+      });
+      container.querySelectorAll('[data-cancel-deadline]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          editingDeadlineId = null;
+          loadAdminEvents();
+        });
+      });
+      container.querySelectorAll('[data-clear-deadline]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          await api('adminEditEvent', { eventId: btn.dataset.clearDeadline, deadline: '' });
+          editingDeadlineId = null;
+          await loadAdminEvents();
+        }));
+      });
+      container.querySelectorAll('[data-save-deadline]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          const eventId = btn.dataset.saveDeadline;
+          const input = container.querySelector(`[data-deadline-input="${eventId}"]`);
+          const val = input.value;
+          await api('adminEditEvent', { eventId, deadline: val ? new Date(val).toISOString() : '' });
+          editingDeadlineId = null;
+          await loadAdminEvents();
         }));
       });
     } catch (err) {

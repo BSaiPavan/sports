@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campus Sports — Season 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --court-navy:#0B2545; --chalk:#F5F3EC; --ball-orange:#FF5A1F;
+    --net-mint:#2FB380; --graphite:#16181D; --line:#D8D3C4; --muted:#6b7280;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--chalk);color:var(--graphite);font-family:'Inter',sans-serif;}
+  h1,h2,h3{font-family:'Anton',sans-serif;font-weight:400;letter-spacing:.5px;margin:0;text-transform:uppercase;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .wrap{max-width:900px;margin:0 auto;padding:0 20px;}
+  nav{background:var(--court-navy);border-bottom:3px solid var(--ball-orange);}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px;}
+  .brand{color:var(--chalk);font-family:'Anton',sans-serif;font-size:20px;}
+  .brand span{color:var(--ball-orange);}
+  .nav-right{display:flex;align-items:center;gap:14px;color:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+  .btn{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;letter-spacing:.5px;text-transform:uppercase;border:none;border-radius:2px;padding:10px 16px;cursor:pointer;text-decoration:none;display:inline-block;}
+  .btn-orange{background:var(--ball-orange);color:#fff;}
+  .btn-orange:hover{background:#e64f18;}
+  .btn-outline{background:transparent;border:1px solid rgba(245,243,236,.35);color:var(--chalk);}
+  .btn-dark{background:var(--graphite);color:#fff;}
+  .btn-small{padding:6px 12px;font-size:11.5px;}
+  .btn-danger{background:#b7401b;color:#fff;}
+  .card{background:#fff;border:1px solid var(--line);}
+  main{padding:40px 0 80px;}
+  .center-box{max-width:380px;margin:80px auto;padding:32px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+  .field input{width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;}
+  .field input:focus{outline:none;border-color:var(--ball-orange);background:#fff;}
+  .msg{margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:10px 12px;border-radius:2px;display:none;}
+  .msg.ok{display:block;background:rgba(47,179,128,.12);color:#1d7d55;}
+  .msg.err{display:block;background:rgba(255,90,31,.1);color:#b7401b;}
+  .hidden{display:none !important;}
+  .hello{font-size:13px;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+  .page-title{font-size:clamp(28px,5vw,42px);margin-bottom:28px;}
+  .event-row{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line);gap:12px;flex-wrap:wrap;}
+  .event-row:last-child{border-bottom:none;}
+  .event-name{font-family:'Anton',sans-serif;font-size:18px;}
+  .event-meta{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);margin-top:3px;text-transform:uppercase;}
+  .pill{font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;padding:4px 8px;border-radius:2px;letter-spacing:.5px;}
+  .pill.open{background:rgba(47,179,128,.15);color:#1d7d55;}
+  .pill.closed{background:rgba(107,114,128,.12);color:var(--muted);}
+  .pill.registered{background:rgba(255,90,31,.12);color:#b7401b;}
+  .tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:2px solid var(--graphite);}
+  .tab{font-family:'IBM Plex Mono',monospace;font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;padding:12px 18px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;}
+  .tab.active{color:var(--graphite);border-color:var(--ball-orange);font-weight:600;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;text-align:left;color:var(--muted);border-bottom:1px solid var(--line);padding:8px 10px;}
+  td{padding:9px 10px;border-bottom:1px solid var(--line);}
+  .admin-section{margin-bottom:36px;}
+  .admin-section h3{font-size:18px;margin-bottom:14px;}
+  .inline-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;}
+  .inline-form .field{margin-bottom:0;min-width:140px;flex:1;}
+  textarea{width:100%;min-height:100px;padding:12px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand">CAMPUS<span>SPORTS</span>26</div>
+    <div class="nav-right hidden" id="navUserBox">
+      <span id="navName"></span>
+      <a class="btn btn-outline btn-small" id="navAdminBtn" href="#" style="display:none;">Admin</a>
+      <a class="btn btn-outline btn-small" id="navLogoutBtn" href="#">Log out</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <!-- LOGIN -->
+  <div id="loginView" class="wrap">
+    <div class="card center-box">
+      <h2 style="font-size:24px;margin-bottom:6px;">Log in</h2>
+      <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 22px;">Use your registration number</p>
+      <div class="field">
+        <label>Registration Number</label>
+        <input type="text" id="loginRegNo" placeholder="e.g. 234207">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="Default: omsrisairam">
+      </div>
+      <button class="btn btn-orange" style="width:100%;" id="loginBtn">Log in</button>
+      <div class="msg" id="loginMsg"></div>
+      <p class="mono" style="font-size:11px;color:var(--muted);margin-top:18px;">Forgot your password? See an admin in person — they can reset it for you.</p>
+    </div>
+  </div>
+
+  <!-- FORCE PASSWORD CHANGE -->
+  <div id="forceChangeView" class="wrap hidden">
+    <div class="card center-box">
+      <h2 style="font-size:22px;margin-bottom:6px;">Set your password</h2>
+      <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 22px;">First login — choose a new password and add your email</p>
+      <div class="field">
+        <label>New Password (min 6 characters)</label>
+        <input type="password" id="fcPassword">
+      </div>
+      <div class="field">
+        <label>Email (optional but recommended)</label>
+        <input type="email" id="fcEmail" placeholder="you@example.com">
+      </div>
+      <button class="btn btn-orange" style="width:100%;" id="fcSaveBtn">Save and continue</button>
+      <div class="msg" id="fcMsg"></div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboardView" class="wrap hidden">
+    <p class="hello">Welcome back</p>
+    <h1 class="page-title" id="dashName">—</h1>
+
+    <div class="card">
+      <div id="eventsList"></div>
+    </div>
+    <p class="msg" id="dashMsg" style="max-width:900px;"></p>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="adminView" class="wrap hidden">
+    <p class="hello">Admin panel</p>
+    <h1 class="page-title">Manage season</h1>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="events">Events</div>
+      <div class="tab" data-tab="users">Users</div>
+      <div class="tab" data-tab="admins">Admins</div>
+    </div>
+
+    <!-- EVENTS TAB -->
+    <div class="admin-tab" id="tab-events">
+      <div class="card" style="padding:22px;margin-bottom:24px;">
+        <h3>Add event</h3>
+        <div class="inline-form">
+          <div class="field"><label>Name</label><input id="newEventName" placeholder="Table Tennis — Singles"></div>
+          <div class="field"><label>Category</label><input id="newEventCategory" placeholder="Indoor"></div>
+          <div class="field"><label>Deadline</label><input id="newEventDeadline" type="datetime-local"></div>
+          <button class="btn btn-dark" id="addEventBtn">Add</button>
+        </div>
+        <div class="msg" id="addEventMsg"></div>
+      </div>
+      <div class="card" id="adminEventsList"></div>
+    </div>
+
+    <!-- USERS TAB -->
+    <div class="admin-tab hidden" id="tab-users">
+      <div class="card" style="padding:22px;margin-bottom:24px;">
+        <h3>Add single user</h3>
+        <div class="inline-form">
+          <div class="field"><label>Registration Number</label><input id="newUserRegNo"></div>
+          <div class="field"><label>Name</label><input id="newUserName"></div>
+          <button class="btn btn-dark" id="addUserBtn">Add</button>
+        </div>
+        <div class="msg" id="addUserMsg"></div>
+      </div>
+      <div class="card" style="padding:22px;margin-bottom:24px;">
+        <h3>Bulk add (one per line: <span class="mono">regNo, Name</span>)</h3>
+        <textarea id="bulkUsers" placeholder="234207, Bhavirisetti Sai Pavan
+234233, Another Student"></textarea>
+        <button class="btn btn-dark" style="margin-top:10px;" id="bulkAddBtn">Add all</button>
+        <div class="msg" id="bulkAddMsg"></div>
+      </div>
+      <div class="card" style="padding:22px;">
+        <h3>All users</h3>
+        <div style="overflow-x:auto;"><table id="usersTable"><thead><tr><th>Reg No</th><th>Name</th><th>Email</th><th>Admin</th><th>Actions</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ADMINS TAB -->
+    <div class="admin-tab hidden" id="tab-admins">
+      <div class="card" style="padding:22px;">
+        <h3>Grant / revoke admin access</h3>
+        <p class="mono" style="font-size:12px;color:var(--muted);">Find the user in the Users tab and use the Make Admin / Remove Admin button there.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // ====== CONFIG ======
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzG55AEw13r65zu9NrYnkjj1FVrKbQKN0OaQRHpi_XmvwWar8AZbB5DnPFcIRO0PiOmFQ/exec";
+
+  const state = { token: null, name: null, isAdmin: false };
+
+  function saveSession() {
+    sessionStorage.setItem('campusSports', JSON.stringify(state));
+  }
+  function loadSession() {
+    const raw = sessionStorage.getItem('campusSports');
+    if (raw) Object.assign(state, JSON.parse(raw));
+  }
+  function clearSession() {
+    sessionStorage.removeItem('campusSports');
+    state.token = null; state.name = null; state.isAdmin = false;
+  }
+
+  async function api(action, payload) {
+    if (SCRIPT_URL.startsWith("PASTE_")) {
+      throw new Error("Backend not connected yet — see SETUP.md");
+    }
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(Object.assign({ action, token: state.token }, payload))
+    });
+    const data = await res.json();
+    if (data.status === 'error') throw new Error(data.message || 'Something went wrong');
+    return data;
+  }
+
+  function showView(id) {
+    ['loginView','forceChangeView','dashboardView','adminView'].forEach(v => {
+      document.getElementById(v).classList.toggle('hidden', v !== id);
+    });
+  }
+
+  function setMsg(el, text, ok) {
+    el.textContent = text;
+    el.className = 'msg ' + (ok ? 'ok' : 'err');
+  }
+
+  // ---------- LOGIN ----------
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    const regNo = document.getElementById('loginRegNo').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const msg = document.getElementById('loginMsg');
+    if (!regNo || !password) { setMsg(msg, 'Enter your registration number and password.', false); return; }
+    try {
+      const data = await api('login', { regNo, password });
+      state.token = data.token; state.name = data.name; state.isAdmin = data.isAdmin;
+      saveSession();
+      if (data.mustChangePassword) {
+        showView('forceChangeView');
+      } else {
+        enterDashboard();
+      }
+    } catch (err) {
+      setMsg(msg, err.message, false);
+    }
+  });
+
+  // ---------- FORCE CHANGE ----------
+  document.getElementById('fcSaveBtn').addEventListener('click', async () => {
+    const newPassword = document.getElementById('fcPassword').value;
+    const email = document.getElementById('fcEmail').value.trim();
+    const msg = document.getElementById('fcMsg');
+    if (newPassword.length < 6) { setMsg(msg, 'Password must be at least 6 characters.', false); return; }
+    try {
+      await api('changePassword', { newPassword, email });
+      enterDashboard();
+    } catch (err) {
+      setMsg(msg, err.message, false);
+    }
+  });
+
+  // ---------- NAV ----------
+  document.getElementById('navLogoutBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    clearSession();
+    document.getElementById('navUserBox').classList.add('hidden');
+    showView('loginView');
+  });
+  document.getElementById('navAdminBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    enterAdmin();
+  });
+
+  // ---------- DASHBOARD ----------
+  async function enterDashboard() {
+    document.getElementById('navUserBox').classList.remove('hidden');
+    document.getElementById('navName').textContent = state.name;
+    document.getElementById('navAdminBtn').style.display = state.isAdmin ? 'inline-block' : 'none';
+    document.getElementById('dashName').textContent = state.name;
+    showView('dashboardView');
+    await loadEvents();
+  }
+
+  async function loadEvents() {
+    const list = document.getElementById('eventsList');
+    const dashMsg = document.getElementById('dashMsg');
+    try {
+      const data = await api('listEvents', {});
+      if (!data.events.length) {
+        list.innerHTML = '<div class="event-row"><span class="mono" style="color:var(--muted);">No events yet — check back soon.</span></div>';
+        return;
+      }
+      list.innerHTML = data.events.map(ev => {
+        const registered = data.myRegistrations.includes(ev.eventId);
+        const deadlinePassed = ev.deadline && new Date() > new Date(ev.deadline);
+        const canAct = ev.active && !deadlinePassed;
+        let statusPill = registered
+          ? '<span class="pill registered">Registered</span>'
+          : (canAct ? '<span class="pill open">Open</span>' : '<span class="pill closed">Closed</span>');
+        let actionBtn = '';
+        if (registered) {
+          actionBtn = `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-action="unregister" data-id="${ev.eventId}">Unregister</button>`;
+        } else if (canAct) {
+          actionBtn = `<button class="btn btn-orange btn-small" data-action="register" data-id="${ev.eventId}">Register</button>`;
+        }
+        const deadlineText = ev.deadline ? new Date(ev.deadline).toLocaleString() : 'No deadline set';
+        return `<div class="event-row">
+          <div>
+            <div class="event-name">${escapeHtml(ev.name)}</div>
+            <div class="event-meta">${escapeHtml(ev.category || '')} · Deadline: ${deadlineText}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">${statusPill}${actionBtn}</div>
+        </div>`;
+      }).join('');
+
+      list.querySelectorAll('button[data-action]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const action = btn.dataset.action === 'register' ? 'registerEvent' : 'unregisterEvent';
+          btn.disabled = true;
+          try {
+            await api(action, { eventId: btn.dataset.id });
+            await loadEvents();
+          } catch (err) {
+            setMsg(dashMsg, err.message, false);
+            btn.disabled = false;
+          }
+        });
+      });
+    } catch (err) {
+      setMsg(dashMsg, err.message, false);
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---------- ADMIN ----------
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
+      document.getElementById('tab-' + tab.dataset.tab).classList.remove('hidden');
+    });
+  });
+
+  async function enterAdmin() {
+    showView('adminView');
+    await Promise.all([loadAdminEvents(), loadAdminUsers()]);
+  }
+
+  async function loadAdminEvents() {
+    const container = document.getElementById('adminEventsList');
+    try {
+      const data = await api('listEvents', {});
+      container.innerHTML = data.events.map(ev => {
+        const deadlineVal = ev.deadline ? new Date(ev.deadline).toLocaleString() : '—';
+        return `<div class="event-row">
+          <div>
+            <div class="event-name">${escapeHtml(ev.name)}</div>
+            <div class="event-meta">${escapeHtml(ev.category||'')} · Deadline: ${deadlineVal}</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="pill ${ev.active ? 'open' : 'closed'}">${ev.active ? 'Active' : 'Disabled'}</span>
+            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>
+            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}">View regs</button>
+            <button class="btn btn-danger btn-small" data-delete="${ev.eventId}">Delete</button>
+          </div>
+        </div>`;
+      }).join('') || '<div class="event-row mono" style="color:var(--muted);">No events yet.</div>';
+
+      container.querySelectorAll('[data-toggle]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await api('adminToggleEvent', { eventId: btn.dataset.toggle, active: btn.dataset.active !== 'true' });
+          loadAdminEvents();
+        });
+      });
+      container.querySelectorAll('[data-delete]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Delete this event and all its registrations?')) return;
+          await api('adminDeleteEvent', { eventId: btn.dataset.delete });
+          loadAdminEvents();
+        });
+      });
+      container.querySelectorAll('[data-view-regs]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const data = await api('adminListRegistrations', { eventId: btn.dataset.viewRegs });
+          const names = data.registrations.map(r => `${r.name} (${r.regNo})`).join('\n') || 'No one registered yet.';
+          alert(names);
+        });
+      });
+    } catch (err) {
+      container.innerHTML = `<div class="event-row" style="color:#b7401b;">${err.message}</div>`;
+    }
+  }
+
+  document.getElementById('addEventBtn').addEventListener('click', async () => {
+    const name = document.getElementById('newEventName').value.trim();
+    const category = document.getElementById('newEventCategory').value.trim();
+    const deadline = document.getElementById('newEventDeadline').value;
+    const msg = document.getElementById('addEventMsg');
+    if (!name) { setMsg(msg, 'Event name is required.', false); return; }
+    try {
+      await api('adminAddEvent', { name, category, deadline: deadline ? new Date(deadline).toISOString() : '' });
+      document.getElementById('newEventName').value = '';
+      document.getElementById('newEventCategory').value = '';
+      document.getElementById('newEventDeadline').value = '';
+      setMsg(msg, 'Event added.', true);
+      loadAdminEvents();
+    } catch (err) { setMsg(msg, err.message, false); }
+  });
+
+  async function loadAdminUsers() {
+    const tbody = document.querySelector('#usersTable tbody');
+    try {
+      const data = await api('adminListUsers', {});
+      tbody.innerHTML = data.users.map(u => `
+        <tr>
+          <td class="mono">${escapeHtml(u.regNo)}</td>
+          <td>${escapeHtml(u.name)}</td>
+          <td class="mono">${escapeHtml(u.email || '—')}</td>
+          <td>${u.isAdmin ? 'Yes' : 'No'}</td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-reset="${u.regNo}">Reset pwd</button>
+            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-admin="${u.regNo}" data-is-admin="${u.isAdmin}">${u.isAdmin ? 'Remove admin' : 'Make admin'}</button>
+          </td>
+        </tr>`).join('');
+
+      tbody.querySelectorAll('[data-reset]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Reset password to default (omsrisairam) for ' + btn.dataset.reset + '?')) return;
+          await api('adminResetPassword', { regNo: btn.dataset.reset });
+          loadAdminUsers();
+        });
+      });
+      tbody.querySelectorAll('[data-toggle-admin]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const makeAdmin = btn.dataset.isAdmin !== 'true';
+          await api('adminSetAdmin', { regNo: btn.dataset.toggleAdmin, makeAdmin });
+          loadAdminUsers();
+        });
+      });
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="5" style="color:#b7401b;">${err.message}</td></tr>`;
+    }
+  }
+
+  document.getElementById('addUserBtn').addEventListener('click', async () => {
+    const regNo = document.getElementById('newUserRegNo').value.trim();
+    const name = document.getElementById('newUserName').value.trim();
+    const msg = document.getElementById('addUserMsg');
+    if (!regNo || !name) { setMsg(msg, 'Both fields are required.', false); return; }
+    try {
+      await api('adminAddUser', { regNo, name });
+      document.getElementById('newUserRegNo').value = '';
+      document.getElementById('newUserName').value = '';
+      setMsg(msg, 'User added with default password.', true);
+      loadAdminUsers();
+    } catch (err) { setMsg(msg, err.message, false); }
+  });
+
+  document.getElementById('bulkAddBtn').addEventListener('click', async () => {
+    const csv = document.getElementById('bulkUsers').value;
+    const msg = document.getElementById('bulkAddMsg');
+    if (!csv.trim()) { setMsg(msg, 'Paste at least one line.', false); return; }
+    try {
+      const data = await api('adminBulkAddUsers', { csv });
+      setMsg(msg, `Added ${data.added}, skipped ${data.skipped} (duplicates).`, true);
+      document.getElementById('bulkUsers').value = '';
+      loadAdminUsers();
+    } catch (err) { setMsg(msg, err.message, false); }
+  });
+
+  // ---------- BOOT ----------
+  loadSession();
+  if (state.token) {
+    enterDashboard().catch(() => { clearSession(); showView('loginView'); });
+  } else {
+    showView('loginView');
+  }
+</script>
+
+</body>
+</html>

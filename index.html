@@ -170,7 +170,7 @@
       </div>
       <button class="btn btn-orange" style="width:100%;" id="loginBtn">Log in</button>
       <div class="msg" id="loginMsg"></div>
-      <p class="mono" style="font-size:11px;color:var(--muted);margin-top:18px;">Forgot your password? See an admin in person — they can reset it for you.</p>
+      <p class="mono" style="font-size:11px;color:var(--muted);margin-top:18px;">Forgot your password? See the sports coordinator in person — they can reset it for you.</p>
     </div>
   </div>
 
@@ -400,6 +400,12 @@
     }
   }));
 
+  ['loginRegNo', 'loginPassword'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('loginBtn').click(); }
+    });
+  });
+
   // ---------- FORCE CHANGE ----------
   document.getElementById('fcSaveBtn').addEventListener('click', withLoading(document.getElementById('fcSaveBtn'), async () => {
     const newPassword = document.getElementById('fcPassword').value;
@@ -413,6 +419,12 @@
       setMsg(msg, err.message, false);
     }
   }));
+
+  ['fcPassword', 'fcEmail'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('fcSaveBtn').click(); }
+    });
+  });
 
   // ---------- NAV ----------
   document.getElementById('navLogoutBtn').addEventListener('click', (e) => {
@@ -518,10 +530,14 @@
           actionBtn = `<button class="btn btn-orange btn-small" data-action="register" data-id="${ev.eventId}">Register</button>`;
         }
         const deadlineText = ev.deadline ? new Date(ev.deadline).toLocaleString() : 'No deadline set';
+        const compDateText = ev.competitionDate
+          ? new Date(ev.competitionDate + 'T00:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+          : 'To be decided';
         return `<div class="event-row">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
-            <div class="event-meta">${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>
+            <div class="event-meta">Register by: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>
+            <div class="event-meta">Event day: ${compDateText}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${catPill}${statusPill}${actionBtn}</div>
         </div>`;
@@ -686,6 +702,7 @@
   }
 
   let editingDeadlineId = null;
+  let editingCompDateId = null;
 
   function toDatetimeLocalValue(iso) {
     if (!iso) return '';
@@ -701,24 +718,37 @@
       const data = await api('listEvents', {});
       container.innerHTML = data.events.map(ev => {
         const deadlineVal = ev.deadline ? new Date(ev.deadline).toLocaleString() : '—';
+        const compDateVal = ev.competitionDate ? new Date(ev.competitionDate + 'T00:00:00').toLocaleDateString() : 'To be decided';
         const cat = String(ev.category || 'OTHER').toUpperCase();
-        const isEditing = editingDeadlineId === ev.eventId;
+        const isEditingDeadline = editingDeadlineId === ev.eventId;
+        const isEditingCompDate = editingCompDateId === ev.eventId;
         return `<div class="event-row">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
-            ${isEditing
+            ${isEditingDeadline
               ? `<div class="event-meta" style="display:flex;gap:8px;align-items:center;margin-top:6px;">
                    <input type="datetime-local" data-deadline-input="${ev.eventId}" value="${toDatetimeLocalValue(ev.deadline)}" style="padding:8px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13px;border-radius:2px;">
                    <button class="btn btn-orange btn-small" data-save-deadline="${ev.eventId}">Save</button>
                    <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-cancel-deadline="${ev.eventId}">Cancel</button>
                    <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-clear-deadline="${ev.eventId}">Clear</button>
                  </div>`
-              : `<div class="event-meta">Deadline: ${deadlineVal}</div>`}
+              : `<div class="event-meta">Register by: ${deadlineVal}</div>`}
+            ${isEditingCompDate
+              ? `<div class="event-meta" style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
+                   <input type="date" data-compdate-input="${ev.eventId}" value="${ev.competitionDate || ''}" ${ev.competitionDate ? '' : 'disabled'} style="padding:8px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13px;border-radius:2px;">
+                   <label style="display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-transform:none;">
+                     <input type="checkbox" data-compdate-tbd="${ev.eventId}" style="width:auto;" ${ev.competitionDate ? '' : 'checked'}> TBD
+                   </label>
+                   <button class="btn btn-orange btn-small" data-save-compdate="${ev.eventId}">Save</button>
+                   <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-cancel-compdate="${ev.eventId}">Cancel</button>
+                 </div>`
+              : `<div class="event-meta">Event day: ${compDateVal}</div>`}
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <span class="pill cat-${cat.toLowerCase()}">${cat.charAt(0)+cat.slice(1).toLowerCase()}</span>
             <span class="pill ${ev.active ? 'open' : 'closed'}">${ev.active ? 'Active' : 'Disabled'}</span>
-            ${!isEditing ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
+            ${!isEditingDeadline ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
+            ${!isEditingCompDate ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-compdate="${ev.eventId}">Edit event day</button>` : ''}
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}">View regs</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-export-event="${ev.eventId}">Export CSV</button>
@@ -756,6 +786,7 @@
       container.querySelectorAll('[data-edit-deadline]').forEach(btn => {
         btn.addEventListener('click', () => {
           editingDeadlineId = btn.dataset.editDeadline;
+          editingCompDateId = null;
           loadAdminEvents();
         });
       });
@@ -779,6 +810,37 @@
           const val = input.value;
           await api('adminEditEvent', { eventId, deadline: val ? new Date(val).toISOString() : '' });
           editingDeadlineId = null;
+          await loadAdminEvents();
+        }));
+      });
+      container.querySelectorAll('[data-edit-compdate]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          editingCompDateId = btn.dataset.editCompdate;
+          editingDeadlineId = null;
+          loadAdminEvents();
+        });
+      });
+      container.querySelectorAll('[data-cancel-compdate]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          editingCompDateId = null;
+          loadAdminEvents();
+        });
+      });
+      container.querySelectorAll('[data-compdate-tbd]').forEach(chk => {
+        chk.addEventListener('change', (e) => {
+          const eventId = chk.dataset.compdateTbd;
+          const input = container.querySelector(`[data-compdate-input="${eventId}"]`);
+          input.disabled = e.target.checked;
+          if (e.target.checked) input.value = '';
+        });
+      });
+      container.querySelectorAll('[data-save-compdate]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          const eventId = btn.dataset.saveCompdate;
+          const tbd = container.querySelector(`[data-compdate-tbd="${eventId}"]`).checked;
+          const input = container.querySelector(`[data-compdate-input="${eventId}"]`);
+          await api('adminEditEvent', { eventId, competitionDate: tbd ? '' : input.value });
+          editingCompDateId = null;
           await loadAdminEvents();
         }));
       });

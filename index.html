@@ -111,6 +111,7 @@
     <div class="modal-body" id="regsModalBody"></div>
     <div class="modal-foot">
       <button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="regsModalCopy">Copy list</button>
+      <button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="regsModalExport">Export CSV</button>
       <button class="btn btn-dark" id="regsModalCloseBtn">Close</button>
     </div>
   </div>
@@ -172,6 +173,9 @@
     <h1 class="page-title" id="dashName">—</h1>
 
     <div class="card mono" id="usageBanner" style="padding:16px 22px;margin-bottom:16px;font-size:12.5px;color:var(--muted);display:none;"></div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+      <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" id="myRegsToggleBtn">My Registrations</button>
+    </div>
     <div class="card">
       <div id="eventsList"></div>
     </div>
@@ -206,6 +210,9 @@
           <button class="btn btn-dark" id="addEventBtn">Add</button>
         </div>
         <div class="msg" id="addEventMsg"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+        <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" id="exportAllRegsBtn">Export all registrations (CSV, event-wise)</button>
       </div>
       <div class="card" id="adminEventsList"></div>
     </div>
@@ -413,6 +420,16 @@
     await loadEvents();
   }
 
+  let showOnlyMyRegs = false;
+  document.getElementById('myRegsToggleBtn').addEventListener('click', () => {
+    showOnlyMyRegs = !showOnlyMyRegs;
+    const btn = document.getElementById('myRegsToggleBtn');
+    btn.textContent = showOnlyMyRegs ? 'Show all events' : 'My Registrations';
+    btn.classList.toggle('btn-orange', showOnlyMyRegs);
+    btn.classList.toggle('btn-outline', !showOnlyMyRegs);
+    loadEvents();
+  });
+
   async function loadEvents() {
     const list = document.getElementById('eventsList');
     const dashMsg = document.getElementById('dashMsg');
@@ -425,11 +442,15 @@
       banner.style.display = 'block';
       banner.innerHTML = `TRACK/FIELD USAGE — Track: <strong>${track}/${maxPerCategory}</strong> · Field: <strong>${field}/${maxPerCategory}</strong> · Combined: <strong>${total}/${maxTotal}</strong> &nbsp;·&nbsp; "Other" events don't count toward this.`;
 
-      if (!data.events.length) {
-        list.innerHTML = '<div class="event-row"><span class="mono" style="color:var(--muted);">No events yet — check back soon.</span></div>';
+      const eventsToShow = showOnlyMyRegs
+        ? data.events.filter(ev => data.myRegistrations.includes(ev.eventId))
+        : data.events;
+
+      if (!eventsToShow.length) {
+        list.innerHTML = `<div class="event-row"><span class="mono" style="color:var(--muted);">${showOnlyMyRegs ? "You haven't registered for any events yet." : 'No events yet — check back soon.'}</span></div>`;
         return;
       }
-      list.innerHTML = data.events.map(ev => {
+      list.innerHTML = eventsToShow.map(ev => {
         const registered = data.myRegistrations.includes(ev.eventId);
         const deadlinePassed = ev.deadline && new Date() > new Date(ev.deadline);
         const cat = String(ev.category || 'OTHER').toUpperCase();
@@ -490,10 +511,52 @@
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
+  // ---------- CSV EXPORT ----------
+  function csvEscape(val) {
+    const s = String(val == null ? '' : val);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function downloadCSV(filename, csvText) {
+    const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  let currentEventNameForExport = '';
+  document.getElementById('regsModalExport').addEventListener('click', () => {
+    const rows = [['#', 'Registration No', 'Name']];
+    currentRegsForCopy.forEach((r, i) => rows.push([i + 1, r.regNo, r.name]));
+    const csv = rows.map(row => row.map(csvEscape).join(',')).join('\n');
+    const safeName = (currentEventNameForExport || 'event').replace(/[^a-z0-9]+/gi, '_');
+    downloadCSV(`${safeName}_registrations.csv`, csv);
+  });
+  document.getElementById('exportAllRegsBtn').addEventListener('click', withLoading(document.getElementById('exportAllRegsBtn'), async () => {
+    const eventsData = await api('listEvents', {});
+    const rows = [['Event', 'Category', '#', 'Registration No', 'Name', 'Timestamp']];
+    for (const ev of eventsData.events) {
+      const regsData = await api('adminListRegistrations', { eventId: ev.eventId });
+      if (!regsData.registrations.length) {
+        rows.push([ev.name, ev.category, '', '', '(no registrations)', '']);
+      } else {
+        regsData.registrations.forEach((r, i) => {
+          rows.push([ev.name, ev.category, i + 1, r.regNo, r.name, r.timestamp]);
+        });
+      }
+    }
+    const csv = rows.map(row => row.map(csvEscape).join(',')).join('\n');
+    downloadCSV('all_registrations_event_wise.csv', csv);
+  }));
+
   // ---------- REGISTRATIONS MODAL ----------
   let currentRegsForCopy = [];
   function showRegsModal(eventName, registrations) {
     currentRegsForCopy = registrations;
+    currentEventNameForExport = eventName;
     document.getElementById('regsModalTitle').textContent = eventName;
     document.getElementById('regsModalCount').textContent = registrations.length + (registrations.length === 1 ? ' entry' : ' entries');
     const body = document.getElementById('regsModalBody');

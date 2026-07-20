@@ -60,9 +60,58 @@
   .inline-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;}
   .inline-form .field{margin-bottom:0;min-width:140px;flex:1;}
   textarea{width:100%;min-height:100px;padding:12px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;}
+
+  /* loading states */
+  .btn.is-loading{position:relative;color:transparent !important;pointer-events:none;}
+  .btn.is-loading::after{
+    content:"";position:absolute;top:50%;left:50%;width:14px;height:14px;
+    margin:-7px 0 0 -7px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.4);border-top-color:#fff;
+    animation:spin .7s linear infinite;
+  }
+  .btn-outline.is-loading::after{border:2px solid rgba(22,24,29,.25);border-top-color:var(--graphite);}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .skeleton-row{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line);gap:12px;}
+  .skeleton-row:last-child{border-bottom:none;}
+  .skel{background:linear-gradient(90deg,#e9e6da 25%,#f2f0e6 37%,#e9e6da 63%);background-size:400% 100%;animation:shimmer 1.4s ease infinite;border-radius:3px;}
+  @keyframes shimmer{0%{background-position:100% 0;}100%{background-position:0 0;}}
+  .top-loader{position:fixed;top:0;left:0;height:3px;width:0%;background:var(--ball-orange);z-index:200;transition:width .3s ease, opacity .3s ease;opacity:0;}
+  .top-loader.active{opacity:1;}
+
+  /* modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(11,37,69,.55);display:flex;align-items:center;justify-content:center;z-index:300;padding:20px;}
+  .modal-overlay.hidden{display:none;}
+  .modal-box{background:#fff;max-width:480px;width:100%;max-height:80vh;display:flex;flex-direction:column;border-radius:2px;overflow:hidden;}
+  .modal-head{background:var(--graphite);color:#fff;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;}
+  .modal-head h3{font-size:17px;}
+  .modal-head .count{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--net-mint);}
+  .modal-close{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;line-height:1;padding:4px;}
+  .modal-body{padding:8px 0;overflow-y:auto;}
+  .modal-row{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);}
+  .modal-row:last-child{border-bottom:none;}
+  .modal-row .idx{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);width:24px;}
+  .modal-row .rname{font-weight:600;font-size:14px;}
+  .modal-row .rreg{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-top:2px;}
+  .modal-empty{padding:30px 22px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px;text-align:center;}
+  .modal-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;}
 </style>
 </head>
 <body>
+<div class="top-loader" id="topLoader"></div>
+
+<div class="modal-overlay hidden" id="regsModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="regsModalTitle">Registrations</h3>
+      <span class="count mono" id="regsModalCount"></span>
+    </div>
+    <div class="modal-body" id="regsModalBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="regsModalCopy">Copy list</button>
+      <button class="btn btn-dark" id="regsModalCloseBtn">Close</button>
+    </div>
+  </div>
+</div>
 
 <nav>
   <div class="wrap">
@@ -105,7 +154,7 @@
         <input type="password" id="fcPassword">
       </div>
       <div class="field">
-        <label>Email (optional but recommended)</label>
+        <label>Email</label>
         <input type="email" id="fcEmail" placeholder="you@example.com">
       </div>
       <button class="btn btn-orange" style="width:100%;" id="fcSaveBtn">Save and continue</button>
@@ -206,14 +255,68 @@
     if (SCRIPT_URL.startsWith("PASTE_")) {
       throw new Error("Backend not connected yet — see SETUP.md");
     }
-    const res = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(Object.assign({ action, token: state.token }, payload))
-    });
-    const data = await res.json();
-    if (data.status === 'error') throw new Error(data.message || 'Something went wrong');
-    return data;
+    showTopLoader();
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(Object.assign({ action, token: state.token }, payload))
+      });
+      const data = await res.json();
+      if (data.status === 'error') throw new Error(data.message || 'Something went wrong');
+      return data;
+    } finally {
+      hideTopLoader();
+    }
+  }
+
+  let topLoaderCount = 0;
+  function showTopLoader() {
+    topLoaderCount++;
+    const bar = document.getElementById('topLoader');
+    bar.classList.add('active');
+    bar.style.width = '20%';
+    clearTimeout(bar._t1); clearTimeout(bar._t2);
+    bar._t1 = setTimeout(() => { bar.style.width = '65%'; }, 150);
+    bar._t2 = setTimeout(() => { bar.style.width = '85%'; }, 900);
+  }
+  function hideTopLoader() {
+    topLoaderCount = Math.max(0, topLoaderCount - 1);
+    if (topLoaderCount > 0) return;
+    const bar = document.getElementById('topLoader');
+    clearTimeout(bar._t1); clearTimeout(bar._t2);
+    bar.style.width = '100%';
+    setTimeout(() => {
+      bar.classList.remove('active');
+      bar.style.width = '0%';
+    }, 250);
+  }
+
+  // Wraps a click handler: disables the button, shows a spinner in place
+  // of its label, and always restores it afterwards (even on error).
+  function withLoading(btn, handler) {
+    return async (...args) => {
+      if (btn.classList.contains('is-loading')) return;
+      btn.classList.add('is-loading');
+      btn.disabled = true;
+      try {
+        await handler(...args);
+      } finally {
+        btn.classList.remove('is-loading');
+        btn.disabled = false;
+      }
+    };
+  }
+
+  function skeletonRows(n) {
+    return Array.from({ length: n }).map(() => `
+      <div class="skeleton-row">
+        <div style="flex:1;">
+          <div class="skel" style="height:16px;width:55%;margin-bottom:8px;"></div>
+          <div class="skel" style="height:11px;width:35%;"></div>
+        </div>
+        <div class="skel" style="height:24px;width:70px;"></div>
+      </div>`).join('');
   }
 
   function showView(id) {
@@ -228,7 +331,7 @@
   }
 
   // ---------- LOGIN ----------
-  document.getElementById('loginBtn').addEventListener('click', async () => {
+  document.getElementById('loginBtn').addEventListener('click', withLoading(document.getElementById('loginBtn'), async () => {
     const regNo = document.getElementById('loginRegNo').value.trim();
     const password = document.getElementById('loginPassword').value;
     const msg = document.getElementById('loginMsg');
@@ -240,26 +343,26 @@
       if (data.mustChangePassword) {
         showView('forceChangeView');
       } else {
-        enterDashboard();
+        await enterDashboard();
       }
     } catch (err) {
       setMsg(msg, err.message, false);
     }
-  });
+  }));
 
   // ---------- FORCE CHANGE ----------
-  document.getElementById('fcSaveBtn').addEventListener('click', async () => {
+  document.getElementById('fcSaveBtn').addEventListener('click', withLoading(document.getElementById('fcSaveBtn'), async () => {
     const newPassword = document.getElementById('fcPassword').value;
     const email = document.getElementById('fcEmail').value.trim();
     const msg = document.getElementById('fcMsg');
     if (newPassword.length < 6) { setMsg(msg, 'Password must be at least 6 characters.', false); return; }
     try {
       await api('changePassword', { newPassword, email });
-      enterDashboard();
+      await enterDashboard();
     } catch (err) {
       setMsg(msg, err.message, false);
     }
-  });
+  }));
 
   // ---------- NAV ----------
   document.getElementById('navLogoutBtn').addEventListener('click', (e) => {
@@ -286,6 +389,7 @@
   async function loadEvents() {
     const list = document.getElementById('eventsList');
     const dashMsg = document.getElementById('dashMsg');
+    list.innerHTML = skeletonRows(3);
     try {
       const data = await api('listEvents', {});
       if (!data.events.length) {
@@ -316,26 +420,66 @@
       }).join('');
 
       list.querySelectorAll('button[data-action]').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', withLoading(btn, async () => {
           const action = btn.dataset.action === 'register' ? 'registerEvent' : 'unregisterEvent';
-          btn.disabled = true;
           try {
             await api(action, { eventId: btn.dataset.id });
             await loadEvents();
           } catch (err) {
             setMsg(dashMsg, err.message, false);
-            btn.disabled = false;
           }
-        });
+        }));
       });
     } catch (err) {
       setMsg(dashMsg, err.message, false);
+      list.innerHTML = '';
     }
   }
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
+
+  // ---------- REGISTRATIONS MODAL ----------
+  let currentRegsForCopy = [];
+  function showRegsModal(eventName, registrations) {
+    currentRegsForCopy = registrations;
+    document.getElementById('regsModalTitle').textContent = eventName;
+    document.getElementById('regsModalCount').textContent = registrations.length + (registrations.length === 1 ? ' entry' : ' entries');
+    const body = document.getElementById('regsModalBody');
+    if (!registrations.length) {
+      body.innerHTML = '<div class="modal-empty">No one registered yet.</div>';
+    } else {
+      body.innerHTML = registrations.map((r, i) => `
+        <div class="modal-row">
+          <div class="idx mono">${String(i + 1).padStart(2, '0')}</div>
+          <div>
+            <div class="rname">${escapeHtml(r.name)}</div>
+            <div class="rreg">${escapeHtml(r.regNo)}</div>
+          </div>
+        </div>`).join('');
+    }
+    document.getElementById('regsModal').classList.remove('hidden');
+  }
+  function hideRegsModal() {
+    document.getElementById('regsModal').classList.add('hidden');
+  }
+  document.getElementById('regsModalCloseBtn').addEventListener('click', hideRegsModal);
+  document.getElementById('regsModal').addEventListener('click', (e) => {
+    if (e.target.id === 'regsModal') hideRegsModal();
+  });
+  document.getElementById('regsModalCopy').addEventListener('click', async () => {
+    const text = currentRegsForCopy.map((r, i) => `${i + 1}. ${r.name} (${r.regNo})`).join('\n') || 'No one registered yet.';
+    const btn = document.getElementById('regsModalCopy');
+    try {
+      await navigator.clipboard.writeText(text);
+      const original = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    } catch (e) {
+      alert(text); // clipboard blocked (e.g. local file:// in some browsers) — fall back
+    }
+  });
 
   // ---------- ADMIN ----------
   document.querySelectorAll('.tab').forEach(tab => {
@@ -354,6 +498,7 @@
 
   async function loadAdminEvents() {
     const container = document.getElementById('adminEventsList');
+    container.innerHTML = skeletonRows(2);
     try {
       const data = await api('listEvents', {});
       container.innerHTML = data.events.map(ev => {
@@ -373,31 +518,31 @@
       }).join('') || '<div class="event-row mono" style="color:var(--muted);">No events yet.</div>';
 
       container.querySelectorAll('[data-toggle]').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', withLoading(btn, async () => {
           await api('adminToggleEvent', { eventId: btn.dataset.toggle, active: btn.dataset.active !== 'true' });
-          loadAdminEvents();
-        });
+          await loadAdminEvents();
+        }));
       });
       container.querySelectorAll('[data-delete]').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', withLoading(btn, async () => {
           if (!confirm('Delete this event and all its registrations?')) return;
           await api('adminDeleteEvent', { eventId: btn.dataset.delete });
-          loadAdminEvents();
-        });
+          await loadAdminEvents();
+        }));
       });
       container.querySelectorAll('[data-view-regs]').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          const eventName = btn.closest('.event-row').querySelector('.event-name').textContent;
           const data = await api('adminListRegistrations', { eventId: btn.dataset.viewRegs });
-          const names = data.registrations.map(r => `${r.name} (${r.regNo})`).join('\n') || 'No one registered yet.';
-          alert(names);
-        });
+          showRegsModal(eventName, data.registrations);
+        }));
       });
     } catch (err) {
       container.innerHTML = `<div class="event-row" style="color:#b7401b;">${err.message}</div>`;
     }
   }
 
-  document.getElementById('addEventBtn').addEventListener('click', async () => {
+  document.getElementById('addEventBtn').addEventListener('click', withLoading(document.getElementById('addEventBtn'), async () => {
     const name = document.getElementById('newEventName').value.trim();
     const category = document.getElementById('newEventCategory').value.trim();
     const deadline = document.getElementById('newEventDeadline').value;
@@ -409,12 +554,13 @@
       document.getElementById('newEventCategory').value = '';
       document.getElementById('newEventDeadline').value = '';
       setMsg(msg, 'Event added.', true);
-      loadAdminEvents();
+      await loadAdminEvents();
     } catch (err) { setMsg(msg, err.message, false); }
-  });
+  }));
 
   async function loadAdminUsers() {
     const tbody = document.querySelector('#usersTable tbody');
+    tbody.innerHTML = `<tr><td colspan="5"><div class="skel" style="height:14px;width:90%;margin:6px 0;"></div><div class="skel" style="height:14px;width:75%;margin:6px 0;"></div><div class="skel" style="height:14px;width:85%;margin:6px 0;"></div></td></tr>`;
     try {
       const data = await api('adminListUsers', {});
       tbody.innerHTML = data.users.map(u => `
@@ -430,25 +576,25 @@
         </tr>`).join('');
 
       tbody.querySelectorAll('[data-reset]').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', withLoading(btn, async () => {
           if (!confirm('Reset password to default (omsrisairam) for ' + btn.dataset.reset + '?')) return;
           await api('adminResetPassword', { regNo: btn.dataset.reset });
-          loadAdminUsers();
-        });
+          await loadAdminUsers();
+        }));
       });
       tbody.querySelectorAll('[data-toggle-admin]').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', withLoading(btn, async () => {
           const makeAdmin = btn.dataset.isAdmin !== 'true';
           await api('adminSetAdmin', { regNo: btn.dataset.toggleAdmin, makeAdmin });
-          loadAdminUsers();
-        });
+          await loadAdminUsers();
+        }));
       });
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="5" style="color:#b7401b;">${err.message}</td></tr>`;
     }
   }
 
-  document.getElementById('addUserBtn').addEventListener('click', async () => {
+  document.getElementById('addUserBtn').addEventListener('click', withLoading(document.getElementById('addUserBtn'), async () => {
     const regNo = document.getElementById('newUserRegNo').value.trim();
     const name = document.getElementById('newUserName').value.trim();
     const msg = document.getElementById('addUserMsg');
@@ -458,11 +604,11 @@
       document.getElementById('newUserRegNo').value = '';
       document.getElementById('newUserName').value = '';
       setMsg(msg, 'User added with default password.', true);
-      loadAdminUsers();
+      await loadAdminUsers();
     } catch (err) { setMsg(msg, err.message, false); }
-  });
+  }));
 
-  document.getElementById('bulkAddBtn').addEventListener('click', async () => {
+  document.getElementById('bulkAddBtn').addEventListener('click', withLoading(document.getElementById('bulkAddBtn'), async () => {
     const csv = document.getElementById('bulkUsers').value;
     const msg = document.getElementById('bulkAddMsg');
     if (!csv.trim()) { setMsg(msg, 'Paste at least one line.', false); return; }
@@ -470,9 +616,9 @@
       const data = await api('adminBulkAddUsers', { csv });
       setMsg(msg, `Added ${data.added}, skipped ${data.skipped} (duplicates).`, true);
       document.getElementById('bulkUsers').value = '';
-      loadAdminUsers();
+      await loadAdminUsers();
     } catch (err) { setMsg(msg, err.message, false); }
-  });
+  }));
 
   // ---------- BOOT ----------
   loadSession();

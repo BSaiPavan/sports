@@ -529,9 +529,9 @@
         } else if (canAct) {
           actionBtn = `<button class="btn btn-orange btn-small" data-action="register" data-id="${ev.eventId}">Register</button>`;
         }
-        const deadlineText = ev.deadline ? new Date(ev.deadline).toLocaleString() : 'No deadline set';
+        const deadlineText = ev.deadline ? fmtDate(new Date(ev.deadline), true) : 'No deadline set';
         const compDateText = ev.competitionDate
-          ? new Date(ev.competitionDate + 'T00:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+          ? fmtDate(new Date(ev.competitionDate + 'T00:00:00'))
           : 'To be decided';
         return `<div class="event-row">
           <div>
@@ -562,6 +562,15 @@
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // Formats dates consistently as "20 Jul 2026" (optionally with time, "20 Jul 2026, 3:45 PM")
+  const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function fmtDate(d, withTime) {
+    const datePart = `${d.getDate()} ${MONTH_ABBR[d.getMonth()]} ${d.getFullYear()}`;
+    if (!withTime) return datePart;
+    const timePart = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    return `${datePart}, ${timePart}`;
   }
 
   // ---------- CSV EXPORT ----------
@@ -717,8 +726,8 @@
     try {
       const data = await api('listEvents', {});
       container.innerHTML = data.events.map(ev => {
-        const deadlineVal = ev.deadline ? new Date(ev.deadline).toLocaleString() : '—';
-        const compDateVal = ev.competitionDate ? new Date(ev.competitionDate + 'T00:00:00').toLocaleDateString() : 'To be decided';
+        const deadlineVal = ev.deadline ? fmtDate(new Date(ev.deadline), true) : '—';
+        const compDateVal = ev.competitionDate ? fmtDate(new Date(ev.competitionDate + 'T00:00:00')) : 'To be decided';
         const cat = String(ev.category || 'OTHER').toUpperCase();
         const isEditingDeadline = editingDeadlineId === ev.eventId;
         const isEditingCompDate = editingCompDateId === ev.eventId;

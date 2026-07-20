@@ -434,7 +434,11 @@
 
         let actionBtn = '';
         if (registered) {
-          actionBtn = `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-action="unregister" data-id="${ev.eventId}">Unregister</button>`;
+          // Only allow unregistering while the event is still open —
+          // once admin closes it (or the deadline passes), the registration is locked in.
+          if (ev.active && !deadlinePassed) {
+            actionBtn = `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-action="unregister" data-id="${ev.eventId}">Unregister</button>`;
+          }
         } else if (canAct) {
           actionBtn = `<button class="btn btn-orange btn-small" data-action="register" data-id="${ev.eventId}">Register</button>`;
         }

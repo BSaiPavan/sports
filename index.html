@@ -146,9 +146,9 @@
   <div id="landingView" class="wrap">
     <div class="landing-hero">
       <img class="landing-crest" src="logo.png" alt="Sri Sathya Sai Institute of Higher Learning crest">
-      <div class="landing-eyebrow">◎ Nandigiri</div>
+      <div class="landing-eyebrow">◎ NANDIGIRI</div>
       <h1 class="landing-title">SSSIHL<br>Annual Sports & Cultural Meet</h1>
-      <div class="landing-motto">LIFE IS A GAME - PLAY IT</div>
+      <div class="landing-motto">Life is a Game - Play it</div>
       <p class="landing-desc">A single home for event registration, results and the winners' gallery — track &amp; field events.</p>
       <button class="btn btn-orange" id="landingLoginBtn" style="margin-top:28px;">Log in →</button>
     </div>
@@ -231,7 +231,14 @@
               <option value="OTHER">Other</option>
             </select>
           </div>
-          <div class="field"><label>Deadline</label><input id="newEventDeadline" type="datetime-local"></div>
+          <div class="field"><label>Registration deadline</label><input id="newEventDeadline" type="datetime-local"></div>
+          <div class="field">
+            <label>Competition date</label>
+            <input id="newEventCompDate" type="date">
+            <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;color:var(--muted);">
+              <input type="checkbox" id="newEventCompDateTbd" style="width:auto;"> Yet to be decided
+            </label>
+          </div>
           <button class="btn btn-dark" id="addEventBtn">Add</button>
         </div>
         <div class="msg" id="addEventMsg"></div>
@@ -780,17 +787,32 @@
     }
   }
 
+  document.getElementById('newEventCompDateTbd').addEventListener('change', (e) => {
+    const input = document.getElementById('newEventCompDate');
+    input.disabled = e.target.checked;
+    if (e.target.checked) input.value = '';
+  });
+
   document.getElementById('addEventBtn').addEventListener('click', withLoading(document.getElementById('addEventBtn'), async () => {
     const name = document.getElementById('newEventName').value.trim();
     const category = document.getElementById('newEventCategory').value.trim();
     const deadline = document.getElementById('newEventDeadline').value;
+    const compDateTbd = document.getElementById('newEventCompDateTbd').checked;
+    const compDate = document.getElementById('newEventCompDate').value;
     const msg = document.getElementById('addEventMsg');
     if (!name) { setMsg(msg, 'Event name is required.', false); return; }
     try {
-      await api('adminAddEvent', { name, category, deadline: deadline ? new Date(deadline).toISOString() : '' });
+      await api('adminAddEvent', {
+        name, category,
+        deadline: deadline ? new Date(deadline).toISOString() : '',
+        competitionDate: (!compDateTbd && compDate) ? compDate : ''
+      });
       document.getElementById('newEventName').value = '';
       document.getElementById('newEventCategory').value = 'TRACK';
       document.getElementById('newEventDeadline').value = '';
+      document.getElementById('newEventCompDate').value = '';
+      document.getElementById('newEventCompDate').disabled = false;
+      document.getElementById('newEventCompDateTbd').checked = false;
       setMsg(msg, 'Event added.', true);
       await loadAdminEvents();
     } catch (err) { setMsg(msg, err.message, false); }

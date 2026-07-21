@@ -1237,6 +1237,9 @@
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
+  let editingDeadlineId = null;
+  let editingCompDateId = null;
+
   async function loadAdminEvents() {
     const container = document.getElementById('adminEventsList');
     container.innerHTML = skeletonRows(2);

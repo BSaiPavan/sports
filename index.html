@@ -227,7 +227,14 @@
     <h1 class="page-title" id="dashName">—</h1>
 
     <div class="card mono" id="usageBanner" style="padding:16px 22px;margin-bottom:16px;font-size:12.5px;color:var(--muted);display:none;"></div>
-    <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+      <div id="categoryFilterBar" style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-orange btn-small filter-btn" data-filter="ALL">All</button>
+        <button class="btn btn-outline btn-small filter-btn" style="border-color:var(--line);color:var(--graphite);" data-filter="TRACK">Track</button>
+        <button class="btn btn-outline btn-small filter-btn" style="border-color:var(--line);color:var(--graphite);" data-filter="FIELD">Field</button>
+        <button class="btn btn-outline btn-small filter-btn" style="border-color:var(--line);color:var(--graphite);" data-filter="MARATHON">Marathon</button>
+        <button class="btn btn-outline btn-small filter-btn" style="border-color:var(--line);color:var(--graphite);" data-filter="OTHER">Other</button>
+      </div>
       <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" id="myRegsToggleBtn">My Registrations</button>
     </div>
     <div class="card">
@@ -639,6 +646,21 @@
     loadEvents();
   });
 
+  let categoryFilter = 'ALL';
+  document.querySelectorAll('#categoryFilterBar .filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      categoryFilter = btn.dataset.filter;
+      document.querySelectorAll('#categoryFilterBar .filter-btn').forEach(b => {
+        const isActive = b === btn;
+        b.classList.toggle('btn-orange', isActive);
+        b.classList.toggle('btn-outline', !isActive);
+        b.style.borderColor = isActive ? '' : 'var(--line)';
+        b.style.color = isActive ? '' : 'var(--graphite)';
+      });
+      loadEvents();
+    });
+  });
+
   async function loadEvents() {
     const list = document.getElementById('eventsList');
     const dashMsg = document.getElementById('dashMsg');
@@ -651,12 +673,18 @@
       banner.style.display = 'block';
       banner.innerHTML = `TRACK/FIELD USAGE — Track: <strong>${track}/${maxPerCategory}</strong> · Field: <strong>${field}/${maxPerCategory}</strong> · Combined: <strong>${total}/${maxTotal}</strong> &nbsp;·&nbsp; "Other" events don't count toward this.`;
 
-      const eventsToShow = showOnlyMyRegs
+      let eventsToShow = showOnlyMyRegs
         ? data.events.filter(ev => data.myRegistrations.includes(ev.eventId))
         : data.events;
+      if (categoryFilter !== 'ALL') {
+        eventsToShow = eventsToShow.filter(ev => String(ev.category || 'OTHER').toUpperCase() === categoryFilter);
+      }
 
       if (!eventsToShow.length) {
-        list.innerHTML = `<div class="event-row"><span class="mono" style="color:var(--muted);">${showOnlyMyRegs ? "You haven't registered for any events yet." : 'No events yet — check back soon.'}</span></div>`;
+        const emptyMsg = showOnlyMyRegs
+          ? (categoryFilter !== 'ALL' ? `You haven't registered for any ${categoryFilter.charAt(0)+categoryFilter.slice(1).toLowerCase()} events yet.` : "You haven't registered for any events yet.")
+          : (categoryFilter !== 'ALL' ? `No ${categoryFilter.charAt(0)+categoryFilter.slice(1).toLowerCase()} events yet — check back soon.` : 'No events yet — check back soon.');
+        list.innerHTML = `<div class="event-row"><span class="mono" style="color:var(--muted);">${emptyMsg}</span></div>`;
         return;
       }
       list.innerHTML = eventsToShow.map(ev => {

@@ -815,6 +815,7 @@
               : (deadlinePassed ? '<span class="pill closed">Closed</span>'
                 : (capBlocked ? '<span class="pill closed">Cap reached</span>' : '<span class="pill open">Open</span>'))));
         const catPill = `<span class="pill cat-${cat.toLowerCase()}">${cat.charAt(0)+cat.slice(1).toLowerCase()}</span>`;
+        const completedPill = ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : '';
 
         let actionBtn = '';
         if (registered) {
@@ -836,7 +837,7 @@
             <div class="event-meta">DEADLINE: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>
             <div class="event-meta">Event day: ${compDateText}</div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${catPill}${statusPill}${actionBtn}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${catPill}${completedPill}${statusPill}${actionBtn}</div>
         </div>`;
       }).join('');
 

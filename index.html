@@ -98,6 +98,25 @@
   .modal-empty{padding:30px 22px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px;text-align:center;}
   .modal-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;}
 
+  /* notice toast */
+  .toast{
+    position:fixed;bottom:24px;right:24px;max-width:320px;
+    background:var(--court-navy);color:var(--chalk);
+    border-left:4px solid var(--ball-orange);
+    padding:16px 18px;border-radius:2px;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+    z-index:400;
+    transform:translateY(20px);opacity:0;
+    transition:transform .35s ease, opacity .35s ease;
+    pointer-events:none;
+  }
+  .toast.show{transform:translateY(0);opacity:1;pointer-events:auto;}
+  .toast-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;}
+  .toast-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--net-mint);}
+  .toast-close{background:none;border:none;color:#8ea3c9;font-size:16px;cursor:pointer;line-height:1;padding:0;}
+  .toast-msg{font-size:13.5px;line-height:1.5;color:#dfe6f2;}
+  .toast-link{display:inline-block;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ball-orange);text-decoration:none;font-weight:600;cursor:pointer;}
+
   /* ---------- Landing ---------- */
   :root{
     --maroon-900:#430E1B; --maroon-700:#7E2434; --maroon-600:#96354A; --maroon-100:#F3DFE1;
@@ -113,6 +132,14 @@
 </head>
 <body>
 <div class="top-loader" id="topLoader"></div>
+<div class="toast" id="noticeToast">
+  <div class="toast-head">
+    <span class="toast-label">Notice</span>
+    <button class="toast-close" id="noticeToastClose">✕</button>
+  </div>
+  <div class="toast-msg" id="noticeToastMsg"></div>
+  <a class="toast-link hidden" id="noticeToastLink">View event →</a>
+</div>
 
 <div class="modal-overlay hidden" id="regsModal">
   <div class="modal-box">
@@ -216,6 +243,7 @@
       <div class="tab active" data-tab="events">Events</div>
       <div class="tab" data-tab="users">Users</div>
       <div class="tab" data-tab="admins">Admins</div>
+      <div class="tab" data-tab="notice">Notice</div>
     </div>
 
     <!-- EVENTS TAB -->
@@ -279,6 +307,36 @@
         <h3>Grant / revoke admin access</h3>
         <p class="mono" style="font-size:12px;color:var(--muted);">Find the user in the Users tab and use the Make Admin / Remove Admin button there.</p>
       </div>
+    </div>
+
+    <!-- NOTICE TAB -->
+    <div class="admin-tab hidden" id="tab-notice">
+      <div class="card" style="padding:22px;margin-bottom:24px;">
+        <h3>Add a notice</h3>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 18px;">Each active notice pops up on its own timer, one after another if more than one is due. Students see all active notices in rotation.</p>
+
+        <div class="field">
+          <label>Message</label>
+          <textarea id="newNoticeMessage" style="min-height:70px;" placeholder="Table Tennis Singles registration closes tonight at 9 PM — register now!"></textarea>
+        </div>
+
+        <div class="inline-form" style="margin-top:4px;">
+          <div class="field">
+            <label>Repeat every (minutes)</label>
+            <input id="newNoticeFrequency" type="number" min="1" value="10" style="width:100px;">
+          </div>
+          <div class="field" style="flex:2;">
+            <label>Tag an event (optional)</label>
+            <select id="newNoticeLinkedEvent" style="width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;">
+              <option value="">None</option>
+            </select>
+          </div>
+          <button class="btn btn-dark" id="addNoticeBtn">Add notice</button>
+        </div>
+        <div class="msg" id="addNoticeMsg"></div>
+      </div>
+
+      <div class="card" id="noticesList"></div>
     </div>
   </div>
 </main>
@@ -430,6 +488,7 @@
   document.getElementById('navLogoutBtn').addEventListener('click', (e) => {
     e.preventDefault();
     clearSession();
+    stopNoticePolling();
     document.getElementById('navUserBox').classList.add('hidden');
     showView('landingView');
   });
@@ -467,7 +526,98 @@
     document.getElementById('dashName').textContent = state.name;
     showView('dashboardView');
     await loadEvents();
+    startNoticePolling();
   }
+
+  // ---------- NOTICE TOAST ----------
+  let noticeInterval = null;
+  let lastShownByNoticeId = {}; // noticeId -> timestamp last displayed
+  let noticeQueue = [];
+  let noticeQueueRunning = false;
+
+  function startNoticePolling() {
+    if (noticeInterval) clearInterval(noticeInterval);
+    lastShownByNoticeId = {};
+    tickNotices();
+    noticeInterval = setInterval(tickNotices, 60 * 1000); // re-check every minute
+  }
+  function stopNoticePolling() {
+    if (noticeInterval) clearInterval(noticeInterval);
+    noticeInterval = null;
+    noticeQueue = [];
+    noticeQueueRunning = false;
+    document.getElementById('noticeToast').classList.remove('show');
+  }
+
+  async function tickNotices() {
+    if (!state.token) return;
+    try {
+      const data = await api('getNotices', {});
+      const now = Date.now();
+      data.notices.forEach(n => {
+        const freqMs = (n.frequencyMinutes || 10) * 60 * 1000;
+        const last = lastShownByNoticeId[n.noticeId] || 0;
+        if (now - last >= freqMs) {
+          lastShownByNoticeId[n.noticeId] = now;
+          noticeQueue.push(n);
+        }
+      });
+      runNoticeQueue();
+    } catch (e) { /* stay silent — a missed notice isn't worth surfacing an error for */ }
+  }
+
+  function runNoticeQueue() {
+    if (noticeQueueRunning || !noticeQueue.length) return;
+    noticeQueueRunning = true;
+    const next = noticeQueue.shift();
+    showNoticeToast(next);
+    setTimeout(() => {
+      hideNoticeToast();
+      setTimeout(() => {
+        noticeQueueRunning = false;
+        runNoticeQueue(); // show the next queued one, if any
+      }, 700); // brief gap so consecutive toasts don't feel like a jump-cut
+    }, 8000);
+  }
+
+  function hideNoticeToast() {
+    document.getElementById('noticeToast').classList.remove('show');
+  }
+
+  function showNoticeToast(notice) {
+    document.getElementById('noticeToastMsg').textContent = notice.message;
+    const link = document.getElementById('noticeToastLink');
+    if (notice.linkedEvent && notice.linkedEvent.active) {
+      link.textContent = 'View: ' + notice.linkedEvent.name + ' →';
+      link.classList.remove('hidden');
+      link.onclick = async () => {
+        hideNoticeToast();
+        await enterDashboardSilently();
+        const row = document.getElementById('event-row-' + notice.linkedEvent.eventId);
+        if (row) {
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          row.style.transition = 'background .3s ease';
+          row.style.background = 'rgba(255,90,31,.12)';
+          setTimeout(() => { row.style.background = ''; }, 2000);
+        }
+      };
+    } else {
+      link.classList.add('hidden');
+      link.onclick = null;
+    }
+    document.getElementById('noticeToast').classList.add('show');
+  }
+
+  // Jumps back to the dashboard (without re-triggering notice scheduling)
+  // so a toast clicked while on the Admin view lands the student/admin
+  // on the event itself.
+  async function enterDashboardSilently() {
+    document.getElementById('dashName').textContent = state.name;
+    showView('dashboardView');
+    await loadEvents();
+  }
+
+  document.getElementById('noticeToastClose').addEventListener('click', hideNoticeToast);
 
   let showOnlyMyRegs = false;
   document.getElementById('myRegsToggleBtn').addEventListener('click', () => {
@@ -533,7 +683,7 @@
         const compDateText = ev.competitionDate
           ? fmtDate(parseDateOnly(ev.competitionDate))
           : 'To be decided';
-        return `<div class="event-row">
+        return `<div class="event-row" id="event-row-${ev.eventId}">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
             <div class="event-meta">Register by: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>
@@ -712,6 +862,7 @@
       tab.classList.add('active');
       document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
       document.getElementById('tab-' + tab.dataset.tab).classList.remove('hidden');
+      if (tab.dataset.tab === 'notice') loadNoticeAdmin();
     });
   });
 
@@ -719,6 +870,110 @@
     showView('adminView');
     await Promise.all([loadAdminEvents(), loadAdminUsers()]);
   }
+
+  // ---------- ADMIN: NOTICE BOARD ----------
+  async function populateEventSelect(selectEl, selectedId) {
+    const data = await api('listEvents', {});
+    selectEl.innerHTML = '<option value="">None</option>' + data.events.map(ev =>
+      `<option value="${ev.eventId}" ${String(ev.eventId) === String(selectedId || '') ? 'selected' : ''}>${escapeHtml(ev.name)} ${ev.active ? '' : '(disabled)'}</option>`
+    ).join('');
+  }
+
+  async function loadNoticeAdmin() {
+    await populateEventSelect(document.getElementById('newNoticeLinkedEvent'));
+    await renderNoticesList();
+  }
+
+  async function renderNoticesList() {
+    const container = document.getElementById('noticesList');
+    container.innerHTML = skeletonRows(2);
+    try {
+      const data = await api('adminListNotices', {});
+      if (!data.notices.length) {
+        container.innerHTML = '<div class="event-row mono" style="color:var(--muted);">No notices yet — add one above.</div>';
+        return;
+      }
+      container.innerHTML = data.notices.map(n => `
+        <div class="event-row" style="align-items:flex-start;flex-direction:column;gap:12px;">
+          <div style="display:flex;justify-content:space-between;width:100%;align-items:center;flex-wrap:wrap;gap:8px;">
+            <span class="pill ${n.active ? 'open' : 'closed'}">${n.active ? 'Active' : 'Inactive'}</span>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-notice-toggle="${n.noticeId}" data-active="${n.active}">${n.active ? 'Deactivate' : 'Activate'}</button>
+              <button class="btn btn-danger btn-small" data-notice-delete="${n.noticeId}">Delete</button>
+            </div>
+          </div>
+          <textarea data-notice-msg="${n.noticeId}" style="width:100%;min-height:60px;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;">${escapeHtml(n.message)}</textarea>
+          <div class="inline-form" style="width:100%;margin:0;">
+            <div class="field">
+              <label>Repeat every (min)</label>
+              <input type="number" min="1" data-notice-freq="${n.noticeId}" value="${n.frequencyMinutes}" style="width:100px;">
+            </div>
+            <div class="field" style="flex:2;">
+              <label>Tagged event</label>
+              <select data-notice-event="${n.noticeId}" style="width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;"></select>
+            </div>
+            <button class="btn btn-dark" data-notice-save="${n.noticeId}">Save changes</button>
+          </div>
+          <div class="msg" data-notice-msg-status="${n.noticeId}" style="width:100%;"></div>
+        </div>`).join('');
+
+      // fill each row's event dropdown with the correct selection
+      for (const n of data.notices) {
+        const select = container.querySelector(`[data-notice-event="${n.noticeId}"]`);
+        await populateEventSelect(select, n.linkedEventId);
+      }
+
+      container.querySelectorAll('[data-notice-toggle]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          await api('adminEditNotice', { noticeId: btn.dataset.noticeToggle, active: btn.dataset.active !== 'true' });
+          await renderNoticesList();
+        }));
+      });
+      container.querySelectorAll('[data-notice-delete]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          if (!confirm('Delete this notice?')) return;
+          await api('adminDeleteNotice', { noticeId: btn.dataset.noticeDelete });
+          await renderNoticesList();
+        }));
+      });
+      container.querySelectorAll('[data-notice-save]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          const id = btn.dataset.noticeSave;
+          const message = container.querySelector(`[data-notice-msg="${id}"]`).value.trim();
+          const frequencyMinutes = Number(container.querySelector(`[data-notice-freq="${id}"]`).value) || 10;
+          const linkedEventId = container.querySelector(`[data-notice-event="${id}"]`).value;
+          const statusEl = container.querySelector(`[data-notice-msg-status="${id}"]`);
+          if (!message) { setMsg(statusEl, 'Message cannot be empty.', false); return; }
+          try {
+            await api('adminEditNotice', { noticeId: id, message, frequencyMinutes, linkedEventId });
+            setMsg(statusEl, 'Saved.', true);
+          } catch (err) {
+            setMsg(statusEl, err.message, false);
+          }
+        }));
+      });
+    } catch (err) {
+      container.innerHTML = `<div class="event-row" style="color:#b7401b;">${err.message}</div>`;
+    }
+  }
+
+  document.getElementById('addNoticeBtn').addEventListener('click', withLoading(document.getElementById('addNoticeBtn'), async () => {
+    const msg = document.getElementById('addNoticeMsg');
+    const message = document.getElementById('newNoticeMessage').value.trim();
+    const frequencyMinutes = Number(document.getElementById('newNoticeFrequency').value) || 10;
+    const linkedEventId = document.getElementById('newNoticeLinkedEvent').value;
+    if (!message) { setMsg(msg, 'Write a message first.', false); return; }
+    try {
+      await api('adminAddNotice', { message, frequencyMinutes, linkedEventId, active: true });
+      document.getElementById('newNoticeMessage').value = '';
+      document.getElementById('newNoticeFrequency').value = 10;
+      document.getElementById('newNoticeLinkedEvent').value = '';
+      setMsg(msg, 'Notice added and active.', true);
+      await renderNoticesList();
+    } catch (err) {
+      setMsg(msg, err.message, false);
+    }
+  }));
 
   let editingDeadlineId = null;
   let editingCompDateId = null;

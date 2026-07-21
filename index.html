@@ -33,6 +33,7 @@
   .center-box{max-width:380px;margin:80px auto;padding:32px;}
   .field{margin-bottom:16px;}
   .field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+  .field-hint{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);margin-top:5px;}
   .field input{width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;}
   .field input:focus{outline:none;border-color:var(--ball-orange);background:#fff;}
   .msg{margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:10px 12px;border-radius:2px;display:none;}
@@ -214,15 +215,33 @@
       </div>
       <div class="field">
         <label>Email</label>
-        <input type="email" id="fcEmail" placeholder="you@example.com">
+        <input type="email" id="fcEmail" placeholder="you@gmail.com" pattern="^[^@\s]+@(gmail\.com|sssihl\.edu\.in|yahoo\.com)$" title="Must end in @gmail.com, @sssihl.edu.in, or @yahoo.com">
+        <div class="field-hint">Only @gmail.com, @sssihl.edu.in, or @yahoo.com addresses accepted</div>
       </div>
       <button class="btn btn-orange" style="width:100%;" id="fcSaveBtn">Save and continue</button>
       <div class="msg" id="fcMsg"></div>
     </div>
   </div>
 
-  <!-- DASHBOARD -->
+  <!-- DASHBOARD HOME -->
+  <div id="dashboardHomeView" class="wrap hidden">
+    <p class="hello">Welcome back</p>
+    <h1 class="page-title" id="dashHomeName">—</h1>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;">
+      <button class="card" id="goRegistrationsBtn" style="flex:1;min-width:220px;padding:26px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name" style="font-size:22px;margin-bottom:6px;">Registrations</div>
+        <div class="mono" style="font-size:12px;color:var(--muted);">Browse events, register, or unregister</div>
+      </button>
+      <button class="card" id="goResultsBtn" style="flex:1;min-width:220px;padding:26px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name" style="font-size:22px;margin-bottom:6px;">Results</div>
+        <div class="mono" style="font-size:12px;color:var(--muted);">See published results for completed events</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD: REGISTRATIONS -->
   <div id="dashboardView" class="wrap hidden">
+    <button class="btn btn-outline btn-small back-btn" data-back-to="dashboardHomeView" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">← Back</button>
     <p class="hello">Welcome back</p>
     <h1 class="page-title" id="dashName">—</h1>
 
@@ -243,6 +262,14 @@
     <p class="msg" id="dashMsg" style="max-width:900px;"></p>
   </div>
 
+  <!-- DASHBOARD: RESULTS -->
+  <div id="resultsView" class="wrap hidden">
+    <button class="btn btn-outline btn-small back-btn" data-back-to="dashboardHomeView" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">← Back</button>
+    <p class="hello">Season 2026</p>
+    <h1 class="page-title">Results</h1>
+    <div class="card" id="resultsList" style="margin-top:16px;"></div>
+  </div>
+
   <!-- ADMIN -->
   <div id="adminView" class="wrap hidden">
     <p class="hello">Admin panel</p>
@@ -253,6 +280,7 @@
       <div class="tab" data-tab="users">Users</div>
       <div class="tab" data-tab="admins">Admins</div>
       <div class="tab" data-tab="notice">Notice</div>
+      <div class="tab" data-tab="results">Results</div>
     </div>
 
     <!-- EVENTS TAB -->
@@ -354,6 +382,46 @@
 
       <div class="card" id="noticesList"></div>
     </div>
+
+    <!-- RESULTS TAB -->
+    <div class="admin-tab hidden" id="tab-results">
+      <div class="card" style="padding:22px;margin-bottom:24px;">
+        <h3>Set results for an event</h3>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 18px;">Pick an event, choose who placed 1st/2nd/3rd from that event's registered list, then publish. Students only see results once published.</p>
+
+        <div class="field">
+          <label>Event</label>
+          <select id="resultsEventSelect" style="width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;">
+            <option value="">Select an event…</option>
+          </select>
+        </div>
+
+        <div id="resultsEditor" class="hidden">
+          <div class="field">
+            <label>1st place</label>
+            <select id="pos1Select" style="width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;"></select>
+          </div>
+          <div class="field">
+            <label>2nd place</label>
+            <select id="pos2Select" style="width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;"></select>
+          </div>
+          <div class="field">
+            <label>3rd place</label>
+            <select id="pos3Select" style="width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;"></select>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;margin:14px 0 18px;font-family:'IBM Plex Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:.5px;">
+            <input type="checkbox" id="resultsPublishedCheck" style="width:auto;"> Published (visible to students)
+          </label>
+          <button class="btn btn-orange" id="saveResultsBtn">Save results</button>
+          <div class="msg" id="resultsEditorMsg"></div>
+        </div>
+      </div>
+
+      <div class="card" id="publishedResultsList" style="padding:22px;">
+        <h3 style="font-size:15px;margin-bottom:14px;">Published results</h3>
+        <div id="publishedResultsInner" class="mono" style="font-size:12.5px;color:var(--muted);">Loading…</div>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -445,7 +513,7 @@
   }
 
   function showView(id) {
-    ['landingView','loginView','forceChangeView','dashboardView','adminView'].forEach(v => {
+    ['landingView','loginView','forceChangeView','dashboardHomeView','dashboardView','resultsView','adminView'].forEach(v => {
       document.getElementById(v).classList.toggle('hidden', v !== id);
     });
   }
@@ -481,12 +549,23 @@
     });
   });
 
+  const ALLOWED_EMAIL_DOMAINS = ['gmail.com', 'sssihl.edu.in', 'yahoo.com'];
+  function isAllowedEmailDomain(email) {
+    const at = email.lastIndexOf('@');
+    if (at === -1) return false;
+    return ALLOWED_EMAIL_DOMAINS.includes(email.slice(at + 1).trim().toLowerCase());
+  }
+
   // ---------- FORCE CHANGE ----------
   document.getElementById('fcSaveBtn').addEventListener('click', withLoading(document.getElementById('fcSaveBtn'), async () => {
     const newPassword = document.getElementById('fcPassword').value;
     const email = document.getElementById('fcEmail').value.trim();
     const msg = document.getElementById('fcMsg');
     if (newPassword.length < 6) { setMsg(msg, 'Password must be at least 6 characters.', false); return; }
+    if (email && !isAllowedEmailDomain(email)) {
+      setMsg(msg, 'Email must end in @gmail.com, @sssihl.edu.in, or @yahoo.com.', false);
+      return;
+    }
     try {
       await api('changePassword', { newPassword, email });
       await enterDashboard();
@@ -540,11 +619,23 @@
     document.getElementById('navUserBox').classList.remove('hidden');
     document.getElementById('navName').textContent = state.name;
     document.getElementById('navAdminBtn').style.display = state.isAdmin ? 'inline-block' : 'none';
+    document.getElementById('dashHomeName').textContent = state.name;
+    showView('dashboardHomeView');
+    startNoticePolling();
+  }
+
+  document.getElementById('goRegistrationsBtn').addEventListener('click', async () => {
     document.getElementById('dashName').textContent = state.name;
     showView('dashboardView');
     await loadEvents();
-    startNoticePolling();
-  }
+  });
+  document.getElementById('goResultsBtn').addEventListener('click', async () => {
+    showView('resultsView');
+    await loadResultsStudent();
+  });
+  document.querySelectorAll('.back-btn').forEach(btn => {
+    btn.addEventListener('click', () => showView(btn.dataset.backTo));
+  });
 
   // ---------- NOTICE TOAST ----------
   let noticeInterval = null;
@@ -752,6 +843,38 @@
     }
   }
 
+  // ---------- RESULTS (student view) ----------
+  const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
+  async function loadResultsStudent() {
+    const container = document.getElementById('resultsList');
+    container.innerHTML = skeletonRows(2);
+    try {
+      const data = await api('getResults', {});
+      if (!data.results.length) {
+        container.innerHTML = '<div class="event-row mono" style="color:var(--muted);">No results published yet.</div>';
+        return;
+      }
+      container.innerHTML = data.results.map(r => {
+        const cat = String(r.category || 'OTHER').toUpperCase();
+        const rows = r.positions.map(p => `
+          <div style="display:flex;align-items:center;gap:10px;padding:6px 0;">
+            <span style="font-size:16px;">${MEDAL[p.place] || p.place}</span>
+            <span style="font-weight:600;font-size:13.5px;">${escapeHtml(p.name || '—')}</span>
+            ${p.regNo ? `<span class="mono" style="font-size:11.5px;color:var(--muted);">${escapeHtml(p.regNo)}</span>` : ''}
+          </div>`).join('') || '<div class="mono" style="font-size:12.5px;color:var(--muted);">Positions to be announced.</div>';
+        return `<div class="event-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
+          <div style="display:flex;justify-content:space-between;width:100%;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div class="event-name">${escapeHtml(r.name)}</div>
+            <span class="pill cat-${cat.toLowerCase()}">${cat.charAt(0)+cat.slice(1).toLowerCase()}</span>
+          </div>
+          <div style="width:100%;">${rows}</div>
+        </div>`;
+      }).join('');
+    } catch (err) {
+      container.innerHTML = `<div class="event-row" style="color:#b7401b;">${err.message}</div>`;
+    }
+  }
+
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
@@ -905,6 +1028,7 @@
       document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
       document.getElementById('tab-' + tab.dataset.tab).classList.remove('hidden');
       if (tab.dataset.tab === 'notice') loadNoticeAdmin();
+      if (tab.dataset.tab === 'results') loadResultsAdminTab();
     });
   });
 
@@ -1017,8 +1141,93 @@
     }
   }));
 
-  let editingDeadlineId = null;
-  let editingCompDateId = null;
+  // ---------- ADMIN: RESULTS ----------
+  let currentResultsEventId = null;
+
+  async function loadResultsAdminTab() {
+    const select = document.getElementById('resultsEventSelect');
+    try {
+      const data = await api('listEvents', {});
+      select.innerHTML = '<option value="">Select an event…</option>' + data.events.map(ev =>
+        `<option value="${ev.eventId}">${escapeHtml(ev.name)}</option>`
+      ).join('');
+    } catch (err) { /* leave default option */ }
+    await renderPublishedResultsAdmin();
+  }
+
+  document.getElementById('resultsEventSelect').addEventListener('change', withLoading(document.getElementById('resultsEventSelect'), async () => {
+    const eventId = document.getElementById('resultsEventSelect').value;
+    currentResultsEventId = eventId || null;
+    const editor = document.getElementById('resultsEditor');
+    const msg = document.getElementById('resultsEditorMsg');
+    msg.style.display = 'none';
+    if (!eventId) { editor.classList.add('hidden'); return; }
+
+    try {
+      const [regsData, savedResults] = await Promise.all([
+        api('adminListRegistrations', { eventId }),
+        api('adminGetEventResults', { eventId })
+      ]);
+
+      const options = ['<option value="">— none —</option>'].concat(
+        regsData.registrations.map(r => `<option value="${escapeHtml(r.regNo)}|${escapeHtml(r.name)}">${escapeHtml(r.name)} (${escapeHtml(r.regNo)})</option>`)
+      ).join('');
+      ['pos1Select', 'pos2Select', 'pos3Select'].forEach((id, i) => {
+        const select = document.getElementById(id);
+        select.innerHTML = options;
+        const saved = savedResults.positions[i];
+        if (saved && saved.regNo) {
+          const val = `${saved.regNo}|${saved.name}`;
+          if ([...select.options].some(o => o.value === val)) select.value = val;
+        }
+      });
+      document.getElementById('resultsPublishedCheck').checked = savedResults.resultsPublished === true;
+      editor.classList.remove('hidden');
+    } catch (err) {
+      setMsg(msg, err.message, false);
+      msg.style.display = 'block';
+    }
+  }));
+
+  document.getElementById('saveResultsBtn').addEventListener('click', withLoading(document.getElementById('saveResultsBtn'), async () => {
+    const msg = document.getElementById('resultsEditorMsg');
+    if (!currentResultsEventId) { setMsg(msg, 'Pick an event first.', false); return; }
+    const parse = (val) => {
+      if (!val) return null;
+      const [regNo, ...nameParts] = val.split('|');
+      return { regNo, name: nameParts.join('|') };
+    };
+    const positions = [
+      parse(document.getElementById('pos1Select').value),
+      parse(document.getElementById('pos2Select').value),
+      parse(document.getElementById('pos3Select').value)
+    ];
+    const resultsPublished = document.getElementById('resultsPublishedCheck').checked;
+    try {
+      await api('adminSetResults', { eventId: currentResultsEventId, positions, resultsPublished });
+      setMsg(msg, resultsPublished ? 'Results saved and published.' : 'Results saved (not yet published).', true);
+      await renderPublishedResultsAdmin();
+    } catch (err) {
+      setMsg(msg, err.message, false);
+    }
+  }));
+
+  async function renderPublishedResultsAdmin() {
+    const inner = document.getElementById('publishedResultsInner');
+    try {
+      const data = await api('getResults', {});
+      if (!data.results.length) {
+        inner.textContent = 'Nothing published yet.';
+        return;
+      }
+      inner.innerHTML = data.results.map(r => {
+        const line = r.positions.map(p => `${MEDAL[p.place] || p.place} ${p.name}${p.regNo ? ' (' + p.regNo + ')' : ''}`).join(' · ');
+        return `<div style="padding:6px 0;border-bottom:1px solid var(--line);color:var(--graphite);"><strong>${escapeHtml(r.name)}</strong> — ${escapeHtml(line || 'no positions set')}</div>`;
+      }).join('');
+    } catch (err) {
+      inner.textContent = err.message;
+    }
+  }
 
   function toDatetimeLocalValue(iso) {
     if (!iso) return '';

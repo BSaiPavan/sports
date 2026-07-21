@@ -397,17 +397,31 @@
         </div>
 
         <div id="resultsEditor" class="hidden">
+          <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Pick from registered students to fill a position automatically, or just type a name directly — handy for walk-in entries taken on the day.</p>
+
           <div class="field">
             <label>1st place</label>
-            <select id="pos1Select" style="width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;"></select>
+            <select id="pos1Select" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;margin-bottom:8px;"></select>
+            <div class="inline-form" style="margin:0;">
+              <div class="field" style="flex:2;"><input id="pos1Name" placeholder="Winner's name"></div>
+              <div class="field" style="flex:1;"><input id="pos1RegNo" placeholder="Reg no (optional)"></div>
+            </div>
           </div>
           <div class="field">
             <label>2nd place</label>
-            <select id="pos2Select" style="width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;"></select>
+            <select id="pos2Select" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;margin-bottom:8px;"></select>
+            <div class="inline-form" style="margin:0;">
+              <div class="field" style="flex:2;"><input id="pos2Name" placeholder="Runner-up's name"></div>
+              <div class="field" style="flex:1;"><input id="pos2RegNo" placeholder="Reg no (optional)"></div>
+            </div>
           </div>
           <div class="field">
             <label>3rd place</label>
-            <select id="pos3Select" style="width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;"></select>
+            <select id="pos3Select" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;margin-bottom:8px;"></select>
+            <div class="inline-form" style="margin:0;">
+              <div class="field" style="flex:2;"><input id="pos3Name" placeholder="Name"></div>
+              <div class="field" style="flex:1;"><input id="pos3RegNo" placeholder="Reg no (optional)"></div>
+            </div>
           </div>
           <label style="display:flex;align-items:center;gap:8px;margin:14px 0 18px;font-family:'IBM Plex Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:.5px;">
             <input type="checkbox" id="resultsPublishedCheck" style="width:auto;"> Published (visible to students)
@@ -1169,17 +1183,16 @@
         api('adminGetEventResults', { eventId })
       ]);
 
-      const options = ['<option value="">— none —</option>'].concat(
+      const options = ['<option value="">— pick a registered student (optional) —</option>'].concat(
         regsData.registrations.map(r => `<option value="${escapeHtml(r.regNo)}|${escapeHtml(r.name)}">${escapeHtml(r.name)} (${escapeHtml(r.regNo)})</option>`)
       ).join('');
-      ['pos1Select', 'pos2Select', 'pos3Select'].forEach((id, i) => {
-        const select = document.getElementById(id);
+      [1, 2, 3].forEach(n => {
+        const select = document.getElementById(`pos${n}Select`);
         select.innerHTML = options;
-        const saved = savedResults.positions[i];
-        if (saved && saved.regNo) {
-          const val = `${saved.regNo}|${saved.name}`;
-          if ([...select.options].some(o => o.value === val)) select.value = val;
-        }
+        select.value = ''; // dropdown is just a quick-fill shortcut, never the source of truth
+        const saved = savedResults.positions[n - 1] || {};
+        document.getElementById(`pos${n}Name`).value = saved.name || '';
+        document.getElementById(`pos${n}RegNo`).value = saved.regNo || '';
       });
       document.getElementById('resultsPublishedCheck').checked = savedResults.resultsPublished === true;
       editor.classList.remove('hidden');
@@ -1189,19 +1202,28 @@
     }
   }));
 
+  // Picking someone from a position's dropdown just fills in that
+  // position's name/reg-no fields — admin can still hand-edit afterward,
+  // e.g. to correct a walk-in entrant's name typed on the day.
+  [1, 2, 3].forEach(n => {
+    document.getElementById(`pos${n}Select`).addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (!val) return;
+      const [regNo, ...nameParts] = val.split('|');
+      document.getElementById(`pos${n}RegNo`).value = regNo;
+      document.getElementById(`pos${n}Name`).value = nameParts.join('|');
+      e.target.value = '';
+    });
+  });
+
   document.getElementById('saveResultsBtn').addEventListener('click', withLoading(document.getElementById('saveResultsBtn'), async () => {
     const msg = document.getElementById('resultsEditorMsg');
     if (!currentResultsEventId) { setMsg(msg, 'Pick an event first.', false); return; }
-    const parse = (val) => {
-      if (!val) return null;
-      const [regNo, ...nameParts] = val.split('|');
-      return { regNo, name: nameParts.join('|') };
-    };
-    const positions = [
-      parse(document.getElementById('pos1Select').value),
-      parse(document.getElementById('pos2Select').value),
-      parse(document.getElementById('pos3Select').value)
-    ];
+    const positions = [1, 2, 3].map(n => {
+      const name = document.getElementById(`pos${n}Name`).value.trim();
+      const regNo = document.getElementById(`pos${n}RegNo`).value.trim();
+      return name ? { name, regNo } : null;
+    });
     const resultsPublished = document.getElementById('resultsPublishedCheck').checked;
     try {
       await api('adminSetResults', { eventId: currentResultsEventId, positions, resultsPublished });
@@ -1282,9 +1304,11 @@
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <span class="pill cat-${cat.toLowerCase()}">${cat.charAt(0)+cat.slice(1).toLowerCase()}</span>
             <span class="pill ${regStatusClass}">${regStatusLabel}</span>
+            ${ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : ''}
             ${!isEditingDeadline ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
             ${!isEditingCompDate ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-compdate="${ev.eventId}">Edit event day</button>` : ''}
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>
+            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-completed="${ev.eventId}" data-completed="${ev.completed}">${ev.completed ? 'Mark not completed' : 'Mark completed'}</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}">View regs</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-export-event="${ev.eventId}">Export CSV</button>
             <button class="btn btn-danger btn-small" data-delete="${ev.eventId}">Delete</button>
@@ -1295,6 +1319,12 @@
       container.querySelectorAll('[data-toggle]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
           await api('adminToggleEvent', { eventId: btn.dataset.toggle, active: btn.dataset.active !== 'true' });
+          await loadAdminEvents();
+        }));
+      });
+      container.querySelectorAll('[data-toggle-completed]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          await api('adminToggleCompleted', { eventId: btn.dataset.toggleCompleted, completed: btn.dataset.completed !== 'true' });
           await loadAdminEvents();
         }));
       });

@@ -494,7 +494,7 @@
     showTopLoader();
     try {
       let attempt = 0;
-      const maxAttempts = RETRY_SAFE_ACTIONS.has(action) ? 2 : 1;
+      const maxAttempts = RETRY_SAFE_ACTIONS.has(action) ? 3 : 1;
       let lastErr;
       while (attempt < maxAttempts) {
         attempt++;
@@ -504,17 +504,26 @@
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify(Object.assign({ action, token: state.token }, payload))
           });
-          const data = await res.json();
+          let data;
+          try {
+            data = await res.json();
+          } catch (parseErr) {
+            // Response wasn't valid JSON — usually Google briefly serving an HTML
+            // page instead of the real response. Same transient issue as a network
+            // failure from our point of view: worth a retry, not a real error yet.
+            throw new SyntaxError('Backend returned an unexpected (non-JSON) response.');
+          }
           if (data.status === 'error') throw new Error(data.message || 'Something went wrong');
           return data;
         } catch (err) {
           lastErr = err;
-          // Only retry on a genuine network-layer failure (fetch/parse threw before
-          // we got a server response) — never retry a real error the server sent back,
-          // since retrying that just repeats the same rejection.
-          const isNetworkFailure = err instanceof TypeError || /fetch/i.test(err.message || '');
-          if (!isNetworkFailure || attempt >= maxAttempts) throw err;
-          await wait(500);
+          // Retry on network-layer failures AND on "got a 200 but it wasn't real
+          // JSON" failures — both are transient Google-side hiccups. Never retry
+          // a genuine error the server deliberately sent back (that's an Error,
+          // not a TypeError/SyntaxError), since retrying that just repeats it.
+          const isTransient = err instanceof TypeError || err instanceof SyntaxError || /fetch/i.test(err.message || '');
+          if (!isTransient || attempt >= maxAttempts) throw err;
+          await wait(500 * attempt);
         }
       }
       throw lastErr;

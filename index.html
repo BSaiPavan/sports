@@ -458,20 +458,56 @@
     state.token = null; state.name = null; state.isAdmin = false;
   }
 
+  // Apps Script occasionally serves a response without the CORS header even
+  // though it actually ran the request server-side (browser reports a
+  // "Failed to fetch" even though the request itself got a 200). This is a
+  // known Google-side flakiness, not something wrong with the data — it
+  // usually clears up on the very next try. We auto-retry once, but ONLY for
+  // actions that are safe to run twice (read-only, or self-guarding like
+  // "already registered" / simple overwrites) — never for actions that
+  // create a new row, where a silent retry could duplicate it.
+  const RETRY_SAFE_ACTIONS = new Set([
+    'login', 'changePassword', 'listEvents', 'registerEvent', 'unregisterEvent',
+    'getNotices', 'getResults',
+    'adminListUsers', 'adminListRegistrations', 'adminListUserRegistrations', 'adminListNotices',
+    'adminGetEventResults', 'adminSetResults', 'adminToggleEvent', 'adminToggleCompleted',
+    'adminSetAdmin', 'adminResetPassword', 'adminEditEvent', 'adminEditNotice',
+    'adminDeleteEvent', 'adminDeleteNotice'
+  ]);
+
+  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
   async function api(action, payload) {
     if (SCRIPT_URL.startsWith("PASTE_")) {
       throw new Error("Backend not connected yet — see SETUP.md");
     }
     showTopLoader();
     try {
-      const res = await fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(Object.assign({ action, token: state.token }, payload))
-      });
-      const data = await res.json();
-      if (data.status === 'error') throw new Error(data.message || 'Something went wrong');
-      return data;
+      let attempt = 0;
+      const maxAttempts = RETRY_SAFE_ACTIONS.has(action) ? 2 : 1;
+      let lastErr;
+      while (attempt < maxAttempts) {
+        attempt++;
+        try {
+          const res = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(Object.assign({ action, token: state.token }, payload))
+          });
+          const data = await res.json();
+          if (data.status === 'error') throw new Error(data.message || 'Something went wrong');
+          return data;
+        } catch (err) {
+          lastErr = err;
+          // Only retry on a genuine network-layer failure (fetch/parse threw before
+          // we got a server response) — never retry a real error the server sent back,
+          // since retrying that just repeats the same rejection.
+          const isNetworkFailure = err instanceof TypeError || /fetch/i.test(err.message || '');
+          if (!isNetworkFailure || attempt >= maxAttempts) throw err;
+          await wait(500);
+        }
+      }
+      throw lastErr;
     } finally {
       hideTopLoader();
     }

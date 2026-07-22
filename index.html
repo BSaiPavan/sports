@@ -151,6 +151,12 @@
       <span class="count mono" id="regsModalCount"></span>
     </div>
     <div class="modal-body" id="regsModalBody"></div>
+    <div id="regsModalAddRow" class="hidden" style="padding:12px 22px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input id="addRegNoInput" list="allUsersDatalist" placeholder="Reg no or name…" style="flex:1;min-width:160px;padding:9px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+      <datalist id="allUsersDatalist"></datalist>
+      <button class="btn btn-dark btn-small" id="addRegNoBtn">Add to event</button>
+      <span class="msg" id="addRegNoMsg" style="width:100%;"></span>
+    </div>
     <div class="modal-foot">
       <button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="regsModalCopy">Copy list</button>
       <button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="regsModalExport">Export CSV</button>
@@ -441,7 +447,11 @@
 
 <script>
   // ====== CONFIG ======
-  const SCRIPT_URL = "https://hello-world.saipavanb02.workers.dev";
+  // Currently points straight at Apps Script. Once you deploy the Cloudflare
+  // Worker proxy (see WORKER_SETUP.md), replace this with your Worker URL
+  // instead (looks like https://campus-sports-proxy.<you>.workers.dev) —
+  // that's what actually fixes the intermittent CORS failures.
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzG55AEw13r65zu9NrYnkjj1FVrKbQKN0OaQRHpi_XmvwWar8AZbB5DnPFcIRO0PiOmFQ/exec";
   const DEADLINE_TBD = 'TBD'; // sentinel deadline value meaning "registration yet to open"
 
   const state = { token: null, name: null, isAdmin: false };
@@ -472,7 +482,7 @@
     'adminListUsers', 'adminListRegistrations', 'adminListUserRegistrations', 'adminListNotices',
     'adminGetEventResults', 'adminSetResults', 'adminToggleEvent', 'adminToggleCompleted',
     'adminSetAdmin', 'adminResetPassword', 'adminEditEvent', 'adminEditNotice',
-    'adminDeleteEvent', 'adminDeleteNotice'
+    'adminDeleteEvent', 'adminDeleteNotice', 'adminRemoveRegistration', 'adminAddRegistration'
   ]);
 
   function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -1007,10 +1017,13 @@
 
   // ---------- REGISTRATIONS MODAL ----------
   let currentRegsForCopy = [];
-  function showRegsModal(eventName, registrations) {
+  let currentModalEventId = null;
+
+  function showRegsModal(eventName, registrations, eventId) {
     currentModalMode = 'event';
     currentRegsForCopy = registrations;
     currentEventNameForExport = eventName;
+    currentModalEventId = eventId || null;
     document.getElementById('regsModalTitle').textContent = eventName;
     document.getElementById('regsModalCount').textContent = registrations.length + (registrations.length === 1 ? ' entry' : ' entries');
     const body = document.getElementById('regsModalBody');
@@ -1018,14 +1031,36 @@
       body.innerHTML = '<div class="modal-empty">No one registered yet.</div>';
     } else {
       body.innerHTML = registrations.map((r, i) => `
-        <div class="modal-row">
-          <div class="idx mono">${String(i + 1).padStart(2, '0')}</div>
-          <div>
-            <div class="rname">${escapeHtml(r.name)}</div>
-            <div class="rreg">${escapeHtml(r.regNo)}</div>
+        <div class="modal-row" style="justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div class="idx mono">${String(i + 1).padStart(2, '0')}</div>
+            <div>
+              <div class="rname">${escapeHtml(r.name)}</div>
+              <div class="rreg">${escapeHtml(r.regNo)}</div>
+            </div>
           </div>
+          <button class="btn btn-outline btn-small" style="border-color:var(--line);color:#b7401b;" data-remove-reg="${escapeHtml(r.regNo)}">Remove</button>
         </div>`).join('');
+
+      body.querySelectorAll('[data-remove-reg]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          if (!confirm('Remove this registration?')) return;
+          try {
+            await api('adminRemoveRegistration', { eventId: currentModalEventId, regNo: btn.dataset.removeReg });
+            const data = await api('adminListRegistrations', { eventId: currentModalEventId });
+            showRegsModal(eventName, data.registrations, currentModalEventId);
+            await loadAdminEvents(); // registration counts elsewhere may depend on this
+          } catch (err) {
+            alert(err.message);
+          }
+        }));
+      });
     }
+    document.getElementById('regsModalAddRow').classList.remove('hidden');
+    document.getElementById('addRegNoInput').value = '';
+    setMsg(document.getElementById('addRegNoMsg'), '', true);
+    document.getElementById('addRegNoMsg').style.display = 'none';
+    populateAllUsersDatalist();
     document.getElementById('regsModal').classList.remove('hidden');
   }
   function showUserRegsModal(userName, registrations) {
@@ -1047,11 +1082,41 @@
           </div>
         </div>`).join('');
     }
+    document.getElementById('regsModalAddRow').classList.add('hidden');
     document.getElementById('regsModal').classList.remove('hidden');
   }
   function hideRegsModal() {
     document.getElementById('regsModal').classList.add('hidden');
   }
+
+  async function populateAllUsersDatalist() {
+    try {
+      const data = await api('adminListUsers', {});
+      document.getElementById('allUsersDatalist').innerHTML = data.users
+        .map(u => `<option value="${escapeHtml(u.regNo)} — ${escapeHtml(u.name)}">`).join('');
+    } catch (e) { /* datalist is just a convenience — fine if it stays empty */ }
+  }
+
+  document.getElementById('addRegNoBtn').addEventListener('click', withLoading(document.getElementById('addRegNoBtn'), async () => {
+    const msg = document.getElementById('addRegNoMsg');
+    msg.style.display = 'block';
+    const raw = document.getElementById('addRegNoInput').value.trim();
+    // accept either a plain reg no, or the "regNo — Name" datalist-picked format
+    const regNo = raw.split('—')[0].split(' ')[0].trim();
+    if (!regNo) { setMsg(msg, 'Enter a registration number.', false); return; }
+    if (!currentModalEventId) { setMsg(msg, 'No event selected.', false); return; }
+    try {
+      await api('adminAddRegistration', { eventId: currentModalEventId, regNo });
+      document.getElementById('addRegNoInput').value = '';
+      const data = await api('adminListRegistrations', { eventId: currentModalEventId });
+      showRegsModal(currentEventNameForExport, data.registrations, currentModalEventId);
+      setMsg(document.getElementById('addRegNoMsg'), 'Added.', true);
+      document.getElementById('addRegNoMsg').style.display = 'block';
+      await loadAdminEvents();
+    } catch (err) {
+      setMsg(msg, err.message, false);
+    }
+  }));
   document.getElementById('regsModalCloseBtn').addEventListener('click', hideRegsModal);
   document.getElementById('regsModal').addEventListener('click', (e) => {
     if (e.target.id === 'regsModal') hideRegsModal();
@@ -1376,7 +1441,7 @@
         btn.addEventListener('click', withLoading(btn, async () => {
           const eventName = btn.closest('.event-row').querySelector('.event-name').textContent;
           const data = await api('adminListRegistrations', { eventId: btn.dataset.viewRegs });
-          showRegsModal(eventName, data.registrations);
+          showRegsModal(eventName, data.registrations, btn.dataset.viewRegs);
         }));
       });
       container.querySelectorAll('[data-export-event]').forEach(btn => {

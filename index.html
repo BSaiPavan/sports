@@ -120,6 +120,88 @@
   .toast-msg{font-size:13.5px;line-height:1.5;color:#dfe6f2;}
   .toast-link{display:inline-block;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ball-orange);text-decoration:none;font-weight:600;cursor:pointer;}
 
+  /* ========== MOBILE & TABLET RESPONSIVE ========== */
+  @media (max-width: 768px) {
+    nav .wrap { height: auto; padding: 12px 0; flex-direction: column; gap: 12px; }
+    .brand { font-size: 16px; }
+    .nav-right { font-size: 11px; gap: 8px; }
+    .page-title { font-size: clamp(20px, 4vw, 36px); margin-bottom: 20px; }
+    .wrap { padding: 0 16px; }
+    main { padding: 24px 0 60px; }
+    .center-box { margin: 40px auto; padding: 20px; }
+    .event-row { padding: 14px 16px; flex-direction: column; align-items: flex-start; gap: 8px; }
+    .event-name { font-size: 16px; }
+    .field { margin-bottom: 14px; }
+    .field input { padding: 10px 12px; font-size: 13px; }
+    .tabs { gap: 2px; margin-bottom: 16px; font-size: 11px; }
+    .tab { padding: 10px 12px; font-size: 11px; }
+    table { font-size: 12px; }
+    th { padding: 6px 8px; font-size: 9.5px; }
+    td { padding: 8px; }
+    .modal-box { max-width: 95vw; max-height: 90vh; }
+    .modal-head { padding: 14px 16px; }
+    .modal-head h3 { font-size: 15px; }
+    .modal-row { padding: 10px 16px; gap: 10px; }
+    .modal-body { max-height: 60vh; }
+    .modal-empty { padding: 20px 16px; font-size: 12px; }
+    .modal-foot { padding: 12px 16px; }
+    .admin-section { margin-bottom: 28px; }
+    .admin-section h3 { font-size: 16px; }
+    .inline-form { gap: 8px; }
+    .inline-form .field { min-width: auto; flex: 1 1 100%; }
+    .inline-form .btn { flex: 1 1 100%; }
+    textarea { min-height: 80px; font-size: 12px; padding: 10px; }
+    .btn { padding: 9px 14px; font-size: 12px; }
+    .btn-small { padding: 6px 10px; font-size: 10.5px; }
+    .toast { bottom: 16px; right: 16px; left: 16px; max-width: none; }
+    .skeleton-row { padding: 14px 16px; }
+  }
+
+  @media (max-width: 640px) {
+    .brand { font-size: 14px; }
+    .nav-right { font-size: 10px; gap: 6px; }
+    .page-title { font-size: clamp(18px, 3.5vw, 28px); }
+    .landing-hero { padding: 40px 16px 60px; }
+    .landing-crest { width: 120px; height: 120px; }
+    .event-row { padding: 12px 14px; }
+    .event-name { font-size: 14px; }
+    .event-meta { font-size: 10px; }
+    .pill { font-size: 9.5px; padding: 3px 6px; }
+    .center-box { margin: 30px auto; padding: 18px; max-width: 95vw; }
+    .field label { font-size: 10px; }
+    .field input { padding: 9px 11px; font-size: 12px; }
+    .field-hint { font-size: 9.5px; }
+    .tabs { gap: 0; }
+    .tab { padding: 8px 10px; font-size: 10px; }
+    table { font-size: 11px; }
+    th { padding: 5px 6px; font-size: 8.5px; }
+    td { padding: 6px; }
+    .modal-row { padding: 8px 14px; gap: 8px; font-size: 13px; }
+    .modal-row .rname { font-size: 13px; }
+    .modal-row .rreg { font-size: 11px; }
+    .modal-row .idx { font-size: 11px; }
+    .admin-section h3 { font-size: 14px; margin-bottom: 12px; }
+    .inline-form { gap: 6px; }
+    .inline-form .field { min-width: 100%; flex: 1 1 100%; }
+    .inline-form .btn { flex: 1 1 100%; padding: 8px 12px; }
+    .btn { padding: 8px 12px; font-size: 11px; }
+    .btn-small { padding: 5px 9px; font-size: 10px; }
+    textarea { min-height: 70px; font-size: 11px; padding: 9px; }
+    .toast { bottom: 12px; right: 12px; left: 12px; max-width: none; }
+    .toast-msg { font-size: 12.5px; }
+    .toast-link { font-size: 10.5px; }
+    main { padding: 16px 0 50px; }
+    .landing-hero { padding: 30px 16px 50px; }
+  }
+
+  @media (max-width: 480px) {
+    .page-title { font-size: clamp(16px, 3vw, 24px); }
+    .landing-crest { width: 100px; height: 100px; margin-bottom: 16px; }
+    .btn { padding: 8px 10px; font-size: 10px; }
+    .field input { font-size: 11px; }
+    textarea { min-height: 60px; font-size: 11px; }
+  }
+
   /* ---------- Landing ---------- */
   :root{
     --maroon-900:#430E1B; --maroon-700:#7E2434; --maroon-600:#96354A; --maroon-100:#F3DFE1;

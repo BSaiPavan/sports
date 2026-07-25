@@ -120,88 +120,6 @@
   .toast-msg{font-size:13.5px;line-height:1.5;color:#dfe6f2;}
   .toast-link{display:inline-block;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ball-orange);text-decoration:none;font-weight:600;cursor:pointer;}
 
-  /* ========== MOBILE & TABLET RESPONSIVE ========== */
-  @media (max-width: 768px) {
-    nav .wrap { height: auto; padding: 12px 0; flex-direction: column; gap: 12px; }
-    .brand { font-size: 16px; }
-    .nav-right { font-size: 11px; gap: 8px; }
-    .page-title { font-size: clamp(20px, 4vw, 36px); margin-bottom: 20px; }
-    .wrap { padding: 0 16px; }
-    main { padding: 24px 0 60px; }
-    .center-box { margin: 40px auto; padding: 20px; }
-    .event-row { padding: 14px 16px; flex-direction: column; align-items: flex-start; gap: 8px; }
-    .event-name { font-size: 16px; }
-    .field { margin-bottom: 14px; }
-    .field input { padding: 10px 12px; font-size: 13px; }
-    .tabs { gap: 2px; margin-bottom: 16px; font-size: 11px; }
-    .tab { padding: 10px 12px; font-size: 11px; }
-    table { font-size: 12px; }
-    th { padding: 6px 8px; font-size: 9.5px; }
-    td { padding: 8px; }
-    .modal-box { max-width: 95vw; max-height: 90vh; }
-    .modal-head { padding: 14px 16px; }
-    .modal-head h3 { font-size: 15px; }
-    .modal-row { padding: 10px 16px; gap: 10px; }
-    .modal-body { max-height: 60vh; }
-    .modal-empty { padding: 20px 16px; font-size: 12px; }
-    .modal-foot { padding: 12px 16px; }
-    .admin-section { margin-bottom: 28px; }
-    .admin-section h3 { font-size: 16px; }
-    .inline-form { gap: 8px; }
-    .inline-form .field { min-width: auto; flex: 1 1 100%; }
-    .inline-form .btn { flex: 1 1 100%; }
-    textarea { min-height: 80px; font-size: 12px; padding: 10px; }
-    .btn { padding: 9px 14px; font-size: 12px; }
-    .btn-small { padding: 6px 10px; font-size: 10.5px; }
-    .toast { bottom: 16px; right: 16px; left: 16px; max-width: none; }
-    .skeleton-row { padding: 14px 16px; }
-  }
-
-  @media (max-width: 640px) {
-    .brand { font-size: 14px; }
-    .nav-right { font-size: 10px; gap: 6px; }
-    .page-title { font-size: clamp(18px, 3.5vw, 28px); }
-    .landing-hero { padding: 40px 16px 60px; }
-    .landing-crest { width: 120px; height: 120px; }
-    .event-row { padding: 12px 14px; }
-    .event-name { font-size: 14px; }
-    .event-meta { font-size: 10px; }
-    .pill { font-size: 9.5px; padding: 3px 6px; }
-    .center-box { margin: 30px auto; padding: 18px; max-width: 95vw; }
-    .field label { font-size: 10px; }
-    .field input { padding: 9px 11px; font-size: 12px; }
-    .field-hint { font-size: 9.5px; }
-    .tabs { gap: 0; }
-    .tab { padding: 8px 10px; font-size: 10px; }
-    table { font-size: 11px; }
-    th { padding: 5px 6px; font-size: 8.5px; }
-    td { padding: 6px; }
-    .modal-row { padding: 8px 14px; gap: 8px; font-size: 13px; }
-    .modal-row .rname { font-size: 13px; }
-    .modal-row .rreg { font-size: 11px; }
-    .modal-row .idx { font-size: 11px; }
-    .admin-section h3 { font-size: 14px; margin-bottom: 12px; }
-    .inline-form { gap: 6px; }
-    .inline-form .field { min-width: 100%; flex: 1 1 100%; }
-    .inline-form .btn { flex: 1 1 100%; padding: 8px 12px; }
-    .btn { padding: 8px 12px; font-size: 11px; }
-    .btn-small { padding: 5px 9px; font-size: 10px; }
-    textarea { min-height: 70px; font-size: 11px; padding: 9px; }
-    .toast { bottom: 12px; right: 12px; left: 12px; max-width: none; }
-    .toast-msg { font-size: 12.5px; }
-    .toast-link { font-size: 10.5px; }
-    main { padding: 16px 0 50px; }
-    .landing-hero { padding: 30px 16px 50px; }
-  }
-
-  @media (max-width: 480px) {
-    .page-title { font-size: clamp(16px, 3vw, 24px); }
-    .landing-crest { width: 100px; height: 100px; margin-bottom: 16px; }
-    .btn { padding: 8px 10px; font-size: 10px; }
-    .field input { font-size: 11px; }
-    textarea { min-height: 60px; font-size: 11px; }
-  }
-
   /* ---------- Landing ---------- */
   :root{
     --maroon-900:#430E1B; --maroon-700:#7E2434; --maroon-600:#96354A; --maroon-100:#F3DFE1;
@@ -429,6 +347,7 @@
       </div>
       <div class="card" style="padding:22px;">
         <h3>All users</h3>
+        <input id="usersSearchInput" placeholder="Search by name or reg no…" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;margin:10px 0 14px;">
         <div style="overflow-x:auto;"><table id="usersTable"><thead><tr><th>Reg No</th><th>Name</th><th>Email</th><th>Admin</th><th>Actions</th></tr></thead><tbody></tbody></table></div>
       </div>
     </div>
@@ -516,6 +435,15 @@
           </label>
           <button class="btn btn-orange" id="saveResultsBtn">Save results</button>
           <div class="msg" id="resultsEditorMsg"></div>
+
+          <div style="margin-top:26px;padding-top:20px;border-top:1px dashed var(--line);">
+            <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Event photos <span id="photoCountLabel" class="mono" style="color:var(--muted);"></span></label>
+            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 12px;">Up to 10 photos per event, visible to students once results are published.</p>
+            <input type="file" id="photoUploadInput" accept="image/*" multiple style="margin-bottom:10px;">
+            <button class="btn btn-dark btn-small" id="uploadPhotosBtn">Upload selected</button>
+            <div class="msg" id="photoUploadMsg"></div>
+            <div id="photoGrid" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;"></div>
+          </div>
         </div>
       </div>
 
@@ -533,7 +461,7 @@
   // Worker proxy (see WORKER_SETUP.md), replace this with your Worker URL
   // instead (looks like https://campus-sports-proxy.<you>.workers.dev) —
   // that's what actually fixes the intermittent CORS failures.
-  const SCRIPT_URL = "https://hello-world.saipavanb02.workers.dev";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzG55AEw13r65zu9NrYnkjj1FVrKbQKN0OaQRHpi_XmvwWar8AZbB5DnPFcIRO0PiOmFQ/exec";
   const DEADLINE_TBD = 'TBD'; // sentinel deadline value meaning "registration yet to open"
 
   const state = { token: null, name: null, isAdmin: false };
@@ -564,10 +492,29 @@
     'adminListUsers', 'adminListRegistrations', 'adminListUserRegistrations', 'adminListNotices',
     'adminGetEventResults', 'adminSetResults', 'adminToggleEvent', 'adminToggleCompleted',
     'adminSetAdmin', 'adminResetPassword', 'adminEditEvent', 'adminEditNotice',
-    'adminDeleteEvent', 'adminDeleteNotice', 'adminRemoveRegistration', 'adminAddRegistration'
+    'adminDeleteEvent', 'adminDeleteNotice', 'adminRemoveRegistration', 'adminAddRegistration',
+    'adminDeleteEventPhoto', 'adminListEventPhotos'
   ]);
 
   function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // Shared ordering for both the student and admin event lists: completed
+  // events always sink to the bottom, and everything else sorts by whichever
+  // date is more relevant right now (the registration deadline, falling back
+  // to the event day if no deadline is set) — so the list naturally re-orders
+  // itself whenever an admin edits either date, with no manual reordering needed.
+  function eventSortTimestamp(ev) {
+    const raw = (ev.deadline && ev.deadline !== DEADLINE_TBD) ? ev.deadline : ev.competitionDate;
+    if (!raw) return Infinity;
+    const t = new Date(raw).getTime();
+    return isNaN(t) ? Infinity : t;
+  }
+  function sortEventsForDisplay(events) {
+    return [...events].sort((a, b) => {
+      if (!!a.completed !== !!b.completed) return a.completed ? 1 : -1;
+      return eventSortTimestamp(a) - eventSortTimestamp(b);
+    });
+  }
 
   async function api(action, payload) {
     if (SCRIPT_URL.startsWith("PASTE_")) {
@@ -921,6 +868,7 @@
       if (categoryFilter !== 'ALL') {
         eventsToShow = eventsToShow.filter(ev => String(ev.category || 'OTHER').toUpperCase() === categoryFilter);
       }
+      eventsToShow = sortEventsForDisplay(eventsToShow);
 
       if (!eventsToShow.length) {
         const emptyMsg = showOnlyMyRegs
@@ -1014,12 +962,18 @@
             <span style="font-weight:600;font-size:13.5px;">${escapeHtml(p.name || '—')}</span>
             ${p.regNo ? `<span class="mono" style="font-size:11.5px;color:var(--muted);">${escapeHtml(p.regNo)}</span>` : ''}
           </div>`).join('') || '<div class="mono" style="font-size:12.5px;color:var(--muted);">Positions to be announced.</div>';
+        const photoStrip = (r.photos && r.photos.length)
+          ? `<div style="display:flex;gap:8px;flex-wrap:wrap;width:100%;margin-top:4px;">${r.photos.map(p =>
+              `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener"><img src="${escapeHtml(p.url)}" style="width:72px;height:72px;object-fit:cover;border-radius:3px;border:1px solid var(--line);"></a>`
+            ).join('')}</div>`
+          : '';
         return `<div class="event-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
           <div style="display:flex;justify-content:space-between;width:100%;align-items:center;flex-wrap:wrap;gap:8px;">
             <div class="event-name">${escapeHtml(r.name)}</div>
             <span class="pill cat-${cat.toLowerCase()}">${cat.charAt(0)+cat.slice(1).toLowerCase()}</span>
           </div>
           <div style="width:100%;">${rows}</div>
+          ${photoStrip}
         </div>`;
       }).join('');
     } catch (err) {
@@ -1389,6 +1343,7 @@
       });
       document.getElementById('resultsPublishedCheck').checked = savedResults.resultsPublished === true;
       editor.classList.remove('hidden');
+      await loadPhotoGrid(eventId);
     } catch (err) {
       setMsg(msg, err.message, false);
       msg.style.display = 'block';
@@ -1427,6 +1382,78 @@
     }
   }));
 
+  // ---------- ADMIN: EVENT PHOTOS ----------
+  async function loadPhotoGrid(eventId) {
+    const grid = document.getElementById('photoGrid');
+    const countLabel = document.getElementById('photoCountLabel');
+    grid.innerHTML = '<span class="mono" style="font-size:11.5px;color:var(--muted);">Loading…</span>';
+    try {
+      const data = await api('adminListEventPhotos', { eventId });
+      countLabel.textContent = `(${data.photos.length}/10)`;
+      if (!data.photos.length) {
+        grid.innerHTML = '<span class="mono" style="font-size:11.5px;color:var(--muted);">No photos yet.</span>';
+        return;
+      }
+      grid.innerHTML = data.photos.map(p => `
+        <div style="position:relative;width:96px;height:96px;">
+          <img src="${escapeHtml(p.url)}" style="width:100%;height:100%;object-fit:cover;border-radius:3px;border:1px solid var(--line);">
+          <button data-delete-photo="${p.photoId}" title="Delete" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:#b7401b;color:#fff;border:2px solid #fff;font-size:12px;line-height:1;cursor:pointer;">✕</button>
+        </div>`).join('');
+      grid.querySelectorAll('[data-delete-photo]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          if (!confirm('Delete this photo?')) return;
+          await api('adminDeleteEventPhoto', { photoId: btn.dataset.deletePhoto });
+          await loadPhotoGrid(eventId);
+        }));
+      });
+    } catch (err) {
+      grid.innerHTML = `<span style="color:#b7401b;font-size:12px;">${err.message}</span>`;
+    }
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]); // strip "data:image/...;base64," prefix
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById('uploadPhotosBtn').addEventListener('click', withLoading(document.getElementById('uploadPhotosBtn'), async () => {
+    const msg = document.getElementById('photoUploadMsg');
+    const input = document.getElementById('photoUploadInput');
+    const files = Array.from(input.files || []);
+    if (!currentResultsEventId) { setMsg(msg, 'Pick an event first.', false); return; }
+    if (!files.length) { setMsg(msg, 'Choose at least one photo.', false); return; }
+    msg.style.display = 'block';
+
+    let uploaded = 0, failed = 0;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setMsg(msg, `Uploading ${i + 1}/${files.length}…`, true);
+      try {
+        const imageBase64 = await fileToBase64(file);
+        await api('adminUploadEventPhoto', {
+          eventId: currentResultsEventId,
+          imageBase64,
+          mimeType: file.type || 'image/jpeg',
+          filename: file.name
+        });
+        uploaded++;
+      } catch (err) {
+        failed++;
+        // Keep going with the rest of the batch — one bad/huge file
+        // shouldn't stop the others from uploading.
+        setMsg(msg, `Photo "${file.name}" failed: ${err.message}. Continuing with the rest…`, false);
+        await wait(1200);
+      }
+    }
+    setMsg(msg, `Uploaded ${uploaded}${failed ? `, ${failed} failed` : ''}.`, failed === 0);
+    input.value = '';
+    await loadPhotoGrid(currentResultsEventId);
+  }));
+
   async function renderPublishedResultsAdmin() {
     const inner = document.getElementById('publishedResultsInner');
     try {
@@ -1460,7 +1487,8 @@
     container.innerHTML = skeletonRows(2);
     try {
       const data = await api('listEvents', {});
-      container.innerHTML = data.events.map(ev => {
+      const sortedEvents = sortEventsForDisplay(data.events);
+      container.innerHTML = sortedEvents.map(ev => {
         const deadlineTbd = ev.deadline === DEADLINE_TBD;
         const deadlineVal = deadlineTbd ? 'Yet to open' : (ev.deadline ? fmtDate(new Date(ev.deadline), true) : '—');
         const compDateVal = ev.competitionDate ? fmtDate(parseDateOnly(ev.competitionDate)) : 'To be decided';
@@ -1656,12 +1684,27 @@
     } catch (err) { setMsg(msg, err.message, false); }
   }));
 
+  let allUsersCache = [];
+
   async function loadAdminUsers() {
     const tbody = document.querySelector('#usersTable tbody');
     tbody.innerHTML = `<tr><td colspan="5"><div class="skel" style="height:14px;width:90%;margin:6px 0;"></div><div class="skel" style="height:14px;width:75%;margin:6px 0;"></div><div class="skel" style="height:14px;width:85%;margin:6px 0;"></div></td></tr>`;
     try {
       const data = await api('adminListUsers', {});
-      tbody.innerHTML = data.users.map(u => `
+      allUsersCache = data.users;
+      renderUsersTable(allUsersCache);
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="5" style="color:#b7401b;">${err.message}</td></tr>`;
+    }
+  }
+
+  function renderUsersTable(users) {
+    const tbody = document.querySelector('#usersTable tbody');
+    if (!users.length) {
+      tbody.innerHTML = `<tr><td colspan="5" class="mono" style="color:var(--muted);">No matching users.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = users.map(u => `
         <tr>
           <td class="mono">${escapeHtml(u.regNo)}</td>
           <td>${escapeHtml(u.name)}</td>
@@ -1695,10 +1738,16 @@
           await loadAdminUsers();
         }));
       });
-    } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="5" style="color:#b7401b;">${err.message}</td></tr>`;
-    }
   }
+
+  document.getElementById('usersSearchInput').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    if (!q) { renderUsersTable(allUsersCache); return; }
+    const filtered = allUsersCache.filter(u =>
+      String(u.regNo).toLowerCase().includes(q) || String(u.name).toLowerCase().includes(q)
+    );
+    renderUsersTable(filtered);
+  });
 
   document.getElementById('addUserBtn').addEventListener('click', withLoading(document.getElementById('addUserBtn'), async () => {
     const regNo = document.getElementById('newUserRegNo').value.trim();

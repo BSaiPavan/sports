@@ -117,7 +117,7 @@
   .toast-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;}
   .toast-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--net-mint);}
   .toast-close{background:none;border:none;color:#8ea3c9;font-size:16px;cursor:pointer;line-height:1;padding:0;}
-  .toast-msg{font-size:13.5px;line-height:1.5;color:#dfe6f2;}
+  .toast-msg{font-size:13.5px;line-height:1.5;color:#dfe6f2;white-space:pre-line;}
   .toast-link{display:inline-block;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ball-orange);text-decoration:none;font-weight:600;cursor:pointer;}
 
   /* ---------- Landing ---------- */
@@ -141,6 +141,7 @@
     <button class="toast-close" id="noticeToastClose">✕</button>
   </div>
   <div class="toast-msg" id="noticeToastMsg"></div>
+  <div id="noticeToastPhotos" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;"></div>
   <a class="toast-link hidden" id="noticeToastLink">View event →</a>
 </div>
 
@@ -493,7 +494,7 @@
     'adminGetEventResults', 'adminSetResults', 'adminToggleEvent', 'adminToggleCompleted',
     'adminSetAdmin', 'adminResetPassword', 'adminEditEvent', 'adminEditNotice',
     'adminDeleteEvent', 'adminDeleteNotice', 'adminRemoveRegistration', 'adminAddRegistration',
-    'adminDeleteEventPhoto', 'adminListEventPhotos'
+    'adminDeleteEventPhoto', 'adminListEventPhotos', 'adminListNoticePhotos', 'adminListEventsWithStatus'
   ]);
 
   function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -792,6 +793,10 @@
 
   function showNoticeToast(notice) {
     document.getElementById('noticeToastMsg').textContent = notice.message;
+    const photosBox = document.getElementById('noticeToastPhotos');
+    photosBox.innerHTML = (notice.photos && notice.photos.length)
+      ? notice.photos.slice(0, 5).map(p => `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener"><img src="${escapeHtml(p.url)}" style="width:44px;height:44px;object-fit:cover;border-radius:3px;border:1px solid rgba(245,243,236,.3);"></a>`).join('')
+      : '';
     const link = document.getElementById('noticeToastLink');
     if (notice.linkedEvent && notice.linkedEvent.active) {
       link.textContent = 'View: ' + notice.linkedEvent.name + ' →';
@@ -1242,13 +1247,53 @@
             <button class="btn btn-dark" data-notice-save="${n.noticeId}">Save changes</button>
           </div>
           <div class="msg" data-notice-msg-status="${n.noticeId}" style="width:100%;"></div>
+
+          <div style="width:100%;padding-top:12px;border-top:1px dashed var(--line);">
+            <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Attach photos <span data-notice-photo-count="${n.noticeId}"></span></label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+              <input type="file" data-notice-photo-input="${n.noticeId}" accept="image/*" multiple style="font-size:12px;">
+              <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-notice-photo-upload="${n.noticeId}">Upload</button>
+            </div>
+            <div class="msg" data-notice-photo-msg="${n.noticeId}"></div>
+            <div data-notice-photo-grid="${n.noticeId}" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+          </div>
         </div>`).join('');
 
       // fill each row's event dropdown with the correct selection
       for (const n of data.notices) {
         const select = container.querySelector(`[data-notice-event="${n.noticeId}"]`);
         await populateEventSelect(select, n.linkedEventId);
+        await loadNoticePhotoGrid(n.noticeId);
       }
+
+      container.querySelectorAll('[data-notice-photo-upload]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          const noticeId = btn.dataset.noticePhotoUpload;
+          const input = container.querySelector(`[data-notice-photo-input="${noticeId}"]`);
+          const msg = container.querySelector(`[data-notice-photo-msg="${noticeId}"]`);
+          const files = Array.from(input.files || []);
+          if (!files.length) { setMsg(msg, 'Choose at least one photo.', false); return; }
+          msg.style.display = 'block';
+          let uploaded = 0, failed = 0;
+          for (let i = 0; i < files.length; i++) {
+            setMsg(msg, `Uploading ${i + 1}/${files.length}…`, true);
+            try {
+              const imageBase64 = await fileToBase64(files[i]);
+              await api('adminUploadNoticePhoto', {
+                noticeId, imageBase64, mimeType: files[i].type || 'image/jpeg', filename: files[i].name
+              });
+              uploaded++;
+            } catch (err) {
+              failed++;
+              setMsg(msg, `"${files[i].name}" failed: ${err.message}`, false);
+              await wait(1000);
+            }
+          }
+          setMsg(msg, `Uploaded ${uploaded}${failed ? `, ${failed} failed` : ''}.`, failed === 0);
+          input.value = '';
+          await loadNoticePhotoGrid(noticeId);
+        }));
+      });
 
       container.querySelectorAll('[data-notice-toggle]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
@@ -1284,6 +1329,33 @@
     }
   }
 
+  async function loadNoticePhotoGrid(noticeId) {
+    const grid = document.querySelector(`[data-notice-photo-grid="${noticeId}"]`);
+    const countLabel = document.querySelector(`[data-notice-photo-count="${noticeId}"]`);
+    if (!grid) return;
+    grid.innerHTML = '<span class="mono" style="font-size:11px;color:var(--muted);">Loading…</span>';
+    try {
+      const data = await api('adminListNoticePhotos', { noticeId });
+      if (countLabel) countLabel.textContent = `(${data.photos.length}/10)`;
+      grid.innerHTML = data.photos.length
+        ? data.photos.map(p => `
+          <div style="position:relative;width:64px;height:64px;">
+            <img src="${escapeHtml(p.url)}" style="width:100%;height:100%;object-fit:cover;border-radius:3px;border:1px solid var(--line);">
+            <button data-delete-notice-photo="${p.photoId}" title="Delete" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#b7401b;color:#fff;border:2px solid #fff;font-size:11px;line-height:1;cursor:pointer;">✕</button>
+          </div>`).join('')
+        : '<span class="mono" style="font-size:11px;color:var(--muted);">No photos yet.</span>';
+      grid.querySelectorAll('[data-delete-notice-photo]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          if (!confirm('Delete this photo?')) return;
+          await api('adminDeleteEventPhoto', { photoId: btn.dataset.deleteNoticePhoto }); // same delete fn works for both owners
+          await loadNoticePhotoGrid(noticeId);
+        }));
+      });
+    } catch (err) {
+      grid.innerHTML = `<span style="color:#b7401b;font-size:11px;">${err.message}</span>`;
+    }
+  }
+
   document.getElementById('addNoticeBtn').addEventListener('click', withLoading(document.getElementById('addNoticeBtn'), async () => {
     const msg = document.getElementById('addNoticeMsg');
     const message = document.getElementById('newNoticeMessage').value.trim();
@@ -1308,21 +1380,42 @@
   async function loadResultsAdminTab() {
     const select = document.getElementById('resultsEventSelect');
     try {
-      const data = await api('listEvents', {});
-      select.innerHTML = '<option value="">Select an event…</option>' + data.events.map(ev =>
+      const data = await api('adminListEventsWithStatus', {});
+      // Only events that have actually happened and don't already have
+      // published results — once published, editing happens via the
+      // "Edit" button on the Published results list below instead, so this
+      // dropdown doesn't get cluttered with things already taken care of.
+      const eligible = data.events.filter(ev => ev.completed && !ev.resultsPublished);
+      select.innerHTML = '<option value="">Select an event…</option>' + eligible.map(ev =>
         `<option value="${ev.eventId}">${escapeHtml(ev.name)}</option>`
       ).join('');
+      if (!eligible.length) {
+        select.innerHTML += '<option value="" disabled>No completed events awaiting results</option>';
+      }
     } catch (err) { /* leave default option */ }
     await renderPublishedResultsAdmin();
+  }
+
+  // Opens the results editor for a specific event — used both by the
+  // dropdown's change handler and by "Edit" on an already-published result
+  // (which intentionally isn't in the dropdown's option list).
+  async function openResultsEditorForEvent(eventId) {
+    document.getElementById('resultsEventSelect').value = eventId; // no-op if not present in the filtered list, that's fine
+    currentResultsEventId = eventId;
+    await loadResultsEditorContent(eventId);
   }
 
   document.getElementById('resultsEventSelect').addEventListener('change', withLoading(document.getElementById('resultsEventSelect'), async () => {
     const eventId = document.getElementById('resultsEventSelect').value;
     currentResultsEventId = eventId || null;
+    if (!eventId) { document.getElementById('resultsEditor').classList.add('hidden'); return; }
+    await loadResultsEditorContent(eventId);
+  }));
+
+  async function loadResultsEditorContent(eventId) {
     const editor = document.getElementById('resultsEditor');
     const msg = document.getElementById('resultsEditorMsg');
     msg.style.display = 'none';
-    if (!eventId) { editor.classList.add('hidden'); return; }
 
     try {
       const [regsData, savedResults] = await Promise.all([
@@ -1343,12 +1436,13 @@
       });
       document.getElementById('resultsPublishedCheck').checked = savedResults.resultsPublished === true;
       editor.classList.remove('hidden');
+      editor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       await loadPhotoGrid(eventId);
     } catch (err) {
       setMsg(msg, err.message, false);
       msg.style.display = 'block';
     }
-  }));
+  }
 
   // Picking someone from a position's dropdown just fills in that
   // position's name/reg-no fields — admin can still hand-edit afterward,
@@ -1376,7 +1470,7 @@
     try {
       await api('adminSetResults', { eventId: currentResultsEventId, positions, resultsPublished });
       setMsg(msg, resultsPublished ? 'Results saved and published.' : 'Results saved (not yet published).', true);
-      await renderPublishedResultsAdmin();
+      await loadResultsAdminTab();
     } catch (err) {
       setMsg(msg, err.message, false);
     }
@@ -1464,8 +1558,16 @@
       }
       inner.innerHTML = data.results.map(r => {
         const line = r.positions.map(p => `${MEDAL[p.place] || p.place} ${p.name}${p.regNo ? ' (' + p.regNo + ')' : ''}`).join(' · ');
-        return `<div style="padding:6px 0;border-bottom:1px solid var(--line);color:var(--graphite);"><strong>${escapeHtml(r.name)}</strong> — ${escapeHtml(line || 'no positions set')}</div>`;
+        return `<div style="padding:8px 0;border-bottom:1px solid var(--line);color:var(--graphite);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div><strong>${escapeHtml(r.name)}</strong> — ${escapeHtml(line || 'no positions set')}</div>
+          <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);flex-shrink:0;" data-edit-result="${r.eventId}">Edit</button>
+        </div>`;
       }).join('');
+      inner.querySelectorAll('[data-edit-result]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          await openResultsEditorForEvent(btn.dataset.editResult);
+        }));
+      });
     } catch (err) {
       inner.textContent = err.message;
     }

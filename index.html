@@ -1363,12 +1363,19 @@
     const linkedEventId = document.getElementById('newNoticeLinkedEvent').value;
     if (!message) { setMsg(msg, 'Write a message first.', false); return; }
     try {
-      await api('adminAddNotice', { message, frequencyMinutes, linkedEventId, active: true });
+      const result = await api('adminAddNotice', { message, frequencyMinutes, linkedEventId, active: true });
       document.getElementById('newNoticeMessage').value = '';
       document.getElementById('newNoticeFrequency').value = 10;
       document.getElementById('newNoticeLinkedEvent').value = '';
-      setMsg(msg, 'Notice added and active.', true);
+      setMsg(msg, 'Notice added — scroll down to attach photos to it if you want.', true);
       await renderNoticesList();
+      const newRow = document.querySelector(`[data-notice-photo-grid="${result.noticeId}"]`)?.closest('.event-row');
+      if (newRow) {
+        newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        newRow.style.transition = 'background .3s ease';
+        newRow.style.background = 'rgba(255,90,31,.12)';
+        setTimeout(() => { newRow.style.background = ''; }, 2500);
+      }
     } catch (err) {
       setMsg(msg, err.message, false);
     }

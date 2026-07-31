@@ -145,6 +145,19 @@
   <a class="toast-link hidden" id="noticeToastLink">View event →</a>
 </div>
 
+<div class="modal-overlay hidden" id="galleryModal">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-head">
+      <h3 id="galleryModalTitle">Gallery</h3>
+      <span class="count mono" id="galleryModalCount"></span>
+    </div>
+    <div class="modal-body" id="galleryModalBody" style="display:flex;flex-wrap:wrap;gap:10px;padding:16px 22px;"></div>
+    <div class="modal-foot">
+      <button class="btn btn-dark" id="galleryModalCloseBtn">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="regsModal">
   <div class="modal-box">
     <div class="modal-head">
@@ -967,20 +980,24 @@
             <span style="font-weight:600;font-size:13.5px;">${escapeHtml(p.name || '—')}</span>
             ${p.regNo ? `<span class="mono" style="font-size:11.5px;color:var(--muted);">${escapeHtml(p.regNo)}</span>` : ''}
           </div>`).join('') || '<div class="mono" style="font-size:12.5px;color:var(--muted);">Positions to be announced.</div>';
-        const photoStrip = (r.photos && r.photos.length)
-          ? `<div style="display:flex;gap:8px;flex-wrap:wrap;width:100%;margin-top:4px;">${r.photos.map(p =>
-              `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener"><img src="${escapeHtml(p.url)}" style="width:72px;height:72px;object-fit:cover;border-radius:3px;border:1px solid var(--line);"></a>`
-            ).join('')}</div>`
-          : '';
+        const hasPhotos = r.photos && r.photos.length;
         return `<div class="event-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
           <div style="display:flex;justify-content:space-between;width:100%;align-items:center;flex-wrap:wrap;gap:8px;">
             <div class="event-name">${escapeHtml(r.name)}</div>
-            <span class="pill cat-${cat.toLowerCase()}">${cat.charAt(0)+cat.slice(1).toLowerCase()}</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="pill cat-${cat.toLowerCase()}">${cat.charAt(0)+cat.slice(1).toLowerCase()}</span>
+              ${hasPhotos ? `<button class="btn btn-outline btn-small gallery-btn" style="border-color:var(--line);color:var(--graphite);" data-event-name="${escapeHtml(r.name)}" data-photos='${escapeHtml(JSON.stringify(r.photos))}'>Gallery</button>` : ''}
+            </div>
           </div>
           <div style="width:100%;">${rows}</div>
-          ${photoStrip}
         </div>`;
       }).join('');
+      container.querySelectorAll('.gallery-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const photos = JSON.parse(btn.dataset.photos);
+          openGalleryModal(btn.dataset.eventName, photos);
+        });
+      });
     } catch (err) {
       container.innerHTML = `<div class="event-row" style="color:#b7401b;">${err.message}</div>`;
     }
@@ -1170,6 +1187,24 @@
   document.getElementById('regsModalCloseBtn').addEventListener('click', hideRegsModal);
   document.getElementById('regsModal').addEventListener('click', (e) => {
     if (e.target.id === 'regsModal') hideRegsModal();
+  });
+
+  // ---------- GALLERY MODAL (student view of published event photos) ----------
+  function openGalleryModal(eventName, photos) {
+    document.getElementById('galleryModalTitle').textContent = eventName || 'Gallery';
+    document.getElementById('galleryModalCount').textContent = photos.length + (photos.length === 1 ? ' photo' : ' photos');
+    const body = document.getElementById('galleryModalBody');
+    body.innerHTML = photos.length
+      ? photos.map(p => `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener"><img src="${escapeHtml(p.url)}" style="width:130px;height:130px;object-fit:cover;border-radius:3px;border:1px solid var(--line);"></a>`).join('')
+      : '<div class="modal-empty">No photos yet.</div>';
+    document.getElementById('galleryModal').classList.remove('hidden');
+  }
+  function hideGalleryModal() {
+    document.getElementById('galleryModal').classList.add('hidden');
+  }
+  document.getElementById('galleryModalCloseBtn').addEventListener('click', hideGalleryModal);
+  document.getElementById('galleryModal').addEventListener('click', (e) => {
+    if (e.target.id === 'galleryModal') hideGalleryModal();
   });
   document.getElementById('regsModalCopy').addEventListener('click', async () => {
     const text = currentModalMode === 'user'

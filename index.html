@@ -131,8 +131,24 @@
   body.teacher-mode textarea[data-notice-msg],
   body.teacher-mode input[data-notice-freq],
   body.teacher-mode select[data-notice-event],
+  body.teacher-mode #usageBanner,
   body.teacher-mode #regsModalAddRow {
     display: none !important;
+  }
+
+  /* mobile fixes — nav bar was overflowing on narrow phone widths, pushing
+     the Logout button off-screen. Shrink brand/nav text and let the nav
+     row wrap onto two lines instead of forcing a horizontal scrollbar. */
+  @media (max-width: 480px) {
+    nav .wrap{height:auto;flex-wrap:wrap;row-gap:8px;padding:10px 14px;}
+    .brand{font-size:14px;}
+    .nav-right{font-size:10px;gap:6px;flex-wrap:wrap;width:100%;justify-content:flex-end;}
+    .nav-right #navName{width:100%;text-align:right;font-size:10.5px;order:-1;}
+    .nav-right .btn-small{padding:5px 9px;font-size:10px;}
+
+    #goRegistrationsBtn, #goResultsBtn{padding:16px !important;min-width:0 !important;}
+    #goRegistrationsBtn .event-name, #goResultsBtn .event-name{font-size:17px !important;}
+    #goRegistrationsBtn .mono, #goResultsBtn .mono{font-size:11px !important;}
   }
 
   /* notice toast */

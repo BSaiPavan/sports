@@ -361,8 +361,13 @@
   <!-- DASHBOARD: RESULTS -->
   <div id="resultsView" class="wrap hidden">
     <button class="btn btn-outline btn-small back-btn" data-back-to="dashboardHomeView" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">← Back</button>
-    <p class="hello">Season 2026</p>
-    <h1 class="page-title">Results</h1>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;">
+      <div>
+        <p class="hello">Season 2026</p>
+        <h1 class="page-title">Results</h1>
+      </div>
+      <button class="btn btn-outline btn-small hidden" id="leaderboardToggleBtn" style="border-color:var(--line);color:var(--graphite);">🏆 Leaderboard</button>
+    </div>
     <div class="card hidden" id="leaderboardCard" style="margin-top:16px;padding:22px;"></div>
     <div class="card" id="resultsList" style="margin-top:16px;"></div>
   </div>
@@ -1053,11 +1058,11 @@
     try {
       const data = await api('getResults', {});
       if (!data.results.length) {
-        document.getElementById('leaderboardCard').classList.add('hidden');
+        try { document.getElementById('leaderboardCard').classList.add('hidden'); } catch (e) {}
         container.innerHTML = '<div class="event-row mono" style="color:var(--muted);">No results published yet.</div>';
         return;
       }
-      renderLeaderboard(data.results);
+      try { renderLeaderboard(data.results); } catch (lbErr) { console.error('Leaderboard render failed (non-fatal):', lbErr); }
       container.innerHTML = data.results.map(r => {
         const cat = String(r.category || 'OTHER').toUpperCase();
         const rows = r.positions.map(p => `
@@ -1095,6 +1100,7 @@
   const LB_POINTS = { 1: 5, 2: 3, 3: 1 };
   function renderLeaderboard(results) {
     const card = document.getElementById('leaderboardCard');
+    const toggleBtn = document.getElementById('leaderboardToggleBtn');
     const scores = {};
     results.forEach(r => {
       const cat = String(r.category || '').toUpperCase();
@@ -1116,12 +1122,16 @@
     const ranked = Object.values(scores).sort((a, b) =>
       b.pts - a.pts || b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze
     );
+    card.classList.add('hidden');
+    toggleBtn.textContent = '🏆 Leaderboard';
     if (!ranked.length) {
-      card.classList.add('hidden');
+      toggleBtn.classList.add('hidden');
       card.innerHTML = '';
       return;
     }
-    card.classList.remove('hidden');
+    toggleBtn.classList.remove('hidden');
+    // Card itself stays collapsed until the Leaderboard button is clicked —
+    // just build the HTML now so it's ready the instant the person opens it.
     const medalStr = e => `${e.gold ? '🥇' + e.gold + ' ' : ''}${e.silver ? '🥈' + e.silver + ' ' : ''}${e.bronze ? '🥉' + e.bronze : ''}`.trim();
 
     const top3 = ranked.slice(0, 3);
@@ -1144,11 +1154,17 @@
 
     card.innerHTML = `
       <div class="lb-title">🏆 Leaderboard</div>
-      <div class="lb-subtitle">TRACK &amp; FIELD ONLY · 1ST = 5 PTS · 2ND = 3 PTS · 3RD = 1 PT</div>
       ${podiumHtml}
       ${restHtml}
     `;
   }
+  document.getElementById('leaderboardToggleBtn').addEventListener('click', () => {
+    const card = document.getElementById('leaderboardCard');
+    const btn = document.getElementById('leaderboardToggleBtn');
+    const nowOpen = card.classList.toggle('hidden') === false;
+    btn.textContent = nowOpen ? '🏆 Hide Leaderboard' : '🏆 Leaderboard';
+    if (nowOpen) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

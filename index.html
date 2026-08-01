@@ -101,6 +101,40 @@
   .modal-empty{padding:30px 22px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px;text-align:center;}
   .modal-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;}
 
+  /* teacher (shared faculty) account — view-only mode.
+     Hides every registration/mutation control site-wide; the Teacher login
+     can see events, users, notices and results, but never register, edit,
+     delete, publish, or upload anything. */
+  body.teacher-mode #myRegsToggleBtn,
+  body.teacher-mode .admin-write,
+  body.teacher-mode #resultsEditor,
+  body.teacher-mode [data-action="register"],
+  body.teacher-mode [data-action="unregister"],
+  body.teacher-mode [data-toggle],
+  body.teacher-mode [data-toggle-completed],
+  body.teacher-mode [data-delete],
+  body.teacher-mode [data-edit-deadline],
+  body.teacher-mode [data-edit-compdate],
+  body.teacher-mode [data-save-deadline],
+  body.teacher-mode [data-cancel-deadline],
+  body.teacher-mode [data-clear-deadline],
+  body.teacher-mode [data-save-compdate],
+  body.teacher-mode [data-cancel-compdate],
+  body.teacher-mode [data-reset],
+  body.teacher-mode [data-toggle-admin],
+  body.teacher-mode [data-notice-toggle],
+  body.teacher-mode [data-notice-delete],
+  body.teacher-mode [data-notice-save],
+  body.teacher-mode [data-notice-photo-upload],
+  body.teacher-mode [data-notice-photo-input],
+  body.teacher-mode [data-delete-notice-photo],
+  body.teacher-mode textarea[data-notice-msg],
+  body.teacher-mode input[data-notice-freq],
+  body.teacher-mode select[data-notice-event],
+  body.teacher-mode #regsModalAddRow {
+    display: none !important;
+  }
+
   /* notice toast */
   .toast{
     position:fixed;bottom:24px;right:24px;max-width:320px;
@@ -305,7 +339,7 @@
 
     <!-- EVENTS TAB -->
     <div class="admin-tab" id="tab-events">
-      <div class="card" style="padding:22px;margin-bottom:24px;">
+      <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
         <h3>Add event</h3>
         <div class="inline-form">
           <div class="field"><label>Name</label><input id="newEventName" placeholder="Table Tennis — Singles"></div>
@@ -343,7 +377,7 @@
 
     <!-- USERS TAB -->
     <div class="admin-tab hidden" id="tab-users">
-      <div class="card" style="padding:22px;margin-bottom:24px;">
+      <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
         <h3>Add single user</h3>
         <div class="inline-form">
           <div class="field"><label>Registration Number</label><input id="newUserRegNo"></div>
@@ -352,7 +386,7 @@
         </div>
         <div class="msg" id="addUserMsg"></div>
       </div>
-      <div class="card" style="padding:22px;margin-bottom:24px;">
+      <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
         <h3>Bulk add (one per line: <span class="mono">regNo, Name</span>)</h3>
         <textarea id="bulkUsers" placeholder="234207, Bhavirisetti Sai Pavan
 234233, Another Student"></textarea>
@@ -368,7 +402,7 @@
 
     <!-- ADMINS TAB -->
     <div class="admin-tab hidden" id="tab-admins">
-      <div class="card" style="padding:22px;">
+      <div class="card admin-write" style="padding:22px;">
         <h3>Grant / revoke admin access</h3>
         <p class="mono" style="font-size:12px;color:var(--muted);">Find the user in the Users tab and use the Make Admin / Remove Admin button there.</p>
       </div>
@@ -376,7 +410,7 @@
 
     <!-- NOTICE TAB -->
     <div class="admin-tab hidden" id="tab-notice">
-      <div class="card" style="padding:22px;margin-bottom:24px;">
+      <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
         <h3>Add a notice</h3>
         <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 18px;">Each active notice pops up on its own timer, one after another if more than one is due. Students see all active notices in rotation.</p>
 
@@ -478,7 +512,7 @@
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzG55AEw13r65zu9NrYnkjj1FVrKbQKN0OaQRHpi_XmvwWar8AZbB5DnPFcIRO0PiOmFQ/exec";
   const DEADLINE_TBD = 'TBD'; // sentinel deadline value meaning "registration yet to open"
 
-  const state = { token: null, name: null, isAdmin: false };
+  const state = { token: null, name: null, isAdmin: false, isTeacher: false };
 
   function saveSession() {
     sessionStorage.setItem('campusSports', JSON.stringify(state));
@@ -489,7 +523,8 @@
   }
   function clearSession() {
     sessionStorage.removeItem('campusSports');
-    state.token = null; state.name = null; state.isAdmin = false;
+    state.token = null; state.name = null; state.isAdmin = false; state.isTeacher = false;
+    document.body.classList.remove('teacher-mode');
   }
 
   // Apps Script occasionally serves a response without the CORS header even
@@ -643,7 +678,8 @@
     if (!regNo || !password) { setMsg(msg, 'Enter your registration number and password.', false); return; }
     try {
       const data = await api('login', { regNo, password });
-      state.token = data.token; state.name = data.name; state.isAdmin = data.isAdmin;
+      state.token = data.token; state.name = data.name; state.isAdmin = data.isAdmin; state.isTeacher = data.isTeacher === true;
+      document.body.classList.toggle('teacher-mode', state.isTeacher);
       saveSession();
       if (data.mustChangePassword) {
         showView('forceChangeView');
@@ -730,7 +766,10 @@
   async function enterDashboard() {
     document.getElementById('navUserBox').classList.remove('hidden');
     document.getElementById('navName').textContent = state.name;
-    document.getElementById('navAdminBtn').style.display = state.isAdmin ? 'inline-block' : 'none';
+    document.body.classList.toggle('teacher-mode', state.isTeacher);
+    const adminBtn = document.getElementById('navAdminBtn');
+    adminBtn.style.display = (state.isAdmin || state.isTeacher) ? 'inline-block' : 'none';
+    adminBtn.textContent = state.isTeacher && !state.isAdmin ? 'View Season' : 'Admin';
     document.getElementById('dashHomeName').textContent = state.name;
     showView('dashboardHomeView');
     startNoticePolling();
@@ -921,14 +960,16 @@
         const completedPill = ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : '';
 
         let actionBtn = '';
-        if (registered) {
-          // Only allow unregistering while the event is still open —
-          // once admin closes it (or the deadline passes), the registration is locked in.
-          if (ev.active && !deadlineTbd && !deadlinePassed) {
-            actionBtn = `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-action="unregister" data-id="${ev.eventId}">Unregister</button>`;
+        if (!state.isTeacher) {
+          if (registered) {
+            // Only allow unregistering while the event is still open —
+            // once admin closes it (or the deadline passes), the registration is locked in.
+            if (ev.active && !deadlineTbd && !deadlinePassed) {
+              actionBtn = `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-action="unregister" data-id="${ev.eventId}">Unregister</button>`;
+            }
+          } else if (canAct) {
+            actionBtn = `<button class="btn btn-orange btn-small" data-action="register" data-id="${ev.eventId}">Register</button>`;
           }
-        } else if (canAct) {
-          actionBtn = `<button class="btn btn-orange btn-small" data-action="register" data-id="${ev.eventId}">Register</button>`;
         }
         const deadlineText = deadlineTbd ? 'Yet to be decided' : (ev.deadline ? fmtDate(new Date(ev.deadline), true) : 'No deadline set');
         const compDateText = ev.competitionDate

@@ -47,6 +47,27 @@
   .event-name{font-family:'Anton',sans-serif;font-size:18px;}
   .event-meta{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);margin-top:3px;text-transform:uppercase;}
   .pill{font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;padding:4px 8px;border-radius:2px;letter-spacing:.5px;}
+
+  /* Leaderboard (Track/Field points only) */
+  .lb-title{font-family:'Anton',sans-serif;font-size:20px;letter-spacing:.3px;margin-bottom:2px;}
+  .lb-subtitle{font-size:11.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:18px;}
+  .lb-podium{display:flex;align-items:flex-end;gap:10px;margin-bottom:22px;}
+  .lb-podium-slot{flex:1;text-align:center;border-radius:4px;padding:14px 8px 12px;color:#fff;position:relative;}
+  .lb-podium-slot.p1{background:#c9971f;order:2;padding-top:22px;}
+  .lb-podium-slot.p2{background:#8a8f98;order:1;}
+  .lb-podium-slot.p3{background:#a15a2e;order:3;}
+  .lb-podium-medal{font-size:22px;line-height:1;margin-bottom:6px;}
+  .lb-podium-name{font-weight:700;font-size:13px;line-height:1.25;word-break:break-word;}
+  .lb-podium-regno{font-family:'IBM Plex Mono',monospace;font-size:10px;opacity:.85;margin-top:2px;}
+  .lb-podium-pts{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;margin-top:8px;}
+  .lb-row{display:flex;align-items:center;gap:12px;padding:9px 4px;border-top:1px solid var(--line);}
+  .lb-row:first-of-type{border-top:none;}
+  .lb-rank{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;color:var(--muted);width:22px;flex-shrink:0;text-align:center;}
+  .lb-name{flex:1;min-width:0;}
+  .lb-name .n{font-weight:600;font-size:13.5px;}
+  .lb-name .r{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);margin-left:6px;}
+  .lb-medals{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;flex-shrink:0;}
+  .lb-pts{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;background:var(--chalk);border:1px solid var(--line);border-radius:2px;padding:3px 9px;flex-shrink:0;}
   .pill.open{background:rgba(47,179,128,.15);color:#1d7d55;}
   .pill.closed{background:rgba(107,114,128,.12);color:var(--muted);}
   .pill.pending{background:rgba(201,162,39,.16);color:#8a6a12;}
@@ -149,6 +170,11 @@
     #goRegistrationsBtn, #goResultsBtn{padding:16px !important;min-width:0 !important;}
     #goRegistrationsBtn .event-name, #goResultsBtn .event-name{font-size:17px !important;}
     #goRegistrationsBtn .mono, #goResultsBtn .mono{font-size:11px !important;}
+    .lb-podium-name{font-size:11.5px;}
+    .lb-podium-pts{font-size:13px;}
+    .lb-podium-medal{font-size:18px;}
+    .lb-row{gap:8px;}
+    .lb-medals{display:none;}
   }
 
   /* notice toast */
@@ -261,7 +287,7 @@
       <h2 style="font-size:24px;margin-bottom:6px;">Log in</h2>
       <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 22px;">Use your registration number</p>
       <div class="field">
-        <label>LOGIN ID </label>
+        <label>Registration Number</label>
         <input type="text" id="loginRegNo" placeholder="e.g. 234207">
       </div>
       <div class="field">
@@ -337,6 +363,7 @@
     <button class="btn btn-outline btn-small back-btn" data-back-to="dashboardHomeView" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">← Back</button>
     <p class="hello">Season 2026</p>
     <h1 class="page-title">Results</h1>
+    <div class="card hidden" id="leaderboardCard" style="margin-top:16px;padding:22px;"></div>
     <div class="card" id="resultsList" style="margin-top:16px;"></div>
   </div>
 
@@ -1026,9 +1053,11 @@
     try {
       const data = await api('getResults', {});
       if (!data.results.length) {
+        document.getElementById('leaderboardCard').classList.add('hidden');
         container.innerHTML = '<div class="event-row mono" style="color:var(--muted);">No results published yet.</div>';
         return;
       }
+      renderLeaderboard(data.results);
       container.innerHTML = data.results.map(r => {
         const cat = String(r.category || 'OTHER').toUpperCase();
         const rows = r.positions.map(p => `
@@ -1058,6 +1087,67 @@
     } catch (err) {
       container.innerHTML = `<div class="event-row" style="color:#b7401b;">${err.message}</div>`;
     }
+  }
+
+  // Points-based leaderboard, built entirely from already-published results —
+  // TRACK and FIELD events only (Marathon and Other don't count, per design).
+  // Scoring: 1st = 5 pts, 2nd = 3 pts, 3rd = 1 pt.
+  const LB_POINTS = { 1: 5, 2: 3, 3: 1 };
+  function renderLeaderboard(results) {
+    const card = document.getElementById('leaderboardCard');
+    const scores = {};
+    results.forEach(r => {
+      const cat = String(r.category || '').toUpperCase();
+      if (cat !== 'TRACK' && cat !== 'FIELD') return;
+      (r.positions || []).forEach(p => {
+        const pts = LB_POINTS[p.place];
+        if (!pts) return;
+        const label = (p.name || '').trim();
+        if (!label) return;
+        const key = p.regNo ? ('R:' + p.regNo) : ('N:' + label.toLowerCase());
+        if (!scores[key]) scores[key] = { name: label, regNo: p.regNo || '', pts: 0, gold: 0, silver: 0, bronze: 0 };
+        scores[key].pts += pts;
+        scores[key].name = label;
+        if (p.place === 1) scores[key].gold++;
+        else if (p.place === 2) scores[key].silver++;
+        else scores[key].bronze++;
+      });
+    });
+    const ranked = Object.values(scores).sort((a, b) =>
+      b.pts - a.pts || b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze
+    );
+    if (!ranked.length) {
+      card.classList.add('hidden');
+      card.innerHTML = '';
+      return;
+    }
+    card.classList.remove('hidden');
+    const medalStr = e => `${e.gold ? '🥇' + e.gold + ' ' : ''}${e.silver ? '🥈' + e.silver + ' ' : ''}${e.bronze ? '🥉' + e.bronze : ''}`.trim();
+
+    const top3 = ranked.slice(0, 3);
+    const rest = ranked.slice(3, 10); // keep the view tidy — top 10 total
+    const podiumHtml = top3.length ? `<div class="lb-podium">${top3.map((e, i) => `
+      <div class="lb-podium-slot p${i + 1}">
+        <div class="lb-podium-medal">${['🥇', '🥈', '🥉'][i]}</div>
+        <div class="lb-podium-name">${escapeHtml(e.name)}</div>
+        ${e.regNo ? `<div class="lb-podium-regno">${escapeHtml(e.regNo)}</div>` : ''}
+        <div class="lb-podium-pts">${e.pts} pts</div>
+      </div>`).join('')}</div>` : '';
+
+    const restHtml = rest.map((e, i) => `
+      <div class="lb-row">
+        <div class="lb-rank">${i + 4}</div>
+        <div class="lb-name"><span class="n">${escapeHtml(e.name)}</span>${e.regNo ? `<span class="r">${escapeHtml(e.regNo)}</span>` : ''}</div>
+        <div class="lb-medals">${medalStr(e)}</div>
+        <div class="lb-pts">${e.pts} pts</div>
+      </div>`).join('');
+
+    card.innerHTML = `
+      <div class="lb-title">🏆 Leaderboard</div>
+      <div class="lb-subtitle">TRACK &amp; FIELD ONLY · 1ST = 5 PTS · 2ND = 3 PTS · 3RD = 1 PT</div>
+      ${podiumHtml}
+      ${restHtml}
+    `;
   }
 
   function escapeHtml(s) {

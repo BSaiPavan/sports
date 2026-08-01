@@ -592,7 +592,7 @@
     'getNotices', 'getResults',
     'adminListUsers', 'adminListRegistrations', 'adminListUserRegistrations', 'adminListNotices',
     'adminGetEventResults', 'adminSetResults', 'adminToggleEvent', 'adminToggleCompleted',
-    'adminSetAdmin', 'adminResetPassword', 'adminEditEvent', 'adminEditNotice',
+    'adminSetAdmin', 'adminResetPassword', 'adminEditUser', 'adminDeleteUser', 'adminEditEvent', 'adminEditNotice',
     'adminDeleteEvent', 'adminDeleteNotice', 'adminRemoveRegistration', 'adminAddRegistration',
     'adminDeleteEventPhoto', 'adminListEventPhotos', 'adminListNoticePhotos', 'adminListEventsWithStatus'
   ]);
@@ -2025,6 +2025,8 @@
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-user-regs="${u.regNo}" data-user-name="${escapeHtml(u.name)}">View regs</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-reset="${u.regNo}">Reset pwd</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-admin="${u.regNo}" data-is-admin="${u.isAdmin}">${u.isAdmin ? 'Remove admin' : 'Make admin'}</button>
+            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-user="${u.regNo}" data-user-name-current="${escapeHtml(u.name)}">Edit</button>
+            <button class="btn btn-outline btn-small" style="border-color:#b7401b;color:#b7401b;" data-remove-user="${u.regNo}">Remove</button>
           </td>
         </tr>`).join('');
 
@@ -2046,6 +2048,30 @@
         btn.addEventListener('click', withLoading(btn, async () => {
           const makeAdmin = btn.dataset.isAdmin !== 'true';
           await api('adminSetAdmin', { regNo: btn.dataset.toggleAdmin, makeAdmin });
+          await loadAdminUsers();
+        }));
+      });
+
+      tbody.querySelectorAll('[data-edit-user]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          const oldRegNo = btn.dataset.editUser;
+          const currentName = btn.dataset.userNameCurrent || '';
+          const newName = prompt('Name:', currentName);
+          if (newName === null) return; // cancelled
+          const newRegNo = prompt('Registration number:', oldRegNo);
+          if (newRegNo === null) return; // cancelled
+          if (!newName.trim() || !newRegNo.trim()) { alert('Name and registration number cannot be empty.'); return; }
+          if (newRegNo.trim() !== oldRegNo && !confirm(`Change reg no from ${oldRegNo} to ${newRegNo.trim()}? This updates all of this student's existing registrations too.`)) return;
+          await api('adminEditUser', { regNo: oldRegNo, newName: newName.trim(), newRegNo: newRegNo.trim() });
+          await loadAdminUsers();
+        }));
+      });
+
+      tbody.querySelectorAll('[data-remove-user]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          const regNo = btn.dataset.removeUser;
+          if (!confirm(`Permanently remove user ${regNo}? This also deletes their event registrations. This cannot be undone.`)) return;
+          await api('adminDeleteUser', { regNo });
           await loadAdminUsers();
         }));
       });

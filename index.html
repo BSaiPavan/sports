@@ -768,8 +768,8 @@
     document.getElementById('navName').textContent = state.name;
     document.body.classList.toggle('teacher-mode', state.isTeacher);
     const adminBtn = document.getElementById('navAdminBtn');
-    adminBtn.style.display = (state.isAdmin || state.isTeacher) ? 'inline-block' : 'none';
-    adminBtn.textContent = state.isTeacher && !state.isAdmin ? 'View Season' : 'Admin';
+    adminBtn.style.display = state.isAdmin ? 'inline-block' : 'none';
+    adminBtn.textContent = 'Admin';
     document.getElementById('dashHomeName').textContent = state.name;
     showView('dashboardHomeView');
     startNoticePolling();

@@ -557,11 +557,7 @@
   // Worker proxy (see WORKER_SETUP.md), replace this with your Worker URL
   // instead (looks like https://campus-sports-proxy.<you>.workers.dev) —
   // that's what actually fixes the intermittent CORS failures.
-  // Now points at the Cloudflare Worker caching proxy (worker.js), not
-  // directly at Apps Script. The Worker forwards everything through to
-  // the same Apps Script backend, but serves read actions from Cloudflare's
-  // edge cache when possible — replace with your Worker's URL.
-  const SCRIPT_URL = "https://hello-world.saipavanb02.workers.dev";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzG55AEw13r65zu9NrYnkjj1FVrKbQKN0OaQRHpi_XmvwWar8AZbB5DnPFcIRO0PiOmFQ/exec";
   const DEADLINE_TBD = 'TBD'; // sentinel deadline value meaning "registration yet to open"
 
   const state = { token: null, name: null, isAdmin: false, isTeacher: false };
@@ -592,7 +588,7 @@
     'getNotices', 'getResults',
     'adminListUsers', 'adminListRegistrations', 'adminListUserRegistrations', 'adminListNotices',
     'adminGetEventResults', 'adminSetResults', 'adminToggleEvent', 'adminToggleCompleted',
-    'adminSetAdmin', 'adminResetPassword', 'adminEditUser', 'adminDeleteUser', 'adminEditEvent', 'adminEditNotice',
+    'adminSetAdmin', 'adminResetPassword', 'adminEditEvent', 'adminEditNotice',
     'adminDeleteEvent', 'adminDeleteNotice', 'adminRemoveRegistration', 'adminAddRegistration',
     'adminDeleteEventPhoto', 'adminListEventPhotos', 'adminListNoticePhotos', 'adminListEventsWithStatus'
   ]);
@@ -1070,10 +1066,11 @@
       container.innerHTML = data.results.map(r => {
         const cat = String(r.category || 'OTHER').toUpperCase();
         const rows = r.positions.map(p => `
-          <div style="display:flex;align-items:center;gap:10px;padding:6px 0;">
+          <div style="display:flex;align-items:center;gap:10px;padding:6px 0;flex-wrap:wrap;">
             <span style="font-size:16px;">${MEDAL[p.place] || p.place}</span>
             <span style="font-weight:600;font-size:13.5px;">${escapeHtml(p.name || '—')}</span>
             ${p.regNo ? `<span class="mono" style="font-size:11.5px;color:var(--muted);">${escapeHtml(p.regNo)}</span>` : ''}
+            ${p.classCourse ? `<span class="mono" style="font-size:10px;color:var(--muted);background:var(--chalk);border:1px solid var(--line);border-radius:2px;padding:2px 6px;">${escapeHtml(p.classCourse)}</span>` : ''}
           </div>`).join('') || '<div class="mono" style="font-size:12.5px;color:var(--muted);">Positions to be announced.</div>';
         const hasPhotos = r.photos && r.photos.length;
         return `<div class="event-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
@@ -1115,9 +1112,10 @@
         const label = (p.name || '').trim();
         if (!label) return;
         const key = p.regNo ? ('R:' + p.regNo) : ('N:' + label.toLowerCase());
-        if (!scores[key]) scores[key] = { name: label, regNo: p.regNo || '', pts: 0, gold: 0, silver: 0, bronze: 0 };
+        if (!scores[key]) scores[key] = { name: label, regNo: p.regNo || '', classCourse: p.classCourse || '', pts: 0, gold: 0, silver: 0, bronze: 0 };
         scores[key].pts += pts;
         scores[key].name = label;
+        scores[key].classCourse = p.classCourse || scores[key].classCourse;
         if (p.place === 1) scores[key].gold++;
         else if (p.place === 2) scores[key].silver++;
         else scores[key].bronze++;
@@ -1145,19 +1143,21 @@
         <div class="lb-podium-medal">${['🥇', '🥈', '🥉'][i]}</div>
         <div class="lb-podium-name">${escapeHtml(e.name)}</div>
         ${e.regNo ? `<div class="lb-podium-regno">${escapeHtml(e.regNo)}</div>` : ''}
+        ${e.classCourse ? `<div class="lb-podium-regno">${escapeHtml(e.classCourse)}</div>` : ''}
         <div class="lb-podium-pts">${e.pts} pts</div>
       </div>`).join('')}</div>` : '';
 
     const restHtml = rest.map((e, i) => `
       <div class="lb-row">
         <div class="lb-rank">${i + 4}</div>
-        <div class="lb-name"><span class="n">${escapeHtml(e.name)}</span>${e.regNo ? `<span class="r">${escapeHtml(e.regNo)}</span>` : ''}</div>
+        <div class="lb-name"><span class="n">${escapeHtml(e.name)}</span>${e.regNo ? `<span class="r">${escapeHtml(e.regNo)}</span>` : ''}${e.classCourse ? `<span class="r">· ${escapeHtml(e.classCourse)}</span>` : ''}</div>
         <div class="lb-medals">${medalStr(e)}</div>
         <div class="lb-pts">${e.pts} pts</div>
       </div>`).join('');
 
     card.innerHTML = `
       <div class="lb-title">🏆 Leaderboard</div>
+      <div class="lb-subtitle">TRACK &amp; FIELD ONLY · 1ST = 5 PTS · 2ND = 3 PTS · 3RD = 1 PT</div>
       ${podiumHtml}
       ${restHtml}
     `;
@@ -2025,8 +2025,6 @@
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-user-regs="${u.regNo}" data-user-name="${escapeHtml(u.name)}">View regs</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-reset="${u.regNo}">Reset pwd</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-admin="${u.regNo}" data-is-admin="${u.isAdmin}">${u.isAdmin ? 'Remove admin' : 'Make admin'}</button>
-            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-user="${u.regNo}" data-user-name-current="${escapeHtml(u.name)}">Edit</button>
-            <button class="btn btn-outline btn-small" style="border-color:#b7401b;color:#b7401b;" data-remove-user="${u.regNo}">Remove</button>
           </td>
         </tr>`).join('');
 
@@ -2048,30 +2046,6 @@
         btn.addEventListener('click', withLoading(btn, async () => {
           const makeAdmin = btn.dataset.isAdmin !== 'true';
           await api('adminSetAdmin', { regNo: btn.dataset.toggleAdmin, makeAdmin });
-          await loadAdminUsers();
-        }));
-      });
-
-      tbody.querySelectorAll('[data-edit-user]').forEach(btn => {
-        btn.addEventListener('click', withLoading(btn, async () => {
-          const oldRegNo = btn.dataset.editUser;
-          const currentName = btn.dataset.userNameCurrent || '';
-          const newName = prompt('Name:', currentName);
-          if (newName === null) return; // cancelled
-          const newRegNo = prompt('Registration number:', oldRegNo);
-          if (newRegNo === null) return; // cancelled
-          if (!newName.trim() || !newRegNo.trim()) { alert('Name and registration number cannot be empty.'); return; }
-          if (newRegNo.trim() !== oldRegNo && !confirm(`Change reg no from ${oldRegNo} to ${newRegNo.trim()}? This updates all of this student's existing registrations too.`)) return;
-          await api('adminEditUser', { regNo: oldRegNo, newName: newName.trim(), newRegNo: newRegNo.trim() });
-          await loadAdminUsers();
-        }));
-      });
-
-      tbody.querySelectorAll('[data-remove-user]').forEach(btn => {
-        btn.addEventListener('click', withLoading(btn, async () => {
-          const regNo = btn.dataset.removeUser;
-          if (!confirm(`Permanently remove user ${regNo}? This also deletes their event registrations. This cannot be undone.`)) return;
-          await api('adminDeleteUser', { regNo });
           await loadAdminUsers();
         }));
       });

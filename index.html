@@ -186,15 +186,17 @@
     box-shadow:0 10px 30px rgba(0,0,0,.25);
     z-index:400;
     transform:translateY(20px);opacity:0;
-    transition:transform .35s ease, opacity .35s ease;
+    transition:transform .35s ease, opacity .35s ease, max-width .2s ease;
     pointer-events:none;
   }
+  .toast.has-photos{max-width:min(460px, calc(100vw - 48px));}
   .toast.show{transform:translateY(0);opacity:1;pointer-events:auto;}
   .toast-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;}
   .toast-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--net-mint);}
   .toast-close{background:none;border:none;color:#8ea3c9;font-size:16px;cursor:pointer;line-height:1;padding:0;}
   .toast-msg{font-size:13.5px;line-height:1.5;color:#dfe6f2;white-space:pre-line;}
   .toast-link{display:inline-block;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ball-orange);text-decoration:none;font-weight:600;cursor:pointer;}
+  .toast-photo-btn{padding:0;border:1px solid rgba(245,243,236,.3);border-radius:3px;background:none;cursor:pointer;overflow:hidden;line-height:0;}
 
   /* ---------- Landing ---------- */
   :root{
@@ -233,6 +235,19 @@
     </div>
   </div>
 </div>
+
+<div class="modal-overlay hidden" id="lightboxModal" style="background:rgba(0,0,0,.88);z-index:500;">
+  <div style="position:relative;max-width:min(880px, 92vw);max-height:88vh;display:flex;flex-direction:column;align-items:center;">
+    <button id="lightboxCloseBtn" style="position:absolute;top:-40px;right:0;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;">✕</button>
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;">
+      <button id="lightboxPrevBtn" style="background:rgba(255,255,255,.12);border:none;color:#fff;font-size:20px;width:42px;height:42px;border-radius:50%;cursor:pointer;flex-shrink:0;margin-right:10px;">‹</button>
+      <img id="lightboxImg" src="" style="max-width:100%;max-height:74vh;object-fit:contain;border-radius:3px;">
+      <button id="lightboxNextBtn" style="background:rgba(255,255,255,.12);border:none;color:#fff;font-size:20px;width:42px;height:42px;border-radius:50%;cursor:pointer;flex-shrink:0;margin-left:10px;">›</button>
+    </div>
+    <div id="lightboxCount" class="mono" style="color:#c9cfda;font-size:12px;margin-top:12px;letter-spacing:.5px;"></div>
+  </div>
+</div>
+
 
 <div class="modal-overlay hidden" id="regsModal">
   <div class="modal-box">
@@ -878,13 +893,14 @@
     noticeQueueRunning = true;
     const next = noticeQueue.shift();
     showNoticeToast(next);
+    const displayMs = (next.photos && next.photos.length) ? 12000 : 8000;
     setTimeout(() => {
       hideNoticeToast();
       setTimeout(() => {
         noticeQueueRunning = false;
         runNoticeQueue(); // show the next queued one, if any
       }, 700); // brief gap so consecutive toasts don't feel like a jump-cut
-    }, 8000);
+    }, displayMs);
   }
 
   function hideNoticeToast() {
@@ -894,9 +910,15 @@
   function showNoticeToast(notice) {
     document.getElementById('noticeToastMsg').textContent = notice.message;
     const photosBox = document.getElementById('noticeToastPhotos');
-    photosBox.innerHTML = (notice.photos && notice.photos.length)
-      ? notice.photos.slice(0, 5).map(p => `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener"><img src="${escapeHtml(p.url)}" style="width:44px;height:44px;object-fit:cover;border-radius:3px;border:1px solid rgba(245,243,236,.3);"></a>`).join('')
+    const photos = notice.photos || [];
+    const toastEl = document.getElementById('noticeToast');
+    toastEl.classList.toggle('has-photos', photos.length > 0);
+    photosBox.innerHTML = photos.length
+      ? photos.slice(0, 5).map((p, i) => `<button class="toast-photo-btn" data-lightbox-index="${i}"><img src="${escapeHtml(p.url)}" style="width:64px;height:64px;object-fit:cover;display:block;"></button>`).join('')
       : '';
+    photosBox.querySelectorAll('[data-lightbox-index]').forEach(btn => {
+      btn.addEventListener('click', () => openLightbox(photos, Number(btn.dataset.lightboxIndex)));
+    });
     const link = document.getElementById('noticeToastLink');
     if (notice.linkedEvent && notice.linkedEvent.active) {
       link.textContent = 'View: ' + notice.linkedEvent.name + ' →';
@@ -1362,8 +1384,11 @@
     document.getElementById('galleryModalCount').textContent = photos.length + (photos.length === 1 ? ' photo' : ' photos');
     const body = document.getElementById('galleryModalBody');
     body.innerHTML = photos.length
-      ? photos.map(p => `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener"><img src="${escapeHtml(p.url)}" style="width:130px;height:130px;object-fit:cover;border-radius:3px;border:1px solid var(--line);"></a>`).join('')
+      ? photos.map((p, i) => `<button class="toast-photo-btn" data-lightbox-index="${i}" style="border-color:var(--line);"><img src="${escapeHtml(p.url)}" style="width:130px;height:130px;object-fit:cover;display:block;"></button>`).join('')
       : '<div class="modal-empty">No photos yet.</div>';
+    body.querySelectorAll('[data-lightbox-index]').forEach(btn => {
+      btn.addEventListener('click', () => openLightbox(photos, Number(btn.dataset.lightboxIndex)));
+    });
     document.getElementById('galleryModal').classList.remove('hidden');
   }
   function hideGalleryModal() {
@@ -1372,6 +1397,47 @@
   document.getElementById('galleryModalCloseBtn').addEventListener('click', hideGalleryModal);
   document.getElementById('galleryModal').addEventListener('click', (e) => {
     if (e.target.id === 'galleryModal') hideGalleryModal();
+  });
+
+  // ---------- PHOTO LIGHTBOX (in-page viewer, prev/next — used by results
+  // gallery AND notice photos, so nothing ever opens a new tab) ----------
+  let lightboxPhotos = [];
+  let lightboxIndex = 0;
+  function openLightbox(photos, startIndex) {
+    lightboxPhotos = photos;
+    lightboxIndex = startIndex || 0;
+    renderLightbox();
+    document.getElementById('lightboxModal').classList.remove('hidden');
+  }
+  function renderLightbox() {
+    if (!lightboxPhotos.length) return;
+    const p = lightboxPhotos[lightboxIndex];
+    document.getElementById('lightboxImg').src = p.url;
+    document.getElementById('lightboxCount').textContent = (lightboxIndex + 1) + ' / ' + lightboxPhotos.length;
+    const multi = lightboxPhotos.length > 1;
+    document.getElementById('lightboxPrevBtn').style.visibility = multi ? 'visible' : 'hidden';
+    document.getElementById('lightboxNextBtn').style.visibility = multi ? 'visible' : 'hidden';
+  }
+  function hideLightbox() {
+    document.getElementById('lightboxModal').classList.add('hidden');
+  }
+  document.getElementById('lightboxCloseBtn').addEventListener('click', hideLightbox);
+  document.getElementById('lightboxModal').addEventListener('click', (e) => {
+    if (e.target.id === 'lightboxModal') hideLightbox();
+  });
+  document.getElementById('lightboxPrevBtn').addEventListener('click', () => {
+    lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
+    renderLightbox();
+  });
+  document.getElementById('lightboxNextBtn').addEventListener('click', () => {
+    lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length;
+    renderLightbox();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (document.getElementById('lightboxModal').classList.contains('hidden')) return;
+    if (e.key === 'Escape') hideLightbox();
+    else if (e.key === 'ArrowLeft') document.getElementById('lightboxPrevBtn').click();
+    else if (e.key === 'ArrowRight') document.getElementById('lightboxNextBtn').click();
   });
   document.getElementById('regsModalCopy').addEventListener('click', async () => {
     const text = currentModalMode === 'user'

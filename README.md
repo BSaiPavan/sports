@@ -1,6 +1,6 @@
 # Nandigiri SportsSphere 2K26
 
-A web-based platform for managing the **SSSIHL Annual Sports & Cultural Meet**.
+A web-based platform for managing the **SSSIHL Nandigiri Campus Annual Sports Events**.
 
 SportsSphere brings student registration, event management, notices, published results, and the winners' gallery into one simple portal.
 

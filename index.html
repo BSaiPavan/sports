@@ -1079,6 +1079,12 @@
     container.innerHTML = skeletonRows(2);
     try {
       const data = await api('getResults', {});
+      // Latest event first — events with no/invalid date sort to the end.
+      data.results.sort((a, b) => {
+        const da = a.competitionDate ? new Date(a.competitionDate).getTime() : -Infinity;
+        const db = b.competitionDate ? new Date(b.competitionDate).getTime() : -Infinity;
+        return (isNaN(db) ? -Infinity : db) - (isNaN(da) ? -Infinity : da);
+      });
       if (!data.results.length) {
         try { document.getElementById('leaderboardCard').classList.add('hidden'); } catch (e) {}
         container.innerHTML = '<div class="event-row mono" style="color:var(--muted);">No results published yet.</div>';
@@ -1158,20 +1164,41 @@
     // just build the HTML now so it's ready the instant the person opens it.
     const medalStr = e => `${e.gold ? '🥇' + e.gold + ' ' : ''}${e.silver ? '🥈' + e.silver + ' ' : ''}${e.bronze ? '🥉' + e.bronze : ''}`.trim();
 
-    const top3 = ranked.slice(0, 3);
-    const rest = ranked.slice(3, 10); // keep the view tidy — top 10 total
-    const podiumHtml = top3.length ? `<div class="lb-podium">${top3.map((e, i) => `
-      <div class="lb-podium-slot p${i + 1}">
-        <div class="lb-podium-medal">${['🥇', '🥈', '🥉'][i]}</div>
+    // Group people by identical points (a "tie group"), in descending order,
+    // and assign standard competition ranking (ties share a rank; the next
+    // rank skips ahead by the group size — e.g. 1, 2, 3, 3, 3, 6...).
+    const groups = [];
+    ranked.forEach(e => {
+      const last = groups[groups.length - 1];
+      if (last && last[0].pts === e.pts) last.push(e);
+      else groups.push([e]);
+    });
+    let rankCursor = 1;
+    groups.forEach(g => { g.forEach(e => e.rank = rankCursor); rankCursor += g.length; });
+
+    // Podium only ever holds WHOLE tie groups — never splits a tie between
+    // the podium and the list below. If the group that would occupy 3rd
+    // place is tied (more than one person), the whole group moves down into
+    // the ranked list instead of picking one of them arbitrarily.
+    const podium = [];
+    for (const g of groups) {
+      if (podium.length + g.length > 3) break;
+      podium.push(...g);
+    }
+    const rest = ranked.filter(e => !podium.includes(e)).slice(0, 10 - podium.length);
+
+    const podiumHtml = podium.length ? `<div class="lb-podium">${podium.map((e) => `
+      <div class="lb-podium-slot p${e.rank}">
+        <div class="lb-podium-medal">${['🥇', '🥈', '🥉'][e.rank - 1]}</div>
         <div class="lb-podium-name">${escapeHtml(e.name)}</div>
         ${e.regNo ? `<div class="lb-podium-regno">${escapeHtml(e.regNo)}</div>` : ''}
         ${e.classCourse ? `<div class="lb-podium-regno">${escapeHtml(e.classCourse)}</div>` : ''}
         <div class="lb-podium-pts">${e.pts} pts</div>
       </div>`).join('')}</div>` : '';
 
-    const restHtml = rest.map((e, i) => `
+    const restHtml = rest.map((e) => `
       <div class="lb-row">
-        <div class="lb-rank">${i + 4}</div>
+        <div class="lb-rank">${e.rank}</div>
         <div class="lb-name"><span class="n">${escapeHtml(e.name)}</span>${e.regNo ? `<span class="r">${escapeHtml(e.regNo)}</span>` : ''}${e.classCourse ? `<span class="r">· ${escapeHtml(e.classCourse)}</span>` : ''}</div>
         <div class="lb-medals">${medalStr(e)}</div>
         <div class="lb-pts">${e.pts} pts</div>

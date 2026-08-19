@@ -1118,12 +1118,17 @@
     container.innerHTML = skeletonRows(2);
     try {
       const data = await api('getResults', {});
-      // Latest event first — events with no/invalid date sort to the end.
-      data.results.sort((a, b) => {
-        const da = a.competitionDate ? new Date(a.competitionDate).getTime() : -Infinity;
-        const db = b.competitionDate ? new Date(b.competitionDate).getTime() : -Infinity;
-        return (isNaN(db) ? -Infinity : db) - (isNaN(da) ? -Infinity : da);
-      });
+      // Most recently PUBLISHED first — this reflects when the result
+      // actually went live, not the (sometimes stale) scheduled event day.
+      // Falls back to competitionDate for any older published events that
+      // predate resultsPublishedAt existing.
+      const sortKey = r => {
+        const t = r.resultsPublishedAt ? new Date(r.resultsPublishedAt).getTime() : NaN;
+        if (!isNaN(t)) return t;
+        const ct = r.competitionDate ? new Date(r.competitionDate).getTime() : NaN;
+        return isNaN(ct) ? -Infinity : ct;
+      };
+      data.results.sort((a, b) => sortKey(b) - sortKey(a));
       if (!data.results.length) {
         try { document.getElementById('leaderboardCard').classList.add('hidden'); } catch (e) {}
         container.innerHTML = '<div class="event-row mono" style="color:var(--muted);">No results published yet.</div>';

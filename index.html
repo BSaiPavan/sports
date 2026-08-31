@@ -433,7 +433,7 @@
               <option value="OTHER">Other</option>
             </select>
           </div>
-          <div class="field">
+          <div class="field" id="newEventDeadlineField">
             <label>Registration deadline</label>
             <input id="newEventDeadline" type="datetime-local">
             <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;color:var(--muted);">
@@ -539,6 +539,7 @@
         </div>
 
         <div id="resultsEditor" class="hidden">
+          <div id="positionResultsSection">
           <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Pick from registered students to fill a position automatically, or just type a name directly — handy for walk-in entries taken on the day.</p>
 
           <div class="field">
@@ -598,6 +599,25 @@
               </div>
             </div>
           </div>
+          </div>
+
+          <div id="matchResultsSection" class="hidden">
+            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Enter the two houses/teams, add a score row per set/half/quarter/innings (label it however fits the sport), then pick the winner.</p>
+            <div class="inline-form" style="margin:0 0 14px;">
+              <div class="field" style="flex:1;"><label>Team / House A</label><input id="matchTeamAInput" placeholder="e.g. Ganapati House"></div>
+              <div class="field" style="flex:1;"><label>Team / House B</label><input id="matchTeamBInput" placeholder="e.g. Krishna House"></div>
+            </div>
+            <label style="font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Scores</label>
+            <div id="matchPeriodsList" style="margin:8px 0 10px;"></div>
+            <button class="btn btn-outline btn-small" id="addMatchPeriodBtn" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">+ Add score row</button>
+            <div class="field" style="margin-bottom:4px;">
+              <label>🏆 Winner</label>
+              <select id="matchWinnerSelect" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;">
+                <option value="">Select winner…</option>
+              </select>
+            </div>
+          </div>
+
           <label style="display:flex;align-items:center;gap:8px;margin:14px 0 18px;font-family:'IBM Plex Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:.5px;">
             <input type="checkbox" id="resultsPublishedCheck" style="width:auto;"> Published (visible to students)
           </label>
@@ -1176,6 +1196,35 @@
     const unit = UNIT_LABEL[p.unit] || p.unit || '';
     return escapeHtml(p.value) + (unit ? ' ' + escapeHtml(unit) : '');
   }
+  function renderMatchScoreboard(match) {
+    if (!match || (!match.teamA && !match.teamB)) {
+      return '<div class="mono" style="font-size:12.5px;color:var(--muted);">Result to be announced.</div>';
+    }
+    const isWinnerA = match.winner && match.winner === match.teamA;
+    const isWinnerB = match.winner && match.winner === match.teamB;
+    const rows = (match.periods || []).map(p => `
+      <div style="display:flex;align-items:center;gap:10px;padding:5px 0;font-size:13px;">
+        <span class="mono" style="width:110px;flex-shrink:0;color:var(--muted);font-size:11px;">${escapeHtml(p.label)}</span>
+        <span style="font-weight:600;">${escapeHtml(p.scoreA || '—')}</span>
+        <span style="color:var(--muted);">–</span>
+        <span style="font-weight:600;">${escapeHtml(p.scoreB || '—')}</span>
+      </div>`).join('');
+    const winnerBox = match.winner ? `
+      <div style="margin-top:10px;padding:8px 12px;background:#fff7e8;border:1px solid #e8c468;border-radius:3px;display:inline-flex;align-items:center;gap:8px;">
+        <span style="font-size:15px;">🏆</span>
+        <span class="mono" style="font-size:11px;color:var(--muted);">WINNER</span>
+        <span style="font-weight:700;font-size:13.5px;">${escapeHtml(match.winner)}</span>
+      </div>` : '';
+    return `
+      <div style="display:flex;align-items:center;gap:10px;font-weight:600;font-size:13.5px;margin-bottom:${rows ? '6px' : '0'};">
+        <span style="${isWinnerA ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamA || 'Team A')}</span>
+        <span class="mono" style="color:var(--muted);font-size:11px;">vs</span>
+        <span style="${isWinnerB ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamB || 'Team B')}</span>
+      </div>
+      ${rows}
+      ${winnerBox}
+    `;
+  }
   async function loadResultsStudent() {
     const container = document.getElementById('resultsList');
     container.innerHTML = skeletonRows(2);
@@ -1201,14 +1250,14 @@
       try { renderLeaderboard(data.results, state.activeSection); } catch (lbErr) { console.error('Leaderboard render failed (non-fatal):', lbErr); }
       container.innerHTML = data.results.map(r => {
         const cat = String(r.category || 'OTHER').toUpperCase();
-        const rows = r.positions.map(p => `
+        const rows = cat === 'GROUP' ? renderMatchScoreboard(r.match) : (r.positions.map(p => `
           <div style="display:flex;align-items:center;gap:10px;padding:6px 0;flex-wrap:wrap;">
             <span style="font-size:16px;">${MEDAL[p.place] || p.place}</span>
             <span style="font-weight:600;font-size:13.5px;">${escapeHtml(p.name || '—')}</span>
             ${p.regNo ? `<span class="mono" style="font-size:11.5px;color:var(--muted);">${escapeHtml(p.regNo)}</span>` : ''}
             ${p.classCourse ? `<span class="mono" style="font-size:10px;color:var(--muted);background:var(--chalk);border:1px solid var(--line);border-radius:2px;padding:2px 6px;">${escapeHtml(p.classCourse)}</span>` : ''}
             ${p.value ? `<span class="mono" style="font-size:11px;font-weight:700;color:var(--graphite);background:#eef7f1;border:1px solid var(--net-mint);border-radius:2px;padding:2px 7px;">${formatMeasurement(p)}</span>` : ''}
-          </div>`).join('') || '<div class="mono" style="font-size:12.5px;color:var(--muted);">Positions to be announced.</div>';
+          </div>`).join('') || '<div class="mono" style="font-size:12.5px;color:var(--muted);">Positions to be announced.</div>');
         const hasPhotos = r.photos && r.photos.length;
         return `<div class="event-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
           <div style="display:flex;justify-content:space-between;width:100%;align-items:center;flex-wrap:wrap;gap:8px;">
@@ -1826,6 +1875,43 @@
     await loadResultsEditorContent(eventId);
   }));
 
+  let currentResultsEventCategory = '';
+  let matchPeriodRowCounter = 0;
+
+  function renderMatchPeriodRow(period) {
+    matchPeriodRowCounter++;
+    const id = 'mp' + matchPeriodRowCounter;
+    const row = document.createElement('div');
+    row.className = 'inline-form';
+    row.style.margin = '0 0 8px';
+    row.dataset.periodRow = id;
+    row.innerHTML = `
+      <div class="field" style="flex:2;"><input class="mp-label" placeholder="e.g. Set 1 / 1st Half / Q1 / 1st Innings" value="${escapeHtml(period.label || '')}"></div>
+      <div class="field" style="flex:1;"><input class="mp-scoreA" placeholder="Team A score" value="${escapeHtml(period.scoreA || '')}"></div>
+      <div class="field" style="flex:1;"><input class="mp-scoreB" placeholder="Team B score" value="${escapeHtml(period.scoreB || '')}"></div>
+      <button type="button" class="btn btn-outline btn-small mp-remove" style="border-color:var(--line);color:var(--graphite);">✕</button>
+    `;
+    row.querySelector('.mp-remove').addEventListener('click', () => row.remove());
+    return row;
+  }
+  document.getElementById('addMatchPeriodBtn').addEventListener('click', () => {
+    document.getElementById('matchPeriodsList').appendChild(renderMatchPeriodRow({}));
+  });
+
+  function updateMatchWinnerOptions(selectedToken) {
+    const teamA = document.getElementById('matchTeamAInput').value.trim();
+    const teamB = document.getElementById('matchTeamBInput').value.trim();
+    const sel = document.getElementById('matchWinnerSelect');
+    const prev = selectedToken !== undefined ? selectedToken : sel.value;
+    sel.innerHTML = '<option value="">Select winner…</option>'
+      + (teamA ? `<option value="TEAM_A">${escapeHtml(teamA)}</option>` : '')
+      + (teamB ? `<option value="TEAM_B">${escapeHtml(teamB)}</option>` : '')
+      + '<option value="DRAW">Draw</option>';
+    sel.value = prev || '';
+  }
+  document.getElementById('matchTeamAInput').addEventListener('input', () => updateMatchWinnerOptions());
+  document.getElementById('matchTeamBInput').addEventListener('input', () => updateMatchWinnerOptions());
+
   async function loadResultsEditorContent(eventId) {
     const editor = document.getElementById('resultsEditor');
     const msg = document.getElementById('resultsEditorMsg');
@@ -1837,19 +1923,39 @@
         api('adminGetEventResults', { eventId })
       ]);
 
-      const options = ['<option value="">— pick a registered student (optional) —</option>'].concat(
-        regsData.registrations.map(r => `<option value="${escapeHtml(r.regNo)}|${escapeHtml(r.name)}">${escapeHtml(r.name)} (${escapeHtml(r.regNo)})</option>`)
-      ).join('');
-      [1, 2, 3].forEach(n => {
-        const select = document.getElementById(`pos${n}Select`);
-        select.innerHTML = options;
-        select.value = ''; // dropdown is just a quick-fill shortcut, never the source of truth
-        const saved = savedResults.positions[n - 1] || {};
-        document.getElementById(`pos${n}Name`).value = saved.name || '';
-        document.getElementById(`pos${n}RegNo`).value = saved.regNo || '';
-        document.getElementById(`pos${n}Value`).value = saved.value || '';
-        document.getElementById(`pos${n}Unit`).value = saved.unit || '';
-      });
+      currentResultsEventCategory = String(savedResults.category || '').toUpperCase();
+      const isGroup = currentResultsEventCategory === 'GROUP';
+      document.getElementById('positionResultsSection').classList.toggle('hidden', isGroup);
+      document.getElementById('matchResultsSection').classList.toggle('hidden', !isGroup);
+
+      if (isGroup) {
+        const m = savedResults.match || {};
+        document.getElementById('matchTeamAInput').value = m.teamA || '';
+        document.getElementById('matchTeamBInput').value = m.teamB || '';
+        const list = document.getElementById('matchPeriodsList');
+        list.innerHTML = '';
+        const periods = (m.periods && m.periods.length) ? m.periods : [{}];
+        periods.forEach(p => list.appendChild(renderMatchPeriodRow(p)));
+        let winnerToken = '';
+        if (m.winner && m.teamA && m.winner === m.teamA) winnerToken = 'TEAM_A';
+        else if (m.winner && m.teamB && m.winner === m.teamB) winnerToken = 'TEAM_B';
+        else if (m.winner) winnerToken = 'DRAW';
+        updateMatchWinnerOptions(winnerToken);
+      } else {
+        const options = ['<option value="">— pick a registered student (optional) —</option>'].concat(
+          regsData.registrations.map(r => `<option value="${escapeHtml(r.regNo)}|${escapeHtml(r.name)}">${escapeHtml(r.name)} (${escapeHtml(r.regNo)})</option>`)
+        ).join('');
+        [1, 2, 3].forEach(n => {
+          const select = document.getElementById(`pos${n}Select`);
+          select.innerHTML = options;
+          select.value = ''; // dropdown is just a quick-fill shortcut, never the source of truth
+          const saved = savedResults.positions[n - 1] || {};
+          document.getElementById(`pos${n}Name`).value = saved.name || '';
+          document.getElementById(`pos${n}RegNo`).value = saved.regNo || '';
+          document.getElementById(`pos${n}Value`).value = saved.value || '';
+          document.getElementById(`pos${n}Unit`).value = saved.unit || '';
+        });
+      }
       document.getElementById('resultsPublishedCheck').checked = savedResults.resultsPublished === true;
       editor.classList.remove('hidden');
       editor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1877,16 +1983,33 @@
   document.getElementById('saveResultsBtn').addEventListener('click', withLoading(document.getElementById('saveResultsBtn'), async () => {
     const msg = document.getElementById('resultsEditorMsg');
     if (!currentResultsEventId) { setMsg(msg, 'Pick an event first.', false); return; }
-    const positions = [1, 2, 3].map(n => {
-      const name = document.getElementById(`pos${n}Name`).value.trim();
-      const regNo = document.getElementById(`pos${n}RegNo`).value.trim();
-      const value = document.getElementById(`pos${n}Value`).value.trim();
-      const unit = document.getElementById(`pos${n}Unit`).value;
-      return name ? { name, regNo, value, unit } : null;
-    });
     const resultsPublished = document.getElementById('resultsPublishedCheck').checked;
+    const payload = { eventId: currentResultsEventId, resultsPublished };
+
+    if (currentResultsEventCategory === 'GROUP') {
+      const teamA = document.getElementById('matchTeamAInput').value.trim();
+      const teamB = document.getElementById('matchTeamBInput').value.trim();
+      const winnerToken = document.getElementById('matchWinnerSelect').value;
+      const winner = winnerToken === 'TEAM_A' ? teamA : winnerToken === 'TEAM_B' ? teamB : winnerToken === 'DRAW' ? 'Draw' : '';
+      if (resultsPublished && (!teamA || !teamB)) { setMsg(msg, 'Enter both team/house names before publishing.', false); return; }
+      const periods = Array.from(document.querySelectorAll('#matchPeriodsList [data-period-row]')).map(row => ({
+        label: row.querySelector('.mp-label').value.trim(),
+        scoreA: row.querySelector('.mp-scoreA').value.trim(),
+        scoreB: row.querySelector('.mp-scoreB').value.trim()
+      })).filter(p => p.label);
+      payload.match = { teamA, teamB, winner, periods };
+    } else {
+      payload.positions = [1, 2, 3].map(n => {
+        const name = document.getElementById(`pos${n}Name`).value.trim();
+        const regNo = document.getElementById(`pos${n}RegNo`).value.trim();
+        const value = document.getElementById(`pos${n}Value`).value.trim();
+        const unit = document.getElementById(`pos${n}Unit`).value;
+        return name ? { name, regNo, value, unit } : null;
+      });
+    }
+
     try {
-      await api('adminSetResults', { eventId: currentResultsEventId, positions, resultsPublished });
+      await api('adminSetResults', payload);
       setMsg(msg, resultsPublished ? 'Results saved and published.' : 'Results saved (not yet published).', true);
       await loadResultsAdminTab();
     } catch (err) {
@@ -1975,9 +2098,14 @@
         return;
       }
       inner.innerHTML = data.results.map(r => {
-        const line = r.positions.map(p => `${MEDAL[p.place] || p.place} ${p.name}${p.regNo ? ' (' + p.regNo + ')' : ''}${p.value ? ' — ' + p.value + (UNIT_LABEL[p.unit] || p.unit || '' ? ' ' + (UNIT_LABEL[p.unit] || p.unit) : '') : ''}`).join(' · ');
+        let line;
+        if (String(r.category).toUpperCase() === 'GROUP' && r.match) {
+          line = `${r.match.teamA || '?'} vs ${r.match.teamB || '?'}${r.match.winner ? ' — 🏆 ' + r.match.winner : ''}`;
+        } else {
+          line = r.positions.map(p => `${MEDAL[p.place] || p.place} ${p.name}${p.regNo ? ' (' + p.regNo + ')' : ''}${p.value ? ' — ' + p.value + (UNIT_LABEL[p.unit] || p.unit || '' ? ' ' + (UNIT_LABEL[p.unit] || p.unit) : '') : ''}`).join(' · ') || 'no positions set';
+        }
         return `<div style="padding:8px 0;border-bottom:1px solid var(--line);color:var(--graphite);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-          <div><strong>${escapeHtml(r.name)}</strong> — ${escapeHtml(line || 'no positions set')}</div>
+          <div><strong>${escapeHtml(r.name)}</strong> — ${escapeHtml(line)}</div>
           <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);flex-shrink:0;" data-edit-result="${r.eventId}">Edit</button>
         </div>`;
       }).join('');
@@ -2209,7 +2337,7 @@
     try {
       await api('adminAddEvent', {
         name, section, category,
-        deadline: deadlineTbd ? DEADLINE_TBD : (deadline ? new Date(deadline).toISOString() : ''),
+        deadline: category === 'GROUP' ? '' : (deadlineTbd ? DEADLINE_TBD : (deadline ? new Date(deadline).toISOString() : '')),
         competitionDate: (!compDateTbd && compDate) ? compDate : ''
       });
       document.getElementById('newEventName').value = '';
@@ -2236,8 +2364,18 @@
     const opts = EVENT_CATEGORY_OPTIONS[section] || EVENT_CATEGORY_OPTIONS.SPORTS;
     const sel = document.getElementById('newEventCategory');
     sel.innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+    toggleDeadlineFieldForCategory();
+  }
+  function toggleDeadlineFieldForCategory() {
+    const isGroup = document.getElementById('newEventCategory').value === 'GROUP';
+    document.getElementById('newEventDeadlineField').classList.toggle('hidden', isGroup);
+    if (isGroup) {
+      document.getElementById('newEventDeadline').value = '';
+      document.getElementById('newEventDeadlineTbd').checked = false;
+    }
   }
   document.getElementById('newEventSection').addEventListener('change', applyEventCategoryOptions);
+  document.getElementById('newEventCategory').addEventListener('change', toggleDeadlineFieldForCategory);
   applyEventCategoryOptions();
 
   let allUsersCache = [];

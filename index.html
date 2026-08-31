@@ -1123,18 +1123,20 @@
               actionBtn = `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-action="unregister" data-id="${ev.eventId}">Unregister</button>`;
             }
           } else if (canAct) {
-            actionBtn = `<button class="btn btn-orange btn-small" data-action="register" data-id="${ev.eventId}">Register</button>`;
+            actionBtn = `<button class="btn btn-orange btn-small" data-action="register" data-id="${ev.eventId}" data-category="${cat}" data-event-name="${escapeHtml(ev.name)}">Register</button>`;
           }
         }
         const deadlineText = deadlineTbd ? 'Yet to be decided' : (ev.deadline ? fmtDate(new Date(ev.deadline), true) : 'No deadline set');
         const compDateText = ev.competitionDate
           ? fmtDate(parseDateOnly(ev.competitionDate))
           : 'To be decided';
+        const groupLabel = registered && cat === 'GROUP' ? (data.myGroupLabels || {})[ev.eventId] : '';
         return `<div class="event-row" id="event-row-${ev.eventId}">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
             <div class="event-meta">DEADLINE: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>
             <div class="event-meta">Event day: ${compDateText}</div>
+            ${groupLabel ? `<div class="event-meta">Team: ${escapeHtml(groupLabel)}</div>` : ''}
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${catPill}${completedPill}${statusPill}${actionBtn}</div>
         </div>`;
@@ -1143,8 +1145,16 @@
       list.querySelectorAll('button[data-action]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
           const action = btn.dataset.action === 'register' ? 'registerEvent' : 'unregisterEvent';
+          const payload = { eventId: btn.dataset.id };
+          if (action === 'registerEvent' && btn.dataset.category === 'GROUP') {
+            const groupLabel = (window.prompt(
+              `"${btn.dataset.eventName}" is a group event.\n\nList your teammates (names and/or reg nos):`
+            ) || '').trim();
+            if (!groupLabel) return; // cancelled or left blank — don't register without teammate info
+            payload.groupLabel = groupLabel;
+          }
           try {
-            await api(action, { eventId: btn.dataset.id });
+            await api(action, payload);
             await loadEvents();
           } catch (err) {
             setMsg(dashMsg, err.message, false);
@@ -1420,6 +1430,7 @@
             <div>
               <div class="rname">${escapeHtml(r.name)}</div>
               <div class="rreg">${escapeHtml(r.regNo)}</div>
+              ${r.groupLabel ? `<div class="rreg" style="color:var(--muted);">Team: ${escapeHtml(r.groupLabel)}</div>` : ''}
             </div>
           </div>
           <button class="btn btn-outline btn-small" style="border-color:var(--line);color:#b7401b;" data-remove-reg="${escapeHtml(r.regNo)}">Remove</button>

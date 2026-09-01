@@ -602,14 +602,26 @@
           </div>
 
           <div id="matchResultsSection" class="hidden">
-            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Enter the two houses/teams, add a score row per set/half/quarter/innings (label it however fits the sport), then pick the winner.</p>
+            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;" id="matchResultsHint">Enter the two houses/teams, add a score row per set/half/quarter/innings (label it however fits the sport), then pick the winner.</p>
             <div class="inline-form" style="margin:0 0 14px;">
               <div class="field" style="flex:1;"><label>Team / House A</label><input id="matchTeamAInput" placeholder="e.g. Ganapati House"></div>
               <div class="field" style="flex:1;"><label>Team / House B</label><input id="matchTeamBInput" placeholder="e.g. Krishna House"></div>
             </div>
-            <label style="font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Scores</label>
-            <div id="matchPeriodsList" style="margin:8px 0 10px;"></div>
-            <button class="btn btn-outline btn-small" id="addMatchPeriodBtn" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">+ Add score row</button>
+
+            <!-- Sport-specific fixed match blocks: volleyball (sets), cricket (innings + toss),
+                 basketball (quarters), football/handball (halves). Up to 3 matches. -->
+            <div id="fixedMatchesWrap" class="hidden">
+              <div id="matchesContainer"></div>
+              <button type="button" class="btn btn-outline btn-small" id="addMatchBtn" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">+ Add match</button>
+            </div>
+
+            <!-- Generic free-form fallback for any other team/group event -->
+            <div id="genericMatchWrap">
+              <label style="font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Scores</label>
+              <div id="matchPeriodsList" style="margin:8px 0 10px;"></div>
+              <button type="button" class="btn btn-outline btn-small" id="addMatchPeriodBtn" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">+ Add score row</button>
+            </div>
+
             <div class="field" style="margin-bottom:4px;">
               <label>🏆 Winner</label>
               <select id="matchWinnerSelect" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;">
@@ -1155,7 +1167,7 @@
         return `<div class="event-row" id="event-row-${ev.eventId}">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
-            <div class="event-meta">DEADLINE: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>
+            ${cat !== 'GROUP' ? `<div class="event-meta">DEADLINE: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>` : ''}
             <div class="event-meta">Event day: ${compDateText}</div>
             ${groupLabel ? `<div class="event-meta">Team: ${escapeHtml(groupLabel)}</div>` : ''}
           </div>
@@ -1202,7 +1214,16 @@
     }
     const isWinnerA = match.winner && match.winner === match.teamA;
     const isWinnerB = match.winner && match.winner === match.teamB;
-    const rows = (match.periods || []).map(p => `
+    const allPeriods = match.periods || [];
+    // Toss rows are saved as "Match N - Toss" (see admin results editor) —
+    // show these as a short line rather than in the score table itself.
+    const tossLines = allPeriods
+      .filter(p => /- Toss$/.test(p.label || '') && p.scoreA)
+      .map(p => `<div class="mono" style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">🪙 ${escapeHtml(p.label.replace(' - Toss', ''))} toss won by ${escapeHtml(p.scoreA)}</div>`)
+      .join('');
+    const rows = allPeriods
+      .filter(p => !/- Toss$/.test(p.label || ''))
+      .map(p => `
       <div style="display:flex;align-items:center;gap:10px;padding:5px 0;font-size:13px;">
         <span class="mono" style="width:110px;flex-shrink:0;color:var(--muted);font-size:11px;">${escapeHtml(p.label)}</span>
         <span style="font-weight:600;">${escapeHtml(p.scoreA || '—')}</span>
@@ -1221,6 +1242,7 @@
         <span class="mono" style="color:var(--muted);font-size:11px;">vs</span>
         <span style="${isWinnerB ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamB || 'Team B')}</span>
       </div>
+      ${tossLines}
       ${rows}
       ${winnerBox}
     `;
@@ -1849,6 +1871,8 @@
       // "Edit" button on the Published results list below instead, so this
       // dropdown doesn't get cluttered with things already taken care of.
       const eligible = data.events.filter(ev => ev.completed && !ev.resultsPublished);
+      resultsEventsById = {};
+      data.events.forEach(ev => { resultsEventsById[ev.eventId] = { name: ev.name, category: ev.category }; });
       select.innerHTML = '<option value="">Select an event…</option>' + eligible.map(ev =>
         `<option value="${ev.eventId}">${ev.section === 'CULTURAL' ? '🎭' : '🏅'} ${escapeHtml(ev.name)}</option>`
       ).join('');
@@ -1877,6 +1901,133 @@
 
   let currentResultsEventCategory = '';
   let matchPeriodRowCounter = 0;
+
+  // ---------- Sport-specific fixed match/period configs ----------
+  // Detected from the event's name (no separate "sport type" field exists).
+  // Each config lays out fixed period rows per match (sets/innings/quarters/
+  // halves) and up to 3 matches. Anything that doesn't match falls back to
+  // the old free-form single-match editor (arbitrary labeled score rows).
+  const SPORT_CONFIGS = [
+    { key: 'VOLLEYBALL', test: /volley/i,        periodLabels: ['Set 1', 'Set 2', 'Set 3'],           toss: false, maxMatches: 3, hint: 'Add up to 3 matches. Each match has 3 sets — enter the set scores, then pick the overall winner.' },
+    { key: 'CRICKET',    test: /cricket/i,        periodLabels: ['1st Innings', '2nd Innings'],        toss: true,  maxMatches: 3, hint: 'Add up to 3 matches. Each match has 2 innings plus who won the toss — enter the scores, then pick the overall winner.' },
+    { key: 'BASKETBALL', test: /basket/i,         periodLabels: ['Q1', 'Q2', 'Q3', 'Q4'],              toss: false, maxMatches: 3, hint: 'Add up to 3 matches. Each match has 4 quarters — enter the quarter scores, then pick the overall winner.' },
+    { key: 'HANDBALL',   test: /hand\s*ball/i,    periodLabels: ['1st Half', '2nd Half'],              toss: false, maxMatches: 3, hint: 'Add up to 3 matches. Each match has 2 halves — enter the half scores, then pick the overall winner.' },
+    { key: 'FOOTBALL',   test: /\bfootball\b/i,   periodLabels: ['1st Half', '2nd Half'],              toss: false, maxMatches: 3, hint: 'Add up to 3 matches. Each match has 2 halves — enter the half scores, then pick the overall winner.' }
+  ];
+  function detectSportConfig(eventName) {
+    const n = String(eventName || '');
+    for (const c of SPORT_CONFIGS) { if (c.test.test(n)) return c; }
+    return null;
+  }
+  // Map of eventId -> {name, category}, populated whenever the results
+  // dropdown is (re)loaded — adminGetEventResults doesn't return the event
+  // name, so we keep this around to detect the sport from it.
+  let resultsEventsById = {};
+
+  let currentSportConfig = null;
+  // For fixed (sport-detected) matches: [{ toss: '', periods: [{scoreA,scoreB}, ...] }, ...]
+  let matchesData = [];
+
+  function emptyFixedMatch() {
+    return { toss: '', periods: currentSportConfig.periodLabels.map(() => ({ scoreA: '', scoreB: '' })) };
+  }
+
+  // Reads whatever is currently in the DOM back into matchesData — used
+  // before any add/remove-match re-render so in-progress edits aren't lost.
+  function readMatchesDataFromDom() {
+    const container = document.getElementById('matchesContainer');
+    if (!container) return;
+    container.querySelectorAll('[data-match-block]').forEach(block => {
+      const idx = Number(block.dataset.matchBlock);
+      if (!matchesData[idx]) matchesData[idx] = emptyFixedMatch();
+      const tossInput = block.querySelector('.match-toss-input');
+      if (tossInput) matchesData[idx].toss = tossInput.value.trim();
+      block.querySelectorAll('[data-period]').forEach(rowEl => {
+        const pIdx = Number(rowEl.dataset.period);
+        const a = rowEl.querySelector('.match-score-a').value.trim();
+        const b = rowEl.querySelector('.match-score-b').value.trim();
+        matchesData[idx].periods[pIdx] = { scoreA: a, scoreB: b };
+      });
+    });
+  }
+
+  function updateAddMatchBtnVisibility() {
+    const btn = document.getElementById('addMatchBtn');
+    if (!btn || !currentSportConfig) return;
+    btn.classList.toggle('hidden', matchesData.length >= currentSportConfig.maxMatches);
+  }
+
+  function renderFixedMatches() {
+    const container = document.getElementById('matchesContainer');
+    container.innerHTML = matchesData.map((mb, idx) => {
+      const removeBtn = matchesData.length > 1
+        ? `<button type="button" class="btn btn-outline btn-small remove-match-btn" data-idx="${idx}" style="border-color:var(--line);color:var(--graphite);">Remove match</button>`
+        : '';
+      const tossRow = currentSportConfig.toss
+        ? `<div class="field" style="margin-bottom:10px;"><label>Toss won by</label><input class="match-toss-input" value="${escapeHtml(mb.toss || '')}" placeholder="e.g. Surya"></div>`
+        : '';
+      const rows = currentSportConfig.periodLabels.map((label, pIdx) => {
+        const p = mb.periods[pIdx] || {};
+        return `<div class="inline-form" style="margin:0 0 8px;" data-period="${pIdx}">
+          <div class="field" style="flex:2;"><input disabled value="${escapeHtml(label)}" style="background:rgba(11,37,69,.05);color:var(--muted);"></div>
+          <div class="field" style="flex:1;"><input class="match-score-a" placeholder="Team A score" value="${escapeHtml(p.scoreA || '')}"></div>
+          <div class="field" style="flex:1;"><input class="match-score-b" placeholder="Team B score" value="${escapeHtml(p.scoreB || '')}"></div>
+        </div>`;
+      }).join('');
+      return `<div data-match-block="${idx}" style="border:1px solid var(--line);padding:14px;margin-bottom:14px;border-radius:3px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <strong class="mono" style="font-size:12px;letter-spacing:.5px;text-transform:uppercase;">Match ${idx + 1}</strong>
+          ${removeBtn}
+        </div>
+        ${tossRow}
+        ${rows}
+      </div>`;
+    }).join('');
+
+    container.querySelectorAll('.remove-match-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        readMatchesDataFromDom();
+        matchesData.splice(Number(btn.dataset.idx), 1);
+        renderFixedMatches();
+        updateAddMatchBtnVisibility();
+      });
+    });
+    updateAddMatchBtnVisibility();
+  }
+
+  document.getElementById('addMatchBtn').addEventListener('click', () => {
+    if (!currentSportConfig || matchesData.length >= currentSportConfig.maxMatches) return;
+    readMatchesDataFromDom();
+    matchesData.push(emptyFixedMatch());
+    renderFixedMatches();
+  });
+
+  // Parses the flat periods array saved on the event back into per-match
+  // fixed data. Labels are saved as "Match N - <period label>" and
+  // "Match N - Toss" (see saveResultsBtn handler below). Anything that
+  // doesn't match this pattern (e.g. legacy free-form data) is ignored here
+  // — the generic editor is used instead for those events.
+  function parseFixedMatchesFromPeriods(periods, sportConfig) {
+    const matches = [];
+    (periods || []).forEach(p => {
+      const m = /^Match (\d+) - (.+)$/.exec(p.label || '');
+      if (!m) return;
+      const idx = Number(m[1]) - 1;
+      const label = m[2];
+      if (!matches[idx]) matches[idx] = emptyFixedMatchFor(sportConfig);
+      if (label === 'Toss') {
+        matches[idx].toss = p.scoreA || '';
+      } else {
+        const pIdx = sportConfig.periodLabels.indexOf(label);
+        if (pIdx >= 0) matches[idx].periods[pIdx] = { scoreA: p.scoreA || '', scoreB: p.scoreB || '' };
+      }
+    });
+    const compact = matches.filter(Boolean);
+    return compact.length ? compact.slice(0, sportConfig.maxMatches) : [emptyFixedMatchFor(sportConfig)];
+  }
+  function emptyFixedMatchFor(sportConfig) {
+    return { toss: '', periods: sportConfig.periodLabels.map(() => ({ scoreA: '', scoreB: '' })) };
+  }
 
   function renderMatchPeriodRow(period) {
     matchPeriodRowCounter++;
@@ -1932,10 +2083,26 @@
         const m = savedResults.match || {};
         document.getElementById('matchTeamAInput').value = m.teamA || '';
         document.getElementById('matchTeamBInput').value = m.teamB || '';
-        const list = document.getElementById('matchPeriodsList');
-        list.innerHTML = '';
-        const periods = (m.periods && m.periods.length) ? m.periods : [{}];
-        periods.forEach(p => list.appendChild(renderMatchPeriodRow(p)));
+
+        const eventName = (resultsEventsById[eventId] || {}).name || '';
+        currentSportConfig = detectSportConfig(eventName);
+        document.getElementById('fixedMatchesWrap').classList.toggle('hidden', !currentSportConfig);
+        document.getElementById('genericMatchWrap').classList.toggle('hidden', !!currentSportConfig);
+
+        if (currentSportConfig) {
+          document.getElementById('matchResultsHint').textContent = currentSportConfig.hint;
+          matchesData = (m.periods && m.periods.length)
+            ? parseFixedMatchesFromPeriods(m.periods, currentSportConfig)
+            : [emptyFixedMatchFor(currentSportConfig)];
+          renderFixedMatches();
+        } else {
+          document.getElementById('matchResultsHint').textContent = 'Enter the two houses/teams, add a score row per set/half/quarter/innings (label it however fits the sport), then pick the winner.';
+          const list = document.getElementById('matchPeriodsList');
+          list.innerHTML = '';
+          const periods = (m.periods && m.periods.length) ? m.periods : [{}];
+          periods.forEach(p => list.appendChild(renderMatchPeriodRow(p)));
+        }
+
         let winnerToken = '';
         if (m.winner && m.teamA && m.winner === m.teamA) winnerToken = 'TEAM_A';
         else if (m.winner && m.teamB && m.winner === m.teamB) winnerToken = 'TEAM_B';
@@ -1992,11 +2159,26 @@
       const winnerToken = document.getElementById('matchWinnerSelect').value;
       const winner = winnerToken === 'TEAM_A' ? teamA : winnerToken === 'TEAM_B' ? teamB : winnerToken === 'DRAW' ? 'Draw' : '';
       if (resultsPublished && (!teamA || !teamB)) { setMsg(msg, 'Enter both team/house names before publishing.', false); return; }
-      const periods = Array.from(document.querySelectorAll('#matchPeriodsList [data-period-row]')).map(row => ({
-        label: row.querySelector('.mp-label').value.trim(),
-        scoreA: row.querySelector('.mp-scoreA').value.trim(),
-        scoreB: row.querySelector('.mp-scoreB').value.trim()
-      })).filter(p => p.label);
+      let periods;
+      if (currentSportConfig) {
+        readMatchesDataFromDom();
+        periods = [];
+        matchesData.forEach((mb, idx) => {
+          if (currentSportConfig.toss) {
+            periods.push({ label: `Match ${idx + 1} - Toss`, scoreA: (mb.toss || '').trim(), scoreB: '' });
+          }
+          currentSportConfig.periodLabels.forEach((label, pIdx) => {
+            const p = mb.periods[pIdx] || {};
+            periods.push({ label: `Match ${idx + 1} - ${label}`, scoreA: (p.scoreA || '').trim(), scoreB: (p.scoreB || '').trim() });
+          });
+        });
+      } else {
+        periods = Array.from(document.querySelectorAll('#matchPeriodsList [data-period-row]')).map(row => ({
+          label: row.querySelector('.mp-label').value.trim(),
+          scoreA: row.querySelector('.mp-scoreA').value.trim(),
+          scoreB: row.querySelector('.mp-scoreB').value.trim()
+        })).filter(p => p.label);
+      }
       payload.match = { teamA, teamB, winner, periods };
     } else {
       payload.positions = [1, 2, 3].map(n => {
@@ -2167,7 +2349,7 @@
         return `<div class="event-row">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
-            ${isEditingDeadline
+            ${cat === 'GROUP' ? '' : (isEditingDeadline
               ? `<div class="event-meta" style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
                    <input type="datetime-local" data-deadline-input="${ev.eventId}" value="${toDatetimeLocalValue(ev.deadline)}" ${deadlineTbd ? 'disabled' : ''} style="padding:8px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13px;border-radius:2px;">
                    <label style="display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-transform:none;">
@@ -2177,7 +2359,7 @@
                    <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-cancel-deadline="${ev.eventId}">Cancel</button>
                    <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-clear-deadline="${ev.eventId}">Clear</button>
                  </div>`
-              : `<div class="event-meta">DEADLINE: ${deadlineVal}</div>`}
+              : `<div class="event-meta">DEADLINE: ${deadlineVal}</div>`)}
             ${isEditingCompDate
               ? `<div class="event-meta" style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
                    <input type="date" data-compdate-input="${ev.eventId}" value="${(ev.competitionDate || '').split('T')[0]}" ${ev.competitionDate ? '' : 'disabled'} style="padding:8px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13px;border-radius:2px;">
@@ -2194,7 +2376,7 @@
             <span class="pill cat-${cat.toLowerCase()}">${cat.charAt(0)+cat.slice(1).toLowerCase()}</span>
             <span class="pill ${regStatusClass}">${regStatusLabel}</span>
             ${ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : ''}
-            ${!isEditingDeadline ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
+            ${(cat !== 'GROUP' && !isEditingDeadline) ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
             ${!isEditingCompDate ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-compdate="${ev.eventId}">Edit event day</button>` : ''}
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-completed="${ev.eventId}" data-completed="${ev.completed}">${ev.completed ? 'Mark not completed' : 'Mark completed'}</button>

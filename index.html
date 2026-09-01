@@ -354,7 +354,10 @@
   </div>
 
   <div id="dashboardHomeView" class="wrap hidden">
-    <button class="btn btn-outline btn-small back-btn" data-back-to="sectionHomeView" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">← Back</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+      <button class="btn btn-outline btn-small back-btn" data-back-to="sectionHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button>
+      <button class="btn btn-outline btn-small" id="switchSectionBtn" style="border-color:var(--line);color:var(--graphite);"></button>
+    </div>
     <p class="hello" id="dashHomeSection">Welcome back</p>
     <h1 class="page-title" id="dashHomeName">—</h1>
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;">
@@ -649,10 +652,10 @@
   // Worker proxy (see WORKER_SETUP.md), replace this with your Worker URL
   // instead (looks like https://campus-sports-proxy.<you>.workers.dev) —
   // that's what actually fixes the intermittent CORS failures.
-  const SCRIPT_URL = "https://hello-world.saipavanb02.workers.dev/";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzG55AEw13r65zu9NrYnkjj1FVrKbQKN0OaQRHpi_XmvwWar8AZbB5DnPFcIRO0PiOmFQ/exec";
   const DEADLINE_TBD = 'TBD'; // sentinel deadline value meaning "registration yet to open"
 
-  const state = { token: null, name: null, isAdmin: false, isTeacher: false, activeSection: 'SPORTS' };
+  const state = { token: null, name: null, isAdmin: false, isTeacher: false, adminRole: '', activeSection: 'SPORTS' };
 
   function saveSession() {
     sessionStorage.setItem('campusSports', JSON.stringify(state));
@@ -663,7 +666,7 @@
   }
   function clearSession() {
     sessionStorage.removeItem('campusSports');
-    state.token = null; state.name = null; state.isAdmin = false; state.isTeacher = false;
+    state.token = null; state.name = null; state.isAdmin = false; state.isTeacher = false; state.adminRole = '';
     document.body.classList.remove('teacher-mode');
   }
 
@@ -818,7 +821,7 @@
     if (!regNo || !password) { setMsg(msg, 'Enter your registration number and password.', false); return; }
     try {
       const data = await api('login', { regNo, password });
-      state.token = data.token; state.name = data.name; state.isAdmin = data.isAdmin; state.isTeacher = data.isTeacher === true;
+      state.token = data.token; state.name = data.name; state.isAdmin = data.isAdmin; state.isTeacher = data.isTeacher === true; state.adminRole = data.adminRole || '';
       document.body.classList.toggle('teacher-mode', state.isTeacher);
       saveSession();
       if (data.mustChangePassword) {
@@ -920,9 +923,14 @@
     state.activeSection = section;
     const label = section === 'CULTURAL' ? '🎭 Cultural 2026' : '🏅 Sports 2026';
     document.getElementById('dashHomeSection').textContent = label;
+    const switchBtn = document.getElementById('switchSectionBtn');
+    switchBtn.textContent = section === 'CULTURAL' ? '🏅 Switch to Sports' : '🎭 Switch to Cultural';
     renderCategoryFilterBar();
     showView('dashboardHomeView');
   }
+  document.getElementById('switchSectionBtn').addEventListener('click', () => {
+    enterSection(state.activeSection === 'CULTURAL' ? 'SPORTS' : 'CULTURAL');
+  });
   document.getElementById('goSportsBtn').addEventListener('click', () => enterSection('SPORTS'));
   document.getElementById('goCulturalBtn').addEventListener('click', () => enterSection('CULTURAL'));
 
@@ -2398,16 +2406,44 @@
       tbody.innerHTML = `<tr><td colspan="5" class="mono" style="color:var(--muted);">No matching users.</td></tr>`;
       return;
     }
+    const ROLE_LABEL = { BOSS: 'Main admin', SPORTS_ADMIN: 'Sports admin', CULTURAL_ADMIN: 'Cultural admin', '': '—' };
+
+    // What role-change buttons the CURRENTLY LOGGED-IN admin is allowed to
+    // offer for a given target user, based on the three-tier hierarchy:
+    //   BOSS           -> can set anyone to any of the 4 states (including removing admin)
+    //   SPORTS_ADMIN   -> can only grant SPORTS_ADMIN (and only to non-sports-admins)
+    //   CULTURAL_ADMIN -> can only grant CULTURAL_ADMIN (and only to non-cultural-admins)
+    function roleActionsFor(u) {
+      const my = state.adminRole || '';
+      const theirRole = u.adminRole || '';
+      if (my === 'BOSS') {
+        const opts = [
+          { role: 'BOSS', label: 'Make main admin' },
+          { role: 'SPORTS_ADMIN', label: 'Make sports admin' },
+          { role: 'CULTURAL_ADMIN', label: 'Make cultural admin' },
+        ].filter(o => o.role !== theirRole);
+        if (theirRole) opts.push({ role: '', label: 'Remove admin' });
+        return opts;
+      }
+      if (my === 'SPORTS_ADMIN' && theirRole !== 'SPORTS_ADMIN') {
+        return [{ role: 'SPORTS_ADMIN', label: 'Make sports admin' }];
+      }
+      if (my === 'CULTURAL_ADMIN' && theirRole !== 'CULTURAL_ADMIN') {
+        return [{ role: 'CULTURAL_ADMIN', label: 'Make cultural admin' }];
+      }
+      return [];
+    }
+
     tbody.innerHTML = users.map(u => `
         <tr>
           <td class="mono">${escapeHtml(u.regNo)}</td>
           <td>${escapeHtml(u.name)}</td>
           <td class="mono">${escapeHtml(u.email || '—')}</td>
-          <td>${u.isAdmin ? 'Yes' : 'No'}</td>
+          <td>${ROLE_LABEL[u.adminRole || ''] || '—'}</td>
           <td style="display:flex;gap:6px;flex-wrap:wrap;">
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-user-regs="${u.regNo}" data-user-name="${escapeHtml(u.name)}">View regs</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-reset="${u.regNo}">Reset pwd</button>
-            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-admin="${u.regNo}" data-is-admin="${u.isAdmin}">${u.isAdmin ? 'Remove admin' : 'Make admin'}</button>
+            ${roleActionsFor(u).map(o => `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-set-role="${u.regNo}" data-role="${o.role}">${o.label}</button>`).join('')}
           </td>
         </tr>`).join('');
 
@@ -2425,10 +2461,9 @@
           await loadAdminUsers();
         }));
       });
-      tbody.querySelectorAll('[data-toggle-admin]').forEach(btn => {
+      tbody.querySelectorAll('[data-set-role]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
-          const makeAdmin = btn.dataset.isAdmin !== 'true';
-          await api('adminSetAdmin', { regNo: btn.dataset.toggleAdmin, makeAdmin });
+          await api('adminSetAdmin', { regNo: btn.dataset.setRole, role: btn.dataset.role });
           await loadAdminUsers();
         }));
       });

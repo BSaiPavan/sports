@@ -421,7 +421,7 @@
   <!-- ADMIN -->
   <div id="adminView" class="wrap hidden">
     <p class="hello">Admin panel</p>
-    <h1 class="page-title">Manage season</h1>
+    <h1 class="page-title" id="adminPanelTitle">Manage season</h1>
 
     <div class="tabs">
       <div class="tab active" data-tab="events">Events</div>
@@ -1762,7 +1762,31 @@
     });
   });
 
+  // Mirrors the backend's sectionLockFor(): a SPORTS_ADMIN/CULTURAL_ADMIN
+  // only ever sees/manages their own section. BOSS (and teachers) see everything.
+  function myAdminSectionLock() {
+    if (state.adminRole === 'SPORTS_ADMIN') return 'SPORTS';
+    if (state.adminRole === 'CULTURAL_ADMIN') return 'CULTURAL';
+    return null;
+  }
+
   async function enterAdmin() {
+    const lock = myAdminSectionLock();
+    const titleEl = document.getElementById('adminPanelTitle');
+    const filterBar = document.getElementById('adminSectionFilterBar');
+    const sectionSelect = document.getElementById('newEventSection');
+    if (lock) {
+      titleEl.textContent = lock === 'CULTURAL' ? 'Manage cultural season' : 'Manage sports season';
+      adminSectionFilter = lock;
+      filterBar.classList.add('hidden');
+      sectionSelect.value = lock;
+      sectionSelect.disabled = true;
+    } else {
+      titleEl.textContent = 'Manage season';
+      filterBar.classList.remove('hidden');
+      sectionSelect.disabled = false;
+    }
+    applyEventCategoryOptions();
     showView('adminView');
     await Promise.all([loadAdminEvents(), loadAdminUsers()]);
   }
@@ -2201,11 +2225,13 @@
     const inner = document.getElementById('publishedResultsInner');
     try {
       const data = await api('getResults', {});
-      if (!data.results.length) {
+      const lock = myAdminSectionLock();
+      const results = lock ? data.results.filter(r => (r.section || 'SPORTS') === lock) : data.results;
+      if (!results.length) {
         inner.textContent = 'Nothing published yet.';
         return;
       }
-      inner.innerHTML = data.results.map(r => {
+      inner.innerHTML = results.map(r => {
         let line;
         if (String(r.category).toUpperCase() === 'GROUP' && r.match) {
           line = `${r.match.teamA || '?'} vs ${r.match.teamB || '?'}${r.match.winner ? ' — 🏆 ' + r.match.winner : ''}`;

@@ -356,7 +356,7 @@
   <div id="dashboardHomeView" class="wrap hidden">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
       <button class="btn btn-outline btn-small back-btn" data-back-to="sectionHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button>
-      <button class="btn btn-outline btn-small" id="switchSectionBtn" style="border-color:var(--line);color:var(--graphite);"></button>
+      <button class="btn btn-outline btn-small switch-section-btn" id="switchSectionBtn" style="border-color:var(--line);color:var(--graphite);"></button>
     </div>
     <p class="hello" id="dashHomeSection">Welcome back</p>
     <h1 class="page-title" id="dashHomeName">—</h1>
@@ -374,7 +374,10 @@
 
   <!-- DASHBOARD: REGISTRATIONS -->
   <div id="dashboardView" class="wrap hidden">
-    <button class="btn btn-outline btn-small back-btn" data-back-to="dashboardHomeView" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">← Back</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+      <button class="btn btn-outline btn-small back-btn" data-back-to="dashboardHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button>
+      <button class="btn btn-outline btn-small switch-section-btn" id="switchSectionBtnRegs" style="border-color:var(--line);color:var(--graphite);"></button>
+    </div>
     <p class="hello">Welcome back</p>
     <h1 class="page-title" id="dashName">—</h1>
 
@@ -391,7 +394,10 @@
 
   <!-- DASHBOARD: RESULTS -->
   <div id="resultsView" class="wrap hidden">
-    <button class="btn btn-outline btn-small back-btn" data-back-to="dashboardHomeView" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">← Back</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+      <button class="btn btn-outline btn-small back-btn" data-back-to="dashboardHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button>
+      <button class="btn btn-outline btn-small switch-section-btn" id="switchSectionBtnResults" style="border-color:var(--line);color:var(--graphite);"></button>
+    </div>
     <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;">
       <div>
         <p class="hello" id="resultsHomeSection">Season 2026</p>
@@ -923,27 +929,50 @@
     state.activeSection = section;
     const label = section === 'CULTURAL' ? '🎭 Cultural 2026' : '🏅 Sports 2026';
     document.getElementById('dashHomeSection').textContent = label;
-    const switchBtn = document.getElementById('switchSectionBtn');
-    switchBtn.textContent = section === 'CULTURAL' ? '🏅 Switch to Sports' : '🎭 Switch to Cultural';
+    syncSwitchSectionButtons();
     renderCategoryFilterBar();
     showView('dashboardHomeView');
   }
+
+  // Keeps the "Switch to Sports/Cultural" label in sync across every
+  // screen that has one (dashboard home, registrations, results) so
+  // whichever one is visible always reads correctly.
+  function syncSwitchSectionButtons() {
+    const text = state.activeSection === 'CULTURAL' ? '🏅 Switch to Sports' : '🎭 Switch to Cultural';
+    document.querySelectorAll('.switch-section-btn').forEach(btn => { btn.textContent = text; });
+  }
+
+  async function openRegistrations() {
+    document.getElementById('dashName').textContent = (state.activeSection === 'CULTURAL' ? '🎭 Cultural' : '🏅 Sports') + ' Registrations';
+    syncSwitchSectionButtons();
+    renderCategoryFilterBar();
+    showView('dashboardView');
+    await loadEvents();
+  }
+
+  async function openResults() {
+    document.getElementById('resultsHomeSection').textContent = (state.activeSection === 'CULTURAL' ? '🎭 Cultural' : '🏅 Sports') + ' · Season 2026';
+    syncSwitchSectionButtons();
+    showView('resultsView');
+    await loadResultsStudent();
+  }
+
   document.getElementById('switchSectionBtn').addEventListener('click', () => {
     enterSection(state.activeSection === 'CULTURAL' ? 'SPORTS' : 'CULTURAL');
+  });
+  document.getElementById('switchSectionBtnRegs').addEventListener('click', () => {
+    state.activeSection = state.activeSection === 'CULTURAL' ? 'SPORTS' : 'CULTURAL';
+    openRegistrations();
+  });
+  document.getElementById('switchSectionBtnResults').addEventListener('click', () => {
+    state.activeSection = state.activeSection === 'CULTURAL' ? 'SPORTS' : 'CULTURAL';
+    openResults();
   });
   document.getElementById('goSportsBtn').addEventListener('click', () => enterSection('SPORTS'));
   document.getElementById('goCulturalBtn').addEventListener('click', () => enterSection('CULTURAL'));
 
-  document.getElementById('goRegistrationsBtn').addEventListener('click', async () => {
-    document.getElementById('dashName').textContent = (state.activeSection === 'CULTURAL' ? '🎭 Cultural' : '🏅 Sports') + ' Registrations';
-    showView('dashboardView');
-    await loadEvents();
-  });
-  document.getElementById('goResultsBtn').addEventListener('click', async () => {
-    document.getElementById('resultsHomeSection').textContent = (state.activeSection === 'CULTURAL' ? '🎭 Cultural' : '🏅 Sports') + ' · Season 2026';
-    showView('resultsView');
-    await loadResultsStudent();
-  });
+  document.getElementById('goRegistrationsBtn').addEventListener('click', openRegistrations);
+  document.getElementById('goResultsBtn').addEventListener('click', openResults);
   document.querySelectorAll('.back-btn').forEach(btn => {
     btn.addEventListener('click', () => showView(btn.dataset.backTo));
   });
@@ -2406,7 +2435,7 @@
       tbody.innerHTML = `<tr><td colspan="5" class="mono" style="color:var(--muted);">No matching users.</td></tr>`;
       return;
     }
-    const ROLE_LABEL = { BOSS: 'Main admin', SPORTS_ADMIN: 'Sports admin', CULTURAL_ADMIN: 'Cultural admin', '': '—' };
+    const ROLE_LABEL = { BOSS: 'BOSS', SPORTS_ADMIN: 'Sports admin', CULTURAL_ADMIN: 'Cultural admin', '': '—' };
 
     // What role-change buttons the CURRENTLY LOGGED-IN admin is allowed to
     // offer for a given target user, based on the three-tier hierarchy:
@@ -2418,7 +2447,7 @@
       const theirRole = u.adminRole || '';
       if (my === 'BOSS') {
         const opts = [
-          { role: 'BOSS', label: 'Make main admin' },
+          { role: 'BOSS', label: 'Make BOSS' },
           { role: 'SPORTS_ADMIN', label: 'Make sports admin' },
           { role: 'CULTURAL_ADMIN', label: 'Make cultural admin' },
         ].filter(o => o.role !== theirRole);

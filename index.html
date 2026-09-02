@@ -265,6 +265,15 @@
       <button class="btn btn-dark btn-small" id="addRegNoBtn">Add to event</button>
       <span class="msg" id="addRegNoMsg" style="width:100%;"></span>
     </div>
+    <div id="regsModalBulkRow" class="hidden" style="padding:12px 22px;border-top:1px solid var(--line);">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Bulk add / remove — one reg no per line (or comma/space separated)</div>
+      <textarea id="bulkRegNosInput" rows="3" placeholder="234207&#10;234211&#10;234218" style="width:100%;padding:9px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;resize:vertical;"></textarea>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn btn-dark btn-small" id="bulkAddRegsBtn">Bulk add</button>
+        <button class="btn btn-danger btn-small" id="bulkRemoveRegsBtn">Bulk remove</button>
+      </div>
+      <span class="msg" id="bulkRegsMsg" style="display:block;margin-top:6px;"></span>
+    </div>
     <div class="modal-foot">
       <button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="regsModalCopy">Copy list</button>
       <button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="regsModalExport">Export CSV</button>
@@ -454,6 +463,12 @@
             <input id="newEventCompDate" type="date">
             <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;color:var(--muted);">
               <input type="checkbox" id="newEventCompDateTbd" style="width:auto;"> Yet to be decided
+            </label>
+          </div>
+          <div class="field">
+            <label>Materials</label>
+            <label style="display:flex;align-items:center;gap:6px;margin-top:12px;font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;color:var(--muted);">
+              <input type="checkbox" id="newEventRequiresMaterials" style="width:auto;"> Ask participants what materials they'll need
             </label>
           </div>
           <button class="btn btn-dark" id="addEventBtn">Add</button>
@@ -691,6 +706,7 @@
     'adminGetEventResults', 'adminSetResults', 'adminToggleEvent', 'adminToggleCompleted',
     'adminSetAdmin', 'adminResetPassword', 'adminEditEvent', 'adminEditNotice',
     'adminDeleteEvent', 'adminDeleteNotice', 'adminRemoveRegistration', 'adminAddRegistration',
+    'adminBulkAddRegistrations', 'adminBulkRemoveRegistrations',
     'adminDeleteEventPhoto', 'adminListEventPhotos', 'adminListNoticePhotos', 'adminListEventsWithStatus'
   ]);
 
@@ -1171,6 +1187,7 @@
                 : (capBlocked ? '<span class="pill closed">Cap reached</span>' : '<span class="pill open">Open</span>'))));
         const catPill = `<span class="pill cat-${cat.toLowerCase()}">${cat.charAt(0)+cat.slice(1).toLowerCase()}</span>`;
         const completedPill = ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : '';
+        const materialsPill = ev.requiresMaterials ? '<span class="pill" style="background:rgba(255,90,31,.12);color:var(--ball-orange);">🎨 Materials needed</span>' : '';
 
         let actionBtn = '';
         if (!state.isTeacher) {
@@ -1181,7 +1198,7 @@
               actionBtn = `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-action="unregister" data-id="${ev.eventId}">Unregister</button>`;
             }
           } else if (canAct) {
-            actionBtn = `<button class="btn btn-orange btn-small" data-action="register" data-id="${ev.eventId}" data-category="${cat}" data-event-name="${escapeHtml(ev.name)}">Register</button>`;
+            actionBtn = `<button class="btn btn-orange btn-small" data-action="register" data-id="${ev.eventId}" data-category="${cat}" data-event-name="${escapeHtml(ev.name)}" data-requires-materials="${ev.requiresMaterials}">Register</button>`;
           }
         }
         const deadlineText = deadlineTbd ? 'Yet to be decided' : (ev.deadline ? fmtDate(new Date(ev.deadline), true) : 'No deadline set');
@@ -1189,14 +1206,16 @@
           ? fmtDate(parseDateOnly(ev.competitionDate))
           : 'To be decided';
         const groupLabel = registered && cat === 'GROUP' ? (data.myGroupLabels || {})[ev.eventId] : '';
+        const myMaterials = registered && ev.requiresMaterials ? (data.myMaterials || {})[ev.eventId] : '';
         return `<div class="event-row" id="event-row-${ev.eventId}">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
             <div class="event-meta">DEADLINE: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>
             <div class="event-meta">Event day: ${compDateText}</div>
             ${groupLabel ? `<div class="event-meta">Team: ${escapeHtml(groupLabel)}</div>` : ''}
+            ${myMaterials ? `<div class="event-meta">Your materials: ${escapeHtml(myMaterials)}</div>` : ''}
           </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${catPill}${completedPill}${statusPill}${actionBtn}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${catPill}${materialsPill}${completedPill}${statusPill}${actionBtn}</div>
         </div>`;
       }).join('');
 
@@ -1210,6 +1229,13 @@
             ) || '').trim();
             if (!groupLabel) return; // cancelled or left blank — don't register without teammate info
             payload.groupLabel = groupLabel;
+          }
+          if (action === 'registerEvent' && btn.dataset.requiresMaterials === 'true') {
+            const materials = (window.prompt(
+              `"${btn.dataset.eventName}" needs a materials list.\n\nWhat will you need/bring (e.g. canvas, paints, poster sheets)?`
+            ) || '').trim();
+            if (!materials) return; // cancelled or left blank — don't register without it
+            payload.materials = materials;
           }
           try {
             await api(action, payload);
@@ -1518,6 +1544,7 @@
               <div class="rname">${escapeHtml(r.name)}</div>
               <div class="rreg">${escapeHtml(r.regNo)}</div>
               ${r.groupLabel ? `<div class="rreg" style="color:var(--muted);">Team: ${escapeHtml(r.groupLabel)}</div>` : ''}
+              ${r.materials ? `<div class="rreg" style="color:var(--muted);">Materials: ${escapeHtml(r.materials)}</div>` : ''}
             </div>
           </div>
           <button class="btn btn-outline btn-small" style="border-color:var(--line);color:#b7401b;" data-remove-reg="${escapeHtml(r.regNo)}">Remove</button>
@@ -1541,6 +1568,9 @@
     document.getElementById('addRegNoInput').value = '';
     setMsg(document.getElementById('addRegNoMsg'), '', true);
     document.getElementById('addRegNoMsg').style.display = 'none';
+    document.getElementById('regsModalBulkRow').classList.remove('hidden');
+    document.getElementById('bulkRegNosInput').value = '';
+    document.getElementById('bulkRegsMsg').textContent = '';
     populateAllUsersDatalist();
     document.getElementById('regsModal').classList.remove('hidden');
   }
@@ -1564,6 +1594,7 @@
         </div>`).join('');
     }
     document.getElementById('regsModalAddRow').classList.add('hidden');
+    document.getElementById('regsModalBulkRow').classList.add('hidden');
     document.getElementById('regsModal').classList.remove('hidden');
   }
   function hideRegsModal() {
@@ -1598,6 +1629,46 @@
       setMsg(msg, err.message, false);
     }
   }));
+
+  document.getElementById('bulkAddRegsBtn').addEventListener('click', withLoading(document.getElementById('bulkAddRegsBtn'), async () => {
+    const msg = document.getElementById('bulkRegsMsg');
+    const regNos = document.getElementById('bulkRegNosInput').value.trim();
+    if (!regNos) { setMsg(msg, 'Paste at least one registration number.', false); return; }
+    if (!currentModalEventId) { setMsg(msg, 'No event selected.', false); return; }
+    try {
+      const result = await api('adminBulkAddRegistrations', { eventId: currentModalEventId, regNos });
+      document.getElementById('bulkRegNosInput').value = '';
+      const data = await api('adminListRegistrations', { eventId: currentModalEventId });
+      showRegsModal(currentEventNameForExport, data.registrations, currentModalEventId);
+      const skippedText = result.skipped.length
+        ? ` Skipped: ${result.skipped.map(s => `${s.regNo} (${s.reason})`).join(', ')}`
+        : '';
+      setMsg(document.getElementById('bulkRegsMsg'), `Added ${result.added}.${skippedText}`, result.skipped.length === 0);
+      await loadAdminEvents();
+    } catch (err) {
+      setMsg(msg, err.message, false);
+    }
+  }));
+
+  document.getElementById('bulkRemoveRegsBtn').addEventListener('click', withLoading(document.getElementById('bulkRemoveRegsBtn'), async () => {
+    const msg = document.getElementById('bulkRegsMsg');
+    const regNos = document.getElementById('bulkRegNosInput').value.trim();
+    if (!regNos) { setMsg(msg, 'Paste at least one registration number.', false); return; }
+    if (!currentModalEventId) { setMsg(msg, 'No event selected.', false); return; }
+    if (!confirm('Remove all these registrations from this event?')) return;
+    try {
+      const result = await api('adminBulkRemoveRegistrations', { eventId: currentModalEventId, regNos });
+      document.getElementById('bulkRegNosInput').value = '';
+      const data = await api('adminListRegistrations', { eventId: currentModalEventId });
+      showRegsModal(currentEventNameForExport, data.registrations, currentModalEventId);
+      const skippedText = result.skipped.length ? ` Not found: ${result.skipped.join(', ')}` : '';
+      setMsg(document.getElementById('bulkRegsMsg'), `Removed ${result.removed}.${skippedText}`, result.skipped.length === 0);
+      await loadAdminEvents();
+    } catch (err) {
+      setMsg(msg, err.message, false);
+    }
+  }));
+
   document.getElementById('regsModalCloseBtn').addEventListener('click', hideRegsModal);
   document.getElementById('regsModal').addEventListener('click', (e) => {
     if (e.target.id === 'regsModal') hideRegsModal();
@@ -2231,10 +2302,12 @@
             <span class="pill cat-${cat.toLowerCase()}">${cat.charAt(0)+cat.slice(1).toLowerCase()}</span>
             <span class="pill ${regStatusClass}">${regStatusLabel}</span>
             ${ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : ''}
+            ${ev.requiresMaterials ? '<span class="pill" style="background:rgba(255,90,31,.12);color:var(--ball-orange);">🎨 Materials</span>' : ''}
             ${!isEditingDeadline ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
             ${!isEditingCompDate ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-compdate="${ev.eventId}">Edit event day</button>` : ''}
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-completed="${ev.eventId}" data-completed="${ev.completed}">${ev.completed ? 'Mark not completed' : 'Mark completed'}</button>
+            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-materials="${ev.eventId}" data-requires-materials="${ev.requiresMaterials}">${ev.requiresMaterials ? 'Materials: on' : 'Materials: off'}</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}">View regs</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-export-event="${ev.eventId}">Export CSV</button>
             <button class="btn btn-danger btn-small" data-delete="${ev.eventId}">Delete</button>
@@ -2251,6 +2324,12 @@
       container.querySelectorAll('[data-toggle-completed]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
           await api('adminToggleCompleted', { eventId: btn.dataset.toggleCompleted, completed: btn.dataset.completed !== 'true' });
+          await loadAdminEvents();
+        }));
+      });
+      container.querySelectorAll('[data-toggle-materials]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          await api('adminEditEvent', { eventId: btn.dataset.toggleMaterials, requiresMaterials: btn.dataset.requiresMaterials !== 'true' });
           await loadAdminEvents();
         }));
       });
@@ -2369,13 +2448,15 @@
     const deadlineTbd = document.getElementById('newEventDeadlineTbd').checked;
     const compDateTbd = document.getElementById('newEventCompDateTbd').checked;
     const compDate = document.getElementById('newEventCompDate').value;
+    const requiresMaterials = document.getElementById('newEventRequiresMaterials').checked;
     const msg = document.getElementById('addEventMsg');
     if (!name) { setMsg(msg, 'Event name is required.', false); return; }
     try {
       await api('adminAddEvent', {
         name, section, category,
         deadline: category === 'GROUP' ? '' : (deadlineTbd ? DEADLINE_TBD : (deadline ? new Date(deadline).toISOString() : '')),
-        competitionDate: (!compDateTbd && compDate) ? compDate : ''
+        competitionDate: (!compDateTbd && compDate) ? compDate : '',
+        requiresMaterials
       });
       document.getElementById('newEventName').value = '';
       applyEventCategoryOptions();
@@ -2385,6 +2466,7 @@
       document.getElementById('newEventCompDate').value = '';
       document.getElementById('newEventCompDate').disabled = false;
       document.getElementById('newEventCompDateTbd').checked = false;
+      document.getElementById('newEventRequiresMaterials').checked = false;
       setMsg(msg, 'Event added.', true);
       await loadAdminEvents();
     } catch (err) { setMsg(msg, err.message, false); }

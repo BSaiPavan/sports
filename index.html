@@ -1257,7 +1257,7 @@
                 : (capBlocked ? '<span class="pill closed">Cap reached</span>' : '<span class="pill open">Open</span>'))));
         const catPill = `<span class="pill cat-${cat.toLowerCase()}">${cat.charAt(0)+cat.slice(1).toLowerCase()}</span>`;
         const completedPill = ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : '';
-        const materialsPill = ev.requiresMaterials ? '<span class="pill" style="background:rgba(255,90,31,.12);color:var(--ball-orange);">🎨 Materials needed</span>' : '';
+        const materialsPill = ev.section === 'CULTURAL' && ev.requiresMaterials ? '<span class="pill" style="background:rgba(255,90,31,.12);color:var(--ball-orange);">🎨 Materials needed</span>' : '';
 
         let actionBtn = '';
         if (!state.isTeacher) {
@@ -2479,12 +2479,12 @@
             <span class="pill cat-${cat.toLowerCase()}">${cat.charAt(0)+cat.slice(1).toLowerCase()}</span>
             <span class="pill ${regStatusClass}">${regStatusLabel}</span>
             ${ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : ''}
-            ${ev.requiresMaterials ? '<span class="pill" style="background:rgba(255,90,31,.12);color:var(--ball-orange);">🎨 Materials</span>' : ''}
+            ${ev.section === 'CULTURAL' && ev.requiresMaterials ? '<span class="pill" style="background:rgba(255,90,31,.12);color:var(--ball-orange);">🎨 Materials</span>' : ''}
             ${!isEditingDeadline ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
             ${!isEditingCompDate ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-compdate="${ev.eventId}">Edit event day</button>` : ''}
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-completed="${ev.eventId}" data-completed="${ev.completed}">${ev.completed ? 'Mark not completed' : 'Mark completed'}</button>
-            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-materials="${ev.eventId}" data-requires-materials="${ev.requiresMaterials}">${ev.requiresMaterials ? 'Materials: on' : 'Materials: off'}</button>
+            ${ev.section === 'CULTURAL' ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-materials="${ev.eventId}" data-requires-materials="${ev.requiresMaterials}">${ev.requiresMaterials ? 'Materials: on' : 'Materials: off'}</button>` : ''}
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}" data-view-regs-category="${ev.category}">View regs</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-export-event="${ev.eventId}">Export CSV</button>
             <button class="btn btn-danger btn-small" data-delete="${ev.eventId}">Delete</button>
@@ -2661,9 +2661,11 @@
     const opts = EVENT_CATEGORY_OPTIONS[section] || EVENT_CATEGORY_OPTIONS.SPORTS;
     const sel = document.getElementById('newEventCategory');
     sel.innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
-    // Materials list applies to both Sports and Cultural events now — always show it.
+    // Materials list is a Cultural-only concept — hide it entirely for Sports,
+    // for every admin including BOSS (BOSS still sees it when Section is Cultural).
     const materialsField = document.getElementById('newEventRequiresMaterials').closest('.field');
-    materialsField.classList.remove('hidden');
+    materialsField.classList.toggle('hidden', section !== 'CULTURAL');
+    if (section !== 'CULTURAL') document.getElementById('newEventRequiresMaterials').checked = false;
     toggleDeadlineFieldForCategory();
   }
   function toggleDeadlineFieldForCategory() {

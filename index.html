@@ -79,6 +79,7 @@
   .pill.cat-solo{background:rgba(140,82,255,.14);color:#6a3ec9;}
   .pill.cat-individual{background:rgba(140,82,255,.14);color:#6a3ec9;}
   .pill.cat-group{background:rgba(255,159,10,.16);color:#a9660a;}
+  .pill.cat-doubles{background:rgba(11,37,69,.1);color:var(--court-navy);}
   .tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:2px solid var(--graphite);}
   .tab{font-family:'IBM Plex Mono',monospace;font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;padding:12px 18px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;}
   .tab.active{color:var(--graphite);border-color:var(--ball-orange);font-weight:600;}
@@ -1105,7 +1106,7 @@
   });
 
   const SECTION_CATEGORIES = {
-    SPORTS: [['ALL','All'],['TRACK','Track'],['FIELD','Field'],['MARATHON','Marathon'],['OTHER','Other'],['GROUP','Group']],
+    SPORTS: [['ALL','All'],['TRACK','Track'],['FIELD','Field'],['MARATHON','Marathon'],['OTHER','Other'],['GROUP','Group'],['DOUBLES','Doubles']],
     CULTURAL: [['ALL','All'],['INDIVIDUAL','Individual'],['GROUP','Group'],['OTHER','Other']]
   };
   let categoryFilter = 'ALL';
@@ -1195,7 +1196,7 @@
             // Only allow unregistering while the event is still open —
             // once admin closes it (or the deadline passes), the registration is locked in.
             if (ev.active && !deadlineTbd && !deadlinePassed) {
-              actionBtn = `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-action="unregister" data-id="${ev.eventId}">Unregister</button>`;
+              actionBtn = `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-action="unregister" data-id="${ev.eventId}" data-category="${cat}">Unregister</button>`;
             }
           } else if (canAct) {
             actionBtn = `<button class="btn btn-orange btn-small" data-action="register" data-id="${ev.eventId}" data-category="${cat}" data-event-name="${escapeHtml(ev.name)}" data-requires-materials="${ev.requiresMaterials}">Register</button>`;
@@ -1206,6 +1207,7 @@
           ? fmtDate(parseDateOnly(ev.competitionDate))
           : 'To be decided';
         const groupLabel = registered && cat === 'GROUP' ? (data.myGroupLabels || {})[ev.eventId] : '';
+        const partnerLabel = registered && cat === 'DOUBLES' ? (data.myGroupLabels || {})[ev.eventId] : '';
         const myMaterials = registered && ev.requiresMaterials ? (data.myMaterials || {})[ev.eventId] : '';
         return `<div class="event-row" id="event-row-${ev.eventId}">
           <div>
@@ -1213,6 +1215,7 @@
             <div class="event-meta">DEADLINE: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>
             <div class="event-meta">Event day: ${compDateText}</div>
             ${groupLabel ? `<div class="event-meta">Team: ${escapeHtml(groupLabel)}</div>` : ''}
+            ${partnerLabel ? `<div class="event-meta">Partner: ${escapeHtml(partnerLabel)}</div>` : ''}
             ${myMaterials ? `<div class="event-meta">Your materials: ${escapeHtml(myMaterials)}</div>` : ''}
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${catPill}${materialsPill}${completedPill}${statusPill}${actionBtn}</div>
@@ -1223,12 +1226,22 @@
         btn.addEventListener('click', withLoading(btn, async () => {
           const action = btn.dataset.action === 'register' ? 'registerEvent' : 'unregisterEvent';
           const payload = { eventId: btn.dataset.id };
+          if (action === 'unregisterEvent' && btn.dataset.category === 'DOUBLES') {
+            if (!confirm('This will unregister both you and your partner from this doubles event. Continue?')) return;
+          }
           if (action === 'registerEvent' && btn.dataset.category === 'GROUP') {
             const groupLabel = (window.prompt(
               `"${btn.dataset.eventName}" is a group event.\n\nList your teammates (names and/or reg nos):`
             ) || '').trim();
             if (!groupLabel) return; // cancelled or left blank — don't register without teammate info
             payload.groupLabel = groupLabel;
+          }
+          if (action === 'registerEvent' && btn.dataset.category === 'DOUBLES') {
+            const partnerRegNo = (window.prompt(
+              `"${btn.dataset.eventName}" is a doubles event.\n\nEnter your partner's registration number:`
+            ) || '').trim();
+            if (!partnerRegNo) return; // cancelled or left blank — don't register without a partner
+            payload.partnerRegNo = partnerRegNo;
           }
           if (action === 'registerEvent' && btn.dataset.requiresMaterials === 'true') {
             const materials = (window.prompt(
@@ -1524,6 +1537,7 @@
   // ---------- REGISTRATIONS MODAL ----------
   let currentRegsForCopy = [];
   let currentModalEventId = null;
+  let currentModalCategory = '';
 
   function showRegsModal(eventName, registrations, eventId) {
     currentModalMode = 'event';
@@ -1543,16 +1557,16 @@
             <div>
               <div class="rname">${escapeHtml(r.name)}</div>
               <div class="rreg">${escapeHtml(r.regNo)}</div>
-              ${r.groupLabel ? `<div class="rreg" style="color:var(--muted);">Team: ${escapeHtml(r.groupLabel)}</div>` : ''}
+              ${r.groupLabel ? `<div class="rreg" style="color:var(--muted);">${currentModalCategory === 'DOUBLES' ? 'Partner' : 'Team'}: ${escapeHtml(r.groupLabel)}</div>` : ''}
               ${r.materials ? `<div class="rreg" style="color:var(--muted);">Materials: ${escapeHtml(r.materials)}</div>` : ''}
             </div>
           </div>
-          <button class="btn btn-outline btn-small" style="border-color:var(--line);color:#b7401b;" data-remove-reg="${escapeHtml(r.regNo)}">Remove</button>
+          <button class="btn btn-outline btn-small" style="border-color:var(--line);color:#b7401b;" data-remove-reg="${escapeHtml(r.regNo)}" data-remove-team-id="${escapeHtml(r.teamId || '')}">Remove</button>
         </div>`).join('');
 
       body.querySelectorAll('[data-remove-reg]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
-          if (!confirm('Remove this registration?')) return;
+          if (!confirm(btn.dataset.removeTeamId ? 'This will remove both partners from this doubles event. Continue?' : 'Remove this registration?')) return;
           try {
             await api('adminRemoveRegistration', { eventId: currentModalEventId, regNo: btn.dataset.removeReg });
             const data = await api('adminListRegistrations', { eventId: currentModalEventId });
@@ -1617,8 +1631,14 @@
     const regNo = raw.split('—')[0].split(' ')[0].trim();
     if (!regNo) { setMsg(msg, 'Enter a registration number.', false); return; }
     if (!currentModalEventId) { setMsg(msg, 'No event selected.', false); return; }
+    const payload = { eventId: currentModalEventId, regNo };
+    if (currentModalCategory === 'DOUBLES') {
+      const partnerRegNo = (window.prompt('Doubles event — enter their partner\'s registration number:') || '').trim();
+      if (!partnerRegNo) { setMsg(msg, 'Doubles event needs a partner reg no — cancelled.', false); return; }
+      payload.partnerRegNo = partnerRegNo;
+    }
     try {
-      await api('adminAddRegistration', { eventId: currentModalEventId, regNo });
+      await api('adminAddRegistration', payload);
       document.getElementById('addRegNoInput').value = '';
       const data = await api('adminListRegistrations', { eventId: currentModalEventId });
       showRegsModal(currentEventNameForExport, data.registrations, currentModalEventId);
@@ -2336,7 +2356,7 @@
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-completed="${ev.eventId}" data-completed="${ev.completed}">${ev.completed ? 'Mark not completed' : 'Mark completed'}</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-materials="${ev.eventId}" data-requires-materials="${ev.requiresMaterials}">${ev.requiresMaterials ? 'Materials: on' : 'Materials: off'}</button>
-            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}">View regs</button>
+            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}" data-view-regs-category="${ev.category}">View regs</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-export-event="${ev.eventId}">Export CSV</button>
             <button class="btn btn-danger btn-small" data-delete="${ev.eventId}">Delete</button>
           </div>
@@ -2371,6 +2391,7 @@
       container.querySelectorAll('[data-view-regs]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
           const eventName = btn.closest('.event-row').querySelector('.event-name').textContent;
+          currentModalCategory = btn.dataset.viewRegsCategory || '';
           const data = await api('adminListRegistrations', { eventId: btn.dataset.viewRegs });
           showRegsModal(eventName, data.registrations, btn.dataset.viewRegs);
         }));
@@ -2503,7 +2524,7 @@
   // Category options depend on which Section is selected — Sports gets
   // Track/Field/Marathon/Other, Cultural gets Solo/Group/Other.
   const EVENT_CATEGORY_OPTIONS = {
-    SPORTS: [['TRACK','Track'],['FIELD','Field'],['MARATHON','Marathon'],['OTHER','Other'],['GROUP','Group']],
+    SPORTS: [['TRACK','Track'],['FIELD','Field'],['MARATHON','Marathon'],['OTHER','Other'],['GROUP','Group'],['DOUBLES','Doubles']],
     CULTURAL: [['INDIVIDUAL','Individual'],['GROUP','Group'],['OTHER','Other']]
   };
   function applyEventCategoryOptions() {
@@ -2511,6 +2532,11 @@
     const opts = EVENT_CATEGORY_OPTIONS[section] || EVENT_CATEGORY_OPTIONS.SPORTS;
     const sel = document.getElementById('newEventCategory');
     sel.innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+    // Materials list is a Cultural-only concept — hide it entirely for Sports,
+    // for every admin including BOSS (BOSS still sees it when Section is Cultural).
+    const materialsField = document.getElementById('newEventRequiresMaterials').closest('.field');
+    materialsField.classList.toggle('hidden', section !== 'CULTURAL');
+    if (section !== 'CULTURAL') document.getElementById('newEventRequiresMaterials').checked = false;
     toggleDeadlineFieldForCategory();
   }
   function toggleDeadlineFieldForCategory() {

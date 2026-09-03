@@ -1235,9 +1235,13 @@
       }
       list.innerHTML = eventsToShow.map(ev => {
         const registered = data.myRegistrations.includes(ev.eventId);
-        const deadlineTbd = ev.deadline === DEADLINE_TBD;
-        const deadlinePassed = ev.deadline && !deadlineTbd && new Date() > new Date(ev.deadline);
         const cat = String(ev.category || 'OTHER').toUpperCase();
+        const isGroup = cat === 'GROUP';
+        // Group events (Sports or Cultural) don't need a registration deadline —
+        // a team can be entered any time before the event, so we ignore deadline
+        // gating entirely for this category.
+        const deadlineTbd = !isGroup && ev.deadline === DEADLINE_TBD;
+        const deadlinePassed = !isGroup && ev.deadline && !deadlineTbd && new Date() > new Date(ev.deadline);
 
         // Would registering push this student over a cap? (server has final say,
         // this just avoids letting them click into an obvious rejection)
@@ -1265,10 +1269,10 @@
             // Only allow unregistering while the event is still open —
             // once admin closes it (or the deadline passes), the registration is locked in.
             if (ev.active && !deadlineTbd && !deadlinePassed) {
-              actionBtn = `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-action="unregister" data-id="${ev.eventId}" data-category="${cat}">Unregister</button>`;
+              actionBtn = `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-action="unregister" data-id="${ev.eventId}" data-category="${cat}">${isGroup ? 'Remove team' : 'Unregister'}</button>`;
             }
           } else if (canAct) {
-            actionBtn = `<button class="btn btn-orange btn-small" data-action="register" data-id="${ev.eventId}" data-category="${cat}" data-event-name="${escapeHtml(ev.name)}" data-requires-materials="${ev.requiresMaterials}">Register</button>`;
+            actionBtn = `<button class="btn btn-orange btn-small" data-action="register" data-id="${ev.eventId}" data-category="${cat}" data-event-name="${escapeHtml(ev.name)}" data-requires-materials="${ev.requiresMaterials}">${isGroup ? 'Add players' : 'Register'}</button>`;
           }
         }
         const deadlineText = deadlineTbd ? 'Yet to be decided' : (ev.deadline ? fmtDate(new Date(ev.deadline), true) : 'No deadline set');
@@ -1281,7 +1285,7 @@
         return `<div class="event-row" id="event-row-${ev.eventId}">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
-            <div class="event-meta">DEADLINE: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>
+            ${isGroup ? '' : `<div class="event-meta">DEADLINE: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>`}
             <div class="event-meta">Event day: ${compDateText}</div>
             ${groupLabel ? `<div class="event-meta">Team: ${escapeHtml(groupLabel)}</div>` : ''}
             ${partnerLabel ? `<div class="event-meta">Partner: ${escapeHtml(partnerLabel)}</div>` : ''}
@@ -1304,8 +1308,9 @@
           if (action === 'registerEvent' && btn.dataset.category === 'GROUP') {
             const groupLabel = await showInputPrompt({
               title: btn.dataset.eventName,
-              text: 'This is a group event. List your teammates (names and/or reg nos):',
-              placeholder: 'e.g. John (234201), Priya (234207)'
+              text: 'Add your team — list the players (names and/or reg nos):',
+              placeholder: 'e.g. John (234201), Priya (234207)',
+              okLabel: 'Add players'
             });
             if (!groupLabel) return; // cancelled or left blank — don't register without teammate info
             payload.groupLabel = groupLabel;
@@ -2441,10 +2446,13 @@
       }
       const sortedEvents = sortEventsForDisplay(filteredEvents);
       container.innerHTML = sortedEvents.map(ev => {
-        const deadlineTbd = ev.deadline === DEADLINE_TBD;
+        const cat = String(ev.category || 'OTHER').toUpperCase();
+        const isGroup = cat === 'GROUP';
+        // Group events (Sports or Cultural) don't need a registration deadline —
+        // players/teams can be added any time, so deadline is ignored entirely.
+        const deadlineTbd = !isGroup && ev.deadline === DEADLINE_TBD;
         const deadlineVal = deadlineTbd ? 'Yet to open' : (ev.deadline ? fmtDate(new Date(ev.deadline), true) : '—');
         const compDateVal = ev.competitionDate ? fmtDate(parseDateOnly(ev.competitionDate)) : 'To be decided';
-        const cat = String(ev.category || 'OTHER').toUpperCase();
         const isEditingDeadline = editingDeadlineId === ev.eventId;
         const isEditingCompDate = editingCompDateId === ev.eventId;
         const regStatusLabel = !ev.active ? 'Closed' : (deadlineTbd ? 'Yet to open' : 'Active');
@@ -2452,7 +2460,7 @@
         return `<div class="event-row">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
-            ${isEditingDeadline
+            ${isGroup ? '' : (isEditingDeadline
               ? `<div class="event-meta" style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
                    <input type="datetime-local" data-deadline-input="${ev.eventId}" value="${toDatetimeLocalValue(ev.deadline)}" ${deadlineTbd ? 'disabled' : ''} style="padding:8px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13px;border-radius:2px;">
                    <label style="display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-transform:none;">
@@ -2462,7 +2470,7 @@
                    <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-cancel-deadline="${ev.eventId}">Cancel</button>
                    <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-clear-deadline="${ev.eventId}">Clear</button>
                  </div>`
-              : `<div class="event-meta">DEADLINE: ${deadlineVal}</div>`}
+              : `<div class="event-meta">DEADLINE: ${deadlineVal}</div>`)}
             ${isEditingCompDate
               ? `<div class="event-meta" style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
                    <input type="date" data-compdate-input="${ev.eventId}" value="${(ev.competitionDate || '').split('T')[0]}" ${ev.competitionDate ? '' : 'disabled'} style="padding:8px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13px;border-radius:2px;">
@@ -2480,12 +2488,12 @@
             <span class="pill ${regStatusClass}">${regStatusLabel}</span>
             ${ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : ''}
             ${ev.section === 'CULTURAL' && ev.requiresMaterials ? '<span class="pill" style="background:rgba(255,90,31,.12);color:var(--ball-orange);">🎨 Materials</span>' : ''}
-            ${!isEditingDeadline ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
+            ${!isGroup && !isEditingDeadline ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
             ${!isEditingCompDate ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-compdate="${ev.eventId}">Edit event day</button>` : ''}
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-completed="${ev.eventId}" data-completed="${ev.completed}">${ev.completed ? 'Mark not completed' : 'Mark completed'}</button>
             ${ev.section === 'CULTURAL' ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-materials="${ev.eventId}" data-requires-materials="${ev.requiresMaterials}">${ev.requiresMaterials ? 'Materials: on' : 'Materials: off'}</button>` : ''}
-            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}" data-view-regs-category="${ev.category}">View regs</button>
+            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}" data-view-regs-category="${ev.category}">${isGroup ? 'Add players' : 'View regs'}</button>
             <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-export-event="${ev.eventId}">Export CSV</button>
             <button class="btn btn-danger btn-small" data-delete="${ev.eventId}">Delete</button>
           </div>

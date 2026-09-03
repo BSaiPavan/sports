@@ -1976,11 +1976,13 @@
     const select = document.getElementById('resultsEventSelect');
     try {
       const data = await api('adminListEventsWithStatus', {});
+      const lock = myAdminSectionLock();
+      const inSection = lock ? data.events.filter(ev => (ev.section || 'SPORTS') === lock) : data.events;
       // Only events that have actually happened and don't already have
       // published results — once published, editing happens via the
       // "Edit" button on the Published results list below instead, so this
       // dropdown doesn't get cluttered with things already taken care of.
-      const eligible = data.events.filter(ev => ev.completed && !ev.resultsPublished);
+      const eligible = inSection.filter(ev => ev.completed && !ev.resultsPublished);
       select.innerHTML = '<option value="">Select an event…</option>' + eligible.map(ev =>
         `<option value="${ev.eventId}">${ev.section === 'CULTURAL' ? '🎭' : '🏅'} ${escapeHtml(ev.name)}</option>`
       ).join('');

@@ -252,6 +252,23 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="inputPromptModal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-head">
+      <h3 id="inputPromptTitle">Enter details</h3>
+      <button class="modal-close" id="inputPromptCloseX">×</button>
+    </div>
+    <div class="modal-body" style="padding:18px 22px;overflow:visible;">
+      <p id="inputPromptText" class="mono" style="font-size:12.5px;color:var(--muted);margin:0 0 14px;white-space:pre-line;"></p>
+      <input id="inputPromptField" type="text" style="width:100%;padding:9px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:13px;border-radius:2px;">
+      <p class="msg" id="inputPromptMsg" style="margin-top:10px;"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="inputPromptCancel">Cancel</button>
+      <button class="btn btn-orange" id="inputPromptOk">OK</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal-overlay hidden" id="regsModal">
   <div class="modal-box">
@@ -836,6 +853,58 @@
     el.className = 'msg ' + (ok ? 'ok' : 'err');
   }
 
+  // ---------- CUSTOM INPUT PROMPT (replaces window.prompt for a nicer UI) ----------
+  // Returns a Promise<string|null> — resolves with the trimmed value, or null if
+  // the user cancelled / closed the modal / left it blank on submit-without-value.
+  function showInputPrompt({ title, text, placeholder = '', okLabel = 'OK' } = {}) {
+    const overlay = document.getElementById('inputPromptModal');
+    const titleEl = document.getElementById('inputPromptTitle');
+    const textEl = document.getElementById('inputPromptText');
+    const field = document.getElementById('inputPromptField');
+    const msg = document.getElementById('inputPromptMsg');
+    const okBtn = document.getElementById('inputPromptOk');
+    const cancelBtn = document.getElementById('inputPromptCancel');
+    const closeX = document.getElementById('inputPromptCloseX');
+
+    titleEl.textContent = title || 'Enter details';
+    textEl.textContent = text || '';
+    textEl.style.display = text ? 'block' : 'none';
+    field.value = '';
+    field.placeholder = placeholder;
+    okBtn.textContent = okLabel;
+    msg.className = 'msg';
+    msg.textContent = '';
+    msg.style.display = 'none';
+
+    overlay.classList.remove('hidden');
+    setTimeout(() => field.focus(), 30);
+
+    return new Promise(resolve => {
+      function cleanup(result) {
+        overlay.classList.add('hidden');
+        okBtn.removeEventListener('click', onOk);
+        cancelBtn.removeEventListener('click', onCancel);
+        closeX.removeEventListener('click', onCancel);
+        field.removeEventListener('keydown', onKeydown);
+        resolve(result);
+      }
+      function onOk() {
+        const val = field.value.trim();
+        if (!val) { setMsg(msg, 'This field is required.', false); return; }
+        cleanup(val);
+      }
+      function onCancel() { cleanup(null); }
+      function onKeydown(e) {
+        if (e.key === 'Enter') { e.preventDefault(); onOk(); }
+        else if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
+      }
+      okBtn.addEventListener('click', onOk);
+      cancelBtn.addEventListener('click', onCancel);
+      closeX.addEventListener('click', onCancel);
+      field.addEventListener('keydown', onKeydown);
+    });
+  }
+
   // ---------- LOGIN ----------
   document.getElementById('loginBtn').addEventListener('click', withLoading(document.getElementById('loginBtn'), async () => {
     const regNo = document.getElementById('loginRegNo').value.trim();
@@ -1217,6 +1286,7 @@
             ${groupLabel ? `<div class="event-meta">Team: ${escapeHtml(groupLabel)}</div>` : ''}
             ${partnerLabel ? `<div class="event-meta">Partner: ${escapeHtml(partnerLabel)}</div>` : ''}
             ${myMaterials ? `<div class="event-meta">Your materials: ${escapeHtml(myMaterials)}</div>` : ''}
+            <p class="msg" id="event-msg-${ev.eventId}" style="margin-top:8px;max-width:520px;"></p>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${catPill}${materialsPill}${completedPill}${statusPill}${actionBtn}</div>
         </div>`;
@@ -1224,29 +1294,37 @@
 
       list.querySelectorAll('button[data-action]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
+          const rowMsg = document.getElementById(`event-msg-${btn.dataset.id}`);
+          if (rowMsg) { rowMsg.style.display = 'none'; rowMsg.textContent = ''; }
           const action = btn.dataset.action === 'register' ? 'registerEvent' : 'unregisterEvent';
           const payload = { eventId: btn.dataset.id };
           if (action === 'unregisterEvent' && btn.dataset.category === 'DOUBLES') {
             if (!confirm('This will unregister both you and your partner from this doubles event. Continue?')) return;
           }
           if (action === 'registerEvent' && btn.dataset.category === 'GROUP') {
-            const groupLabel = (window.prompt(
-              `"${btn.dataset.eventName}" is a group event.\n\nList your teammates (names and/or reg nos):`
-            ) || '').trim();
+            const groupLabel = await showInputPrompt({
+              title: btn.dataset.eventName,
+              text: 'This is a group event. List your teammates (names and/or reg nos):',
+              placeholder: 'e.g. John (234201), Priya (234207)'
+            });
             if (!groupLabel) return; // cancelled or left blank — don't register without teammate info
             payload.groupLabel = groupLabel;
           }
           if (action === 'registerEvent' && btn.dataset.category === 'DOUBLES') {
-            const partnerRegNo = (window.prompt(
-              `"${btn.dataset.eventName}" is a doubles event.\n\nEnter your partner's registration number:`
-            ) || '').trim();
+            const partnerRegNo = await showInputPrompt({
+              title: btn.dataset.eventName,
+              text: "This is a doubles event. Enter your partner's registration number:",
+              placeholder: 'Partner registration number'
+            });
             if (!partnerRegNo) return; // cancelled or left blank — don't register without a partner
             payload.partnerRegNo = partnerRegNo;
           }
           if (action === 'registerEvent' && btn.dataset.requiresMaterials === 'true') {
-            const materials = (window.prompt(
-              `"${btn.dataset.eventName}" needs a materials list.\n\nWhat will you need/bring (e.g. canvas, paints, poster sheets)?`
-            ) || '').trim();
+            const materials = await showInputPrompt({
+              title: btn.dataset.eventName,
+              text: 'This event needs a materials list. What will you need/bring (e.g. canvas, paints, poster sheets)?',
+              placeholder: 'Materials list'
+            });
             if (!materials) return; // cancelled or left blank — don't register without it
             payload.materials = materials;
           }
@@ -1254,7 +1332,8 @@
             await api(action, payload);
             await loadEvents();
           } catch (err) {
-            setMsg(dashMsg, err.message, false);
+            if (rowMsg) setMsg(rowMsg, err.message, false);
+            else setMsg(dashMsg, err.message, false);
           }
         }));
       });
@@ -1549,6 +1628,52 @@
     const body = document.getElementById('regsModalBody');
     if (!registrations.length) {
       body.innerHTML = '<div class="modal-empty">No one registered yet.</div>';
+    } else if (currentModalCategory === 'DOUBLES') {
+      // Doubles: group the two paired registrations into "Team 1", "Team 2"...
+      // instead of listing each partner as a separate flat entry.
+      const teams = [];
+      const seen = new Set();
+      registrations.forEach(r => {
+        if (seen.has(r.regNo)) return;
+        if (r.teamId) {
+          const teammates = registrations.filter(x => x.teamId === r.teamId);
+          teammates.forEach(t => seen.add(t.regNo));
+          teams.push(teammates);
+        } else {
+          seen.add(r.regNo);
+          teams.push([r]);
+        }
+      });
+      body.innerHTML = teams.map((team, i) => `
+        <div class="modal-row" style="justify-content:space-between;align-items:flex-start;">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div class="idx mono">${String(i + 1).padStart(2, '0')}</div>
+            <div>
+              <div class="rname">Team ${i + 1}</div>
+              ${team.map(p => `
+                <div style="margin-top:6px;">
+                  <div class="rreg" style="color:var(--graphite);font-weight:600;">${escapeHtml(p.name)}</div>
+                  <div class="rreg">${escapeHtml(p.regNo)}</div>
+                  ${p.materials ? `<div class="rreg" style="color:var(--muted);">Materials: ${escapeHtml(p.materials)}</div>` : ''}
+                </div>`).join('')}
+            </div>
+          </div>
+          <button class="btn btn-outline btn-small" style="border-color:var(--line);color:#b7401b;" data-remove-reg="${escapeHtml(team[0].regNo)}" data-remove-team-id="${escapeHtml(team[0].teamId || '')}">Remove</button>
+        </div>`).join('');
+
+      body.querySelectorAll('[data-remove-reg]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          if (!confirm(btn.dataset.removeTeamId ? 'This will remove both partners from this doubles event. Continue?' : 'Remove this registration?')) return;
+          try {
+            await api('adminRemoveRegistration', { eventId: currentModalEventId, regNo: btn.dataset.removeReg });
+            const data = await api('adminListRegistrations', { eventId: currentModalEventId });
+            showRegsModal(eventName, data.registrations, currentModalEventId);
+            await loadAdminEvents(); // registration counts elsewhere may depend on this
+          } catch (err) {
+            alert(err.message);
+          }
+        }));
+      });
     } else {
       body.innerHTML = registrations.map((r, i) => `
         <div class="modal-row" style="justify-content:space-between;">
@@ -1557,7 +1682,7 @@
             <div>
               <div class="rname">${escapeHtml(r.name)}</div>
               <div class="rreg">${escapeHtml(r.regNo)}</div>
-              ${r.groupLabel ? `<div class="rreg" style="color:var(--muted);">${currentModalCategory === 'DOUBLES' ? 'Partner' : 'Team'}: ${escapeHtml(r.groupLabel)}</div>` : ''}
+              ${r.groupLabel ? `<div class="rreg" style="color:var(--muted);">Team: ${escapeHtml(r.groupLabel)}</div>` : ''}
               ${r.materials ? `<div class="rreg" style="color:var(--muted);">Materials: ${escapeHtml(r.materials)}</div>` : ''}
             </div>
           </div>
@@ -1633,7 +1758,11 @@
     if (!currentModalEventId) { setMsg(msg, 'No event selected.', false); return; }
     const payload = { eventId: currentModalEventId, regNo };
     if (currentModalCategory === 'DOUBLES') {
-      const partnerRegNo = (window.prompt('Doubles event — enter their partner\'s registration number:') || '').trim();
+      const partnerRegNo = await showInputPrompt({
+        title: 'Doubles event',
+        text: "Enter their partner's registration number:",
+        placeholder: 'Partner registration number'
+      });
       if (!partnerRegNo) { setMsg(msg, 'Doubles event needs a partner reg no — cancelled.', false); return; }
       payload.partnerRegNo = partnerRegNo;
     }
@@ -2532,11 +2661,9 @@
     const opts = EVENT_CATEGORY_OPTIONS[section] || EVENT_CATEGORY_OPTIONS.SPORTS;
     const sel = document.getElementById('newEventCategory');
     sel.innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
-    // Materials list is a Cultural-only concept — hide it entirely for Sports,
-    // for every admin including BOSS (BOSS still sees it when Section is Cultural).
+    // Materials list applies to both Sports and Cultural events now — always show it.
     const materialsField = document.getElementById('newEventRequiresMaterials').closest('.field');
-    materialsField.classList.toggle('hidden', section !== 'CULTURAL');
-    if (section !== 'CULTURAL') document.getElementById('newEventRequiresMaterials').checked = false;
+    materialsField.classList.remove('hidden');
     toggleDeadlineFieldForCategory();
   }
   function toggleDeadlineFieldForCategory() {

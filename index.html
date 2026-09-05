@@ -536,6 +536,12 @@
               <input type="checkbox" id="newEventRequiresMaterials" style="width:auto;"> Ask participants what materials they'll need
             </label>
           </div>
+          <div class="field hidden" id="newEventMassEventField">
+            <label>Roster</label>
+            <label style="display:flex;align-items:center;gap:6px;margin-top:12px;font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;color:var(--muted);">
+              <input type="checkbox" id="newEventMassEvent" style="width:auto;"> Mass event — whole house takes part, no individual player list needed (e.g. Orchestra, Drama)
+            </label>
+          </div>
           <button class="btn btn-dark" id="addEventBtn">Add</button>
         </div>
         <div class="msg" id="addEventMsg"></div>
@@ -1488,18 +1494,39 @@
         list.innerHTML = '<div class="event-row"><span class="mono" style="color:var(--muted);">No group events yet — check back soon.</span></div>';
         return;
       }
-      const rosters = await Promise.all(groupEvents.map(ev => api('getGroupRoster', { eventId: ev.eventId }).catch(() => ({ roster: [] }))));
+      // Only fetch rosters for events that actually have one — a mass event
+      // (e.g. Orchestra, Drama) has no individual player list at all.
+      const rosters = await Promise.all(groupEvents.map(ev =>
+        ev.massEvent ? Promise.resolve({ roster: [] }) : api('getGroupRoster', { eventId: ev.eventId }).catch(() => ({ roster: [] }))
+      ));
+      // Group results now live here instead of the Results tab — fetch once
+      // and reveal per-event via the "View results" button below.
+      let resultsByEvent = {};
+      try {
+        const resultsData = await api('getResults', {});
+        resultsData.results.forEach(r => { resultsByEvent[r.eventId] = r; });
+      } catch (e) { /* results just won't be revealable if this fails */ }
+
       list.innerHTML = groupEvents.map((ev, i) => {
-        const roster = rosters[i].roster || [];
-        const byHouse = {};
-        roster.forEach(r => { (byHouse[r.house || 'Unassigned'] = byHouse[r.house || 'Unassigned'] || []).push(r.name); });
-        const houseBlocks = Object.keys(byHouse).map(house => `
-          <div style="margin-top:8px;">
-            <div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px;">${escapeHtml(house)}</div>
-            <div style="font-size:13px;">${byHouse[house].map(escapeHtml).join(', ')}</div>
-          </div>`).join('') || '<div class="mono" style="font-size:12px;color:var(--muted);margin-top:8px;">No players added yet.</div>';
+        let rosterBlock;
+        if (ev.massEvent) {
+          rosterBlock = '<div class="mono" style="font-size:12px;color:var(--muted);margin-top:8px;">🎭 Mass event — the whole house takes part; there\'s no individual player list for this one.</div>';
+        } else {
+          const roster = rosters[i].roster || [];
+          const byHouse = {};
+          roster.forEach(r => { (byHouse[r.house || 'Unassigned'] = byHouse[r.house || 'Unassigned'] || []).push(r.name); });
+          rosterBlock = Object.keys(byHouse).map(house => `
+            <div style="margin-top:8px;">
+              <div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px;">${escapeHtml(house)}</div>
+              <div style="font-size:13px;">${byHouse[house].map(escapeHtml).join(', ')}</div>
+            </div>`).join('') || '<div class="mono" style="font-size:12px;color:var(--muted);margin-top:8px;">No players added yet.</div>';
+        }
         const compDateText = ev.competitionDate ? fmtDate(parseDateOnly(ev.competitionDate)) : 'To be decided';
         const completedPill = ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : '';
+        const result = resultsByEvent[ev.eventId];
+        const resultsControl = result
+          ? `<button class="btn btn-outline btn-small group-results-btn" style="border-color:var(--line);color:var(--graphite);" data-event-id="${ev.eventId}">View results</button>`
+          : '<span class="pill" style="background:rgba(0,0,0,.06);color:var(--muted);">Results not published yet</span>';
         return `<div class="event-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
           <div style="display:flex;justify-content:space-between;width:100%;align-items:center;flex-wrap:wrap;gap:8px;">
             <div class="event-name">${escapeHtml(ev.name)}</div>
@@ -1508,9 +1535,26 @@
             </div>
           </div>
           <div class="event-meta">Event day: ${compDateText}</div>
-          <div style="width:100%;">${houseBlocks}</div>
+          <div style="width:100%;">${rosterBlock}</div>
+          <div style="width:100%;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
+            ${resultsControl}
+            <div class="hidden group-results-panel" data-panel-for="${ev.eventId}" style="margin-top:10px;"></div>
+          </div>
         </div>`;
       }).join('');
+
+      list.querySelectorAll('.group-results-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const panel = list.querySelector(`.group-results-panel[data-panel-for="${btn.dataset.eventId}"]`);
+          const nowHidden = panel.classList.toggle('hidden');
+          if (!nowHidden && !panel.dataset.rendered) {
+            const result = resultsByEvent[btn.dataset.eventId];
+            panel.innerHTML = renderMatchScoreboard(result.match);
+            panel.dataset.rendered = '1';
+          }
+          btn.textContent = nowHidden ? 'View results' : 'Hide results';
+        });
+      });
     } catch (err) {
       list.innerHTML = `<div class="event-row" style="color:#b7401b;">${err.message}</div>`;
     }
@@ -1664,21 +1708,13 @@
         </div>`;
       };
 
-      // Group and individual results are kept in the same Results section but
-      // shown as two clearly separate blocks, since a house-vs-house
-      // scoreboard and a 1st/2nd/3rd podium aren't really comparable.
-      const groupResults = data.results.filter(r => String(r.category || '').toUpperCase() === 'GROUP');
+      // Group results now live on the Group Events page (with a "View
+      // results" button per event) instead of here — the Results tab is
+      // individual events only.
       const individualResults = data.results.filter(r => String(r.category || '').toUpperCase() !== 'GROUP');
-      let html = '';
-      if (groupResults.length) {
-        html += `<div style="padding:14px 22px;background:var(--chalk);border-bottom:1px solid var(--line);"><span class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">Group Events</span></div>`;
-        html += groupResults.map(renderResultRow).join('');
-      }
-      if (individualResults.length) {
-        html += `<div style="padding:14px 22px;background:var(--chalk);border-bottom:1px solid var(--line);"><span class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">Individual Events</span></div>`;
-        html += individualResults.map(renderResultRow).join('');
-      }
-      container.innerHTML = html;
+      container.innerHTML = individualResults.length
+        ? individualResults.map(renderResultRow).join('')
+        : '<div class="event-row"><span class="mono" style="color:var(--muted);">No individual results published yet.</span></div>';
       container.querySelectorAll('.gallery-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const photos = JSON.parse(btn.dataset.photos);
@@ -2919,19 +2955,27 @@
             <span class="pill ${regStatusClass}">${regStatusLabel}</span>
             ${ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : ''}
             ${ev.section === 'CULTURAL' && ev.requiresMaterials ? '<span class="pill" style="background:rgba(255,90,31,.12);color:var(--ball-orange);">🎨 Materials</span>' : ''}
+            ${ev.massEvent ? '<span class="pill" style="background:rgba(140,82,255,.14);color:#6a3ec9;">👥 Mass event — no roster</span>' : ''}
             ${!canEdit ? '<span class="pill" style="background:rgba(0,0,0,.06);color:var(--muted);">👁 View only — the other section\'s admin manages this one</span>' : ''}
             ${canEdit && !isGroup && !isEditingDeadline ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
             ${canEdit && !isEditingCompDate ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-compdate="${ev.eventId}">Edit event day</button>` : ''}
             ${canEdit ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>` : ''}
             ${canEdit ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-completed="${ev.eventId}" data-completed="${ev.completed}">${ev.completed ? 'Mark not completed' : 'Mark completed'}</button>` : ''}
             ${canEdit && ev.section === 'CULTURAL' ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-materials="${ev.eventId}" data-requires-materials="${ev.requiresMaterials}">${ev.requiresMaterials ? 'Materials: on' : 'Materials: off'}</button>` : ''}
-            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}" data-view-regs-category="${ev.category}" data-view-regs-readonly="${!canEdit}">${!canEdit ? 'View roster' : (isGroup ? 'Add players' : 'View regs')}</button>
+            ${canEdit && ev.section === 'CULTURAL' && isGroup ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-mass-event="${ev.eventId}" data-mass-event="${ev.massEvent}">${ev.massEvent ? 'Mass event: on' : 'Mass event: off'}</button>` : ''}
+            ${!ev.massEvent ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}" data-view-regs-category="${ev.category}" data-view-regs-readonly="${!canEdit}">${!canEdit ? 'View roster' : (isGroup ? 'Add players' : 'View regs')}</button>` : ''}
             ${canEdit ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-export-event="${ev.eventId}">Export CSV</button>` : ''}
             ${canEdit ? `<button class="btn btn-danger btn-small" data-delete="${ev.eventId}">Delete</button>` : ''}
           </div>
         </div>`;
       }).join('') || '<div class="event-row mono" style="color:var(--muted);">No events yet.</div>';
 
+      container.querySelectorAll('[data-toggle-mass-event]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          await api('adminEditEvent', { eventId: btn.dataset.toggleMassEvent, massEvent: btn.dataset.massEvent !== 'true' });
+          await loadAdminEvents();
+        }));
+      });
       container.querySelectorAll('[data-toggle]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
           await api('adminToggleEvent', { eventId: btn.dataset.toggle, active: btn.dataset.active !== 'true' });
@@ -3068,6 +3112,7 @@
     const compDateTbd = document.getElementById('newEventCompDateTbd').checked;
     const compDate = document.getElementById('newEventCompDate').value;
     const requiresMaterials = document.getElementById('newEventRequiresMaterials').checked;
+    const massEvent = document.getElementById('newEventMassEvent').checked;
     const msg = document.getElementById('addEventMsg');
     if (!name) { setMsg(msg, 'Event name is required.', false); return; }
     try {
@@ -3075,7 +3120,7 @@
         name, section, category,
         deadline: category === 'GROUP' ? '' : (deadlineTbd ? DEADLINE_TBD : (deadline ? new Date(deadline).toISOString() : '')),
         competitionDate: (!compDateTbd && compDate) ? compDate : '',
-        requiresMaterials
+        requiresMaterials, massEvent
       });
       document.getElementById('newEventName').value = '';
       applyEventCategoryOptions();
@@ -3086,6 +3131,7 @@
       document.getElementById('newEventCompDate').disabled = false;
       document.getElementById('newEventCompDateTbd').checked = false;
       document.getElementById('newEventRequiresMaterials').checked = false;
+      document.getElementById('newEventMassEvent').checked = false;
       setMsg(msg, 'Event added.', true);
       await loadAdminEvents();
     } catch (err) { setMsg(msg, err.message, false); }
@@ -3110,12 +3156,19 @@
     toggleDeadlineFieldForCategory();
   }
   function toggleDeadlineFieldForCategory() {
+    const section = document.getElementById('newEventSection').value;
     const isGroup = document.getElementById('newEventCategory').value === 'GROUP';
     document.getElementById('newEventDeadlineField').classList.toggle('hidden', isGroup);
     if (isGroup) {
       document.getElementById('newEventDeadline').value = '';
       document.getElementById('newEventDeadlineTbd').checked = false;
     }
+    // Mass event (no roster) only makes sense for a Cultural GROUP event —
+    // hidden for Sports or any non-Group category, for every admin.
+    const massEventField = document.getElementById('newEventMassEventField');
+    const showMassEvent = section === 'CULTURAL' && isGroup;
+    massEventField.classList.toggle('hidden', !showMassEvent);
+    if (!showMassEvent) document.getElementById('newEventMassEvent').checked = false;
   }
   document.getElementById('newEventSection').addEventListener('change', applyEventCategoryOptions);
   document.getElementById('newEventCategory').addEventListener('change', toggleDeadlineFieldForCategory);

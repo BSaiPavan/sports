@@ -277,6 +277,10 @@
       <span class="count mono" id="regsModalCount"></span>
     </div>
     <div class="modal-body" id="regsModalBody"></div>
+    <div id="regsModalHouseRow" class="hidden" style="padding:12px 22px 0;border-top:1px solid var(--line);">
+      <label class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:6px;">House / team for the player(s) below</label>
+      <select id="regsModalHouseSelect" style="width:100%;max-width:280px;padding:9px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13px;border-radius:2px;"><option value="">Select house…</option></select>
+    </div>
     <div id="regsModalAddRow" class="hidden" style="padding:12px 22px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <input id="addRegNoInput" list="allUsersDatalist" placeholder="Reg no or name…" style="flex:1;min-width:160px;padding:9px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
       <datalist id="allUsersDatalist"></datalist>
@@ -377,7 +381,23 @@
         <div class="event-name" style="font-size:24px;margin-bottom:6px;">🎭 Cultural</div>
         <div class="mono" style="font-size:12px;color:var(--muted);">Solo, group &amp; other performances</div>
       </button>
+      <button class="card" id="goHousePointsBtn" style="flex:1;min-width:220px;padding:28px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name" style="font-size:24px;margin-bottom:6px;">🏆 House Points</div>
+        <div class="mono" style="font-size:12px;color:var(--muted);">Standings &amp; the House Championship</div>
+      </button>
     </div>
+  </div>
+
+  <!-- HOUSE POINTS (season-wide, not per-section) -->
+  <div id="housePointsView" class="wrap hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+      <button class="btn btn-outline btn-small back-btn" data-back-to="sectionHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button>
+    </div>
+    <p class="hello" id="housePointsSeason">Season</p>
+    <h1 class="page-title">House Points</h1>
+    <div class="card hidden" id="houseChampionBanner" style="padding:18px 22px;margin-bottom:16px;background:#fff7e8;border-color:#e8c468;"></div>
+    <div class="card mono" id="houseProgressBanner" style="padding:14px 22px;margin-bottom:16px;font-size:12px;color:var(--muted);"></div>
+    <div class="card" id="houseStandingsCard" style="padding:22px;"></div>
   </div>
 
   <div id="dashboardHomeView" class="wrap hidden">
@@ -396,7 +416,24 @@
         <div class="event-name" style="font-size:22px;margin-bottom:6px;">Results</div>
         <div class="mono" style="font-size:12px;color:var(--muted);">See published results for completed events</div>
       </button>
+      <button class="card" id="goGroupEventsBtn" style="flex:1;min-width:220px;padding:26px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name" style="font-size:22px;margin-bottom:6px;">Group Events</div>
+        <div class="mono" style="font-size:12px;color:var(--muted);">House-vs-house team events &amp; rosters</div>
+      </button>
     </div>
+  </div>
+
+  <!-- DASHBOARD: GROUP EVENTS (read-only roster view — no self-registration;
+       admins add players from the Admin panel's Events tab) -->
+  <div id="groupEventsView" class="wrap hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+      <button class="btn btn-outline btn-small back-btn" data-back-to="dashboardHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button>
+      <button class="btn btn-outline btn-small switch-section-btn" id="switchSectionBtnGroup" style="border-color:var(--line);color:var(--graphite);"></button>
+    </div>
+    <p class="hello" id="groupEventsHomeSection">Group Events</p>
+    <h1 class="page-title">Group Events</h1>
+    <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">Rosters are set by the sports/cultural coordinator — contact them to be added or moved.</p>
+    <div class="card" id="groupEventsList"></div>
   </div>
 
   <!-- DASHBOARD: REGISTRATIONS -->
@@ -447,6 +484,7 @@
       <div class="tab" data-tab="admins">Admins</div>
       <div class="tab" data-tab="notice">Notice</div>
       <div class="tab" data-tab="results">Results</div>
+      <div class="tab" data-tab="houses">Houses</div>
     </div>
 
     <!-- EVENTS TAB -->
@@ -644,11 +682,16 @@
           </div>
 
           <div id="matchResultsSection" class="hidden">
-            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Enter the two houses/teams, add a score row per set/half/quarter/innings (label it however fits the sport), then pick the winner.</p>
+            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Pick the two houses, add a score row per set/half/quarter/innings (label it however fits the sport), then pick the winner. A published group result must have a decided winner — that's what earns the house its championship point.</p>
             <div class="inline-form" style="margin:0 0 14px;">
-              <div class="field" style="flex:1;"><label>Team / House A</label><input id="matchTeamAInput" placeholder="e.g. Ganapati House"></div>
-              <div class="field" style="flex:1;"><label>Team / House B</label><input id="matchTeamBInput" placeholder="e.g. Krishna House"></div>
+              <div class="field" style="flex:1;"><label>House A</label>
+                <select id="matchTeamASelect" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;"><option value="">Select house…</option></select>
+              </div>
+              <div class="field" style="flex:1;"><label>House B</label>
+                <select id="matchTeamBSelect" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;"><option value="">Select house…</option></select>
+              </div>
             </div>
+            <p class="field-hint" id="matchNoHousesHint" style="display:none;margin:-6px 0 14px;">No houses set up yet — add them in the Houses tab first.</p>
             <label style="font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Scores</label>
             <div id="matchPeriodsList" style="margin:8px 0 10px;"></div>
             <button class="btn btn-outline btn-small" id="addMatchPeriodBtn" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">+ Add score row</button>
@@ -682,6 +725,41 @@
         <div id="publishedResultsInner" class="mono" style="font-size:12.5px;color:var(--muted);">Loading…</div>
       </div>
     </div>
+
+    <!-- HOUSES TAB -->
+    <div class="admin-tab hidden" id="tab-houses">
+      <div class="card mono" style="padding:16px 22px;margin-bottom:20px;font-size:12px;color:var(--muted);" id="houseSettingsSeasonLabel"></div>
+
+      <div class="card admin-write" id="addHouseCard" style="padding:22px;margin-bottom:24px;">
+        <h3>Houses</h3>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">Shared between Sports and Cultural — only the main admin (BOSS) can add or remove a house, since both sections score against the same list.</p>
+        <div class="inline-form" id="addHouseForm">
+          <div class="field"><label>House name</label><input id="newHouseName" placeholder="e.g. Surya House"></div>
+          <button class="btn btn-dark" id="addHouseBtn">Add house</button>
+        </div>
+        <div class="msg" id="addHouseMsg"></div>
+        <div id="housesListInner" style="margin-top:16px;"></div>
+      </div>
+
+      <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
+        <h3>Group events this season</h3>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">How many group events are planned in total this season, per section. Once every planned group event's result is published, the House Championship is declared.</p>
+        <div class="inline-form">
+          <div class="field"><label>🏅 Sports group events (total)</label><input id="sportsGroupTotalInput" type="number" min="0" placeholder="e.g. 4"></div>
+          <button class="btn btn-dark" id="saveSportsTotalBtn">Save</button>
+        </div>
+        <div class="inline-form">
+          <div class="field"><label>🎭 Cultural group events (total)</label><input id="culturalGroupTotalInput" type="number" min="0" placeholder="e.g. 3"></div>
+          <button class="btn btn-dark" id="saveCulturalTotalBtn">Save</button>
+        </div>
+        <div class="msg" id="houseSettingsMsg"></div>
+      </div>
+
+      <div class="card" style="padding:22px;">
+        <h3>Current standings</h3>
+        <div id="adminHouseStandings" class="mono" style="font-size:12.5px;color:var(--muted);">Loading…</div>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -695,6 +773,7 @@
   const DEADLINE_TBD = 'TBD'; // sentinel deadline value meaning "registration yet to open"
 
   const state = { token: null, name: null, isAdmin: false, isTeacher: false, adminRole: '', activeSection: 'SPORTS' };
+  let currentSeasonCache = ''; // filled in from the first listEvents/getHouseStandings response
 
   function saveSession() {
     sessionStorage.setItem('campusSports', JSON.stringify(state));
@@ -1037,10 +1116,22 @@
   }
 
   async function openResults() {
-    document.getElementById('resultsHomeSection').textContent = (state.activeSection === 'CULTURAL' ? '🎭 Cultural' : '🏅 Sports') + ' · Season 2026';
+    document.getElementById('resultsHomeSection').textContent = (state.activeSection === 'CULTURAL' ? '🎭 Cultural' : '🏅 Sports') + ' · Season ' + currentSeasonCache;
     syncSwitchSectionButtons();
     showView('resultsView');
     await loadResultsStudent();
+  }
+
+  async function openGroupEvents() {
+    document.getElementById('groupEventsHomeSection').textContent = (state.activeSection === 'CULTURAL' ? '🎭 Cultural' : '🏅 Sports') + ' · Group Events';
+    syncSwitchSectionButtons();
+    showView('groupEventsView');
+    await loadGroupEventsStudent();
+  }
+
+  async function openHousePoints() {
+    showView('housePointsView');
+    await loadHouseStandings();
   }
 
   document.getElementById('switchSectionBtn').addEventListener('click', () => {
@@ -1054,11 +1145,17 @@
     state.activeSection = state.activeSection === 'CULTURAL' ? 'SPORTS' : 'CULTURAL';
     openResults();
   });
+  document.getElementById('switchSectionBtnGroup').addEventListener('click', () => {
+    state.activeSection = state.activeSection === 'CULTURAL' ? 'SPORTS' : 'CULTURAL';
+    openGroupEvents();
+  });
   document.getElementById('goSportsBtn').addEventListener('click', () => enterSection('SPORTS'));
   document.getElementById('goCulturalBtn').addEventListener('click', () => enterSection('CULTURAL'));
+  document.getElementById('goHousePointsBtn').addEventListener('click', openHousePoints);
 
   document.getElementById('goRegistrationsBtn').addEventListener('click', openRegistrations);
   document.getElementById('goResultsBtn').addEventListener('click', openResults);
+  document.getElementById('goGroupEventsBtn').addEventListener('click', openGroupEvents);
   document.querySelectorAll('.back-btn').forEach(btn => {
     btn.addEventListener('click', () => showView(btn.dataset.backTo));
   });
@@ -1174,9 +1271,11 @@
     loadEvents();
   });
 
+  // GROUP is deliberately absent here — group events have no registration at
+  // all (see the Group Events section) so they never appear in this list.
   const SECTION_CATEGORIES = {
-    SPORTS: [['ALL','All'],['TRACK','Track'],['FIELD','Field'],['MARATHON','Marathon'],['OTHER','Other'],['GROUP','Group'],['DOUBLES','Doubles']],
-    CULTURAL: [['ALL','All'],['INDIVIDUAL','Individual'],['GROUP','Group'],['OTHER','Other']]
+    SPORTS: [['ALL','All'],['TRACK','Track'],['FIELD','Field'],['MARATHON','Marathon'],['OTHER','Other'],['DOUBLES','Doubles']],
+    CULTURAL: [['ALL','All'],['INDIVIDUAL','Individual'],['OTHER','Other']]
   };
   let categoryFilter = 'ALL';
   function renderCategoryFilterBar() {
@@ -1208,6 +1307,7 @@
     list.innerHTML = skeletonRows(3);
     try {
       const data = await api('listEvents', {});
+      if (data.season) currentSeasonCache = data.season;
       const { track, field, total } = data.usage;
       const { maxPerCategory, maxTotal } = data.limits;
       if (state.activeSection === 'CULTURAL') {
@@ -1217,7 +1317,9 @@
         banner.innerHTML = `TRACK/FIELD USAGE — Track: <strong>${track}/${maxPerCategory}</strong> · Field: <strong>${field}/${maxPerCategory}</strong> · Combined: <strong>${total}/${maxTotal}</strong> &nbsp;·&nbsp; "Other" events don't count toward this.`;
       }
 
-      let eventsToShow = data.events.filter(ev => (ev.section || 'SPORTS') === state.activeSection);
+      // Group events never appear here — they have no registration; see the
+      // Group Events section for rosters instead.
+      let eventsToShow = data.events.filter(ev => (ev.section || 'SPORTS') === state.activeSection && String(ev.category || '').toUpperCase() !== 'GROUP');
       eventsToShow = showOnlyMyRegs
         ? eventsToShow.filter(ev => data.myRegistrations.includes(ev.eventId))
         : eventsToShow;
@@ -1348,6 +1450,96 @@
     }
   }
 
+  // ---------- GROUP EVENTS (student view — read-only roster) ----------
+  async function loadGroupEventsStudent() {
+    const list = document.getElementById('groupEventsList');
+    list.innerHTML = skeletonRows(2);
+    try {
+      const data = await api('listEvents', {});
+      if (data.season) currentSeasonCache = data.season;
+      const groupEvents = sortEventsForDisplay(
+        data.events.filter(ev => (ev.section || 'SPORTS') === state.activeSection && String(ev.category || '').toUpperCase() === 'GROUP')
+      );
+      if (!groupEvents.length) {
+        list.innerHTML = '<div class="event-row"><span class="mono" style="color:var(--muted);">No group events yet — check back soon.</span></div>';
+        return;
+      }
+      const rosters = await Promise.all(groupEvents.map(ev => api('getGroupRoster', { eventId: ev.eventId }).catch(() => ({ roster: [] }))));
+      list.innerHTML = groupEvents.map((ev, i) => {
+        const roster = rosters[i].roster || [];
+        const byHouse = {};
+        roster.forEach(r => { (byHouse[r.house || 'Unassigned'] = byHouse[r.house || 'Unassigned'] || []).push(r.name); });
+        const houseBlocks = Object.keys(byHouse).map(house => `
+          <div style="margin-top:8px;">
+            <div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px;">${escapeHtml(house)}</div>
+            <div style="font-size:13px;">${byHouse[house].map(escapeHtml).join(', ')}</div>
+          </div>`).join('') || '<div class="mono" style="font-size:12px;color:var(--muted);margin-top:8px;">No players added yet.</div>';
+        const compDateText = ev.competitionDate ? fmtDate(parseDateOnly(ev.competitionDate)) : 'To be decided';
+        const completedPill = ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : '';
+        return `<div class="event-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+          <div style="display:flex;justify-content:space-between;width:100%;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div class="event-name">${escapeHtml(ev.name)}</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span class="pill cat-group">Group</span>${completedPill}
+            </div>
+          </div>
+          <div class="event-meta">Event day: ${compDateText}</div>
+          <div style="width:100%;">${houseBlocks}</div>
+        </div>`;
+      }).join('');
+    } catch (err) {
+      list.innerHTML = `<div class="event-row" style="color:#b7401b;">${err.message}</div>`;
+    }
+  }
+
+  // ---------- HOUSE POINTS ----------
+  async function loadHouseStandings() {
+    const card = document.getElementById('houseStandingsCard');
+    const banner = document.getElementById('houseChampionBanner');
+    const progress = document.getElementById('houseProgressBanner');
+    card.innerHTML = skeletonRows(2);
+    banner.classList.add('hidden');
+    try {
+      const data = await api('getHouseStandings', {});
+      currentSeasonCache = data.season;
+      document.getElementById('housePointsSeason').textContent = 'Season ' + data.season;
+
+      progress.innerHTML = `🏅 Sports group events: <strong>${data.sportsCompleted}${data.sportsTotal ? ' / ' + data.sportsTotal : ''}</strong> completed &nbsp;·&nbsp; 🎭 Cultural group events: <strong>${data.culturalCompleted}${data.culturalTotal ? ' / ' + data.culturalTotal : ''}</strong> completed`;
+
+      if (data.allDone && data.champions.length) {
+        banner.classList.remove('hidden');
+        banner.innerHTML = `<div style="font-family:'Anton',sans-serif;font-size:20px;">🏆 House Champion${data.champions.length > 1 ? 's' : ''} — ${data.champions.map(escapeHtml).join(' & ')}</div>
+          <div class="mono" style="font-size:11.5px;color:var(--muted);margin-top:4px;">All group events for the season are complete.</div>`;
+      } else if (data.standings.length && data.standings[0].totalPoints > 0) {
+        banner.classList.remove('hidden');
+        banner.style.background = '#fff';
+        banner.style.borderColor = 'var(--line)';
+        const leaders = data.standings.filter(s => s.totalPoints === data.standings[0].totalPoints).map(s => s.name);
+        banner.innerHTML = `<div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Currently leading</div>
+          <div style="font-family:'Anton',sans-serif;font-size:18px;margin-top:2px;">${leaders.map(escapeHtml).join(' & ')}</div>`;
+      }
+
+      if (!data.standings.length) {
+        card.innerHTML = '<div class="mono" style="color:var(--muted);font-size:13px;">No houses have scored yet — points are awarded once a group event\'s result is published.</div>';
+        return;
+      }
+      card.innerHTML = `
+        <table>
+          <thead><tr><th>House</th><th>🏅 Sports</th><th>🎭 Cultural</th><th>Total</th></tr></thead>
+          <tbody>
+            ${data.standings.map(s => `<tr>
+              <td style="font-weight:600;">${escapeHtml(s.name)}</td>
+              <td class="mono">${s.sportsPoints}</td>
+              <td class="mono">${s.culturalPoints}</td>
+              <td class="mono" style="font-weight:700;">${s.totalPoints}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>`;
+    } catch (err) {
+      card.innerHTML = `<div style="color:#b7401b;">${err.message}</div>`;
+    }
+  }
+
   // ---------- RESULTS (student view) ----------
   const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
   const UNIT_LABEL = { m: 'm', ft: 'ft', s: 's' };
@@ -1408,7 +1600,8 @@
         return;
       }
       try { renderLeaderboard(data.results, state.activeSection); } catch (lbErr) { console.error('Leaderboard render failed (non-fatal):', lbErr); }
-      container.innerHTML = data.results.map(r => {
+
+      const renderResultRow = (r) => {
         const cat = String(r.category || 'OTHER').toUpperCase();
         const rows = cat === 'GROUP' ? renderMatchScoreboard(r.match) : (r.positions.map(p => `
           <div style="display:flex;align-items:center;gap:10px;padding:6px 0;flex-wrap:wrap;">
@@ -1429,7 +1622,23 @@
           </div>
           <div style="width:100%;">${rows}</div>
         </div>`;
-      }).join('');
+      };
+
+      // Group and individual results are kept in the same Results section but
+      // shown as two clearly separate blocks, since a house-vs-house
+      // scoreboard and a 1st/2nd/3rd podium aren't really comparable.
+      const groupResults = data.results.filter(r => String(r.category || '').toUpperCase() === 'GROUP');
+      const individualResults = data.results.filter(r => String(r.category || '').toUpperCase() !== 'GROUP');
+      let html = '';
+      if (groupResults.length) {
+        html += `<div style="padding:14px 22px;background:var(--chalk);border-bottom:1px solid var(--line);"><span class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">Group Events</span></div>`;
+        html += groupResults.map(renderResultRow).join('');
+      }
+      if (individualResults.length) {
+        html += `<div style="padding:14px 22px;background:var(--chalk);border-bottom:1px solid var(--line);"><span class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">Individual Events</span></div>`;
+        html += individualResults.map(renderResultRow).join('');
+      }
+      container.innerHTML = html;
       container.querySelectorAll('.gallery-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const photos = JSON.parse(btn.dataset.photos);
@@ -1716,6 +1925,15 @@
     document.getElementById('bulkRegNosInput').value = '';
     document.getElementById('bulkRegsMsg').textContent = '';
     populateAllUsersDatalist();
+    const houseRow = document.getElementById('regsModalHouseRow');
+    if (currentModalCategory === 'GROUP') {
+      houseRow.classList.remove('hidden');
+      loadHousesCache().then(() => {
+        document.getElementById('regsModalHouseSelect').innerHTML = houseSelectOptions('');
+      });
+    } else {
+      houseRow.classList.add('hidden');
+    }
     document.getElementById('regsModal').classList.remove('hidden');
   }
   function showUserRegsModal(userName, registrations) {
@@ -1739,6 +1957,7 @@
     }
     document.getElementById('regsModalAddRow').classList.add('hidden');
     document.getElementById('regsModalBulkRow').classList.add('hidden');
+    document.getElementById('regsModalHouseRow').classList.add('hidden');
     document.getElementById('regsModal').classList.remove('hidden');
   }
   function hideRegsModal() {
@@ -1771,6 +1990,11 @@
       if (!partnerRegNo) { setMsg(msg, 'Doubles event needs a partner reg no — cancelled.', false); return; }
       payload.partnerRegNo = partnerRegNo;
     }
+    if (currentModalCategory === 'GROUP') {
+      const house = document.getElementById('regsModalHouseSelect').value;
+      if (!house) { setMsg(msg, "Pick which house/team this player belongs to.", false); return; }
+      payload.groupLabel = house;
+    }
     try {
       await api('adminAddRegistration', payload);
       document.getElementById('addRegNoInput').value = '';
@@ -1789,8 +2013,14 @@
     const regNos = document.getElementById('bulkRegNosInput').value.trim();
     if (!regNos) { setMsg(msg, 'Paste at least one registration number.', false); return; }
     if (!currentModalEventId) { setMsg(msg, 'No event selected.', false); return; }
+    const payload = { eventId: currentModalEventId, regNos };
+    if (currentModalCategory === 'GROUP') {
+      const house = document.getElementById('regsModalHouseSelect').value;
+      if (!house) { setMsg(msg, "Pick which house/team these players belong to.", false); return; }
+      payload.groupLabel = house;
+    }
     try {
-      const result = await api('adminBulkAddRegistrations', { eventId: currentModalEventId, regNos });
+      const result = await api('adminBulkAddRegistrations', payload);
       document.getElementById('bulkRegNosInput').value = '';
       const data = await api('adminListRegistrations', { eventId: currentModalEventId });
       showRegsModal(currentEventNameForExport, data.registrations, currentModalEventId);
@@ -1913,6 +2143,7 @@
       document.getElementById('tab-' + tab.dataset.tab).classList.remove('hidden');
       if (tab.dataset.tab === 'notice') loadNoticeAdmin();
       if (tab.dataset.tab === 'results') loadResultsAdminTab();
+      if (tab.dataset.tab === 'houses') loadHousesAdminTab();
     });
   });
 
@@ -2147,6 +2378,109 @@
     await renderPublishedResultsAdmin();
   }
 
+  // ---------- HOUSES TAB (admin) ----------
+  function myGroupTotalSectionsEditable() {
+    // BOSS can edit both totals; a section-locked admin (or teacher, who
+    // gets no lock and thus no edit rights here) can only edit their own.
+    const lock = myAdminSectionLock();
+    if (!lock) return state.adminRole === 'BOSS' ? ['SPORTS', 'CULTURAL'] : [];
+    return [lock];
+  }
+
+  async function loadHousesAdminTab() {
+    const isBoss = state.adminRole === 'BOSS';
+    document.getElementById('addHouseCard').style.display = isBoss ? '' : 'none';
+    const editable = myGroupTotalSectionsEditable();
+    document.getElementById('saveSportsTotalBtn').closest('.inline-form').style.display = editable.includes('SPORTS') ? '' : 'none';
+    document.getElementById('saveCulturalTotalBtn').closest('.inline-form').style.display = editable.includes('CULTURAL') ? '' : 'none';
+
+    await loadHousesCache();
+    renderHousesList();
+
+    try {
+      const settings = await api('adminGetSettings', {});
+      document.getElementById('houseSettingsSeasonLabel').textContent = 'Season ' + settings.season;
+      document.getElementById('sportsGroupTotalInput').value = settings.sportsTotal || '';
+      document.getElementById('culturalGroupTotalInput').value = settings.culturalTotal || '';
+      document.getElementById('sportsGroupTotalInput').placeholder = settings.sportsCompleted + ' completed so far';
+      document.getElementById('culturalGroupTotalInput').placeholder = settings.culturalCompleted + ' completed so far';
+    } catch (err) { /* leave defaults */ }
+
+    await renderAdminHouseStandings();
+  }
+
+  function renderHousesList() {
+    const box = document.getElementById('housesListInner');
+    const isBoss = state.adminRole === 'BOSS';
+    if (!housesCache.length) {
+      box.innerHTML = '<div class="mono" style="font-size:12px;color:var(--muted);">No houses added yet.</div>';
+      return;
+    }
+    box.innerHTML = housesCache.map(h => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">
+        <span style="font-weight:600;font-size:13.5px;">${escapeHtml(h.name)}</span>
+        ${isBoss ? `<button class="btn btn-outline btn-small delete-house-btn" data-house-id="${h.houseId}" style="border-color:#b7401b;color:#b7401b;">Remove</button>` : ''}
+      </div>`).join('');
+    box.querySelectorAll('.delete-house-btn').forEach(btn => {
+      btn.addEventListener('click', withLoading(btn, async () => {
+        if (!confirm('Remove this house? Past results already published keep their recorded winner text, but it will drop out of dropdowns for new results.')) return;
+        await api('adminDeleteHouse', { houseId: btn.dataset.houseId });
+        await loadHousesCache();
+        renderHousesList();
+        await renderAdminHouseStandings();
+      }));
+    });
+  }
+
+  document.getElementById('addHouseBtn').addEventListener('click', withLoading(document.getElementById('addHouseBtn'), async () => {
+    const msg = document.getElementById('addHouseMsg');
+    const nameInput = document.getElementById('newHouseName');
+    const name = nameInput.value.trim();
+    if (!name) { setMsg(msg, 'Enter a house name.', false); return; }
+    try {
+      await api('adminAddHouse', { name });
+      nameInput.value = '';
+      setMsg(msg, 'House added.', true);
+      await loadHousesCache();
+      renderHousesList();
+    } catch (err) { setMsg(msg, err.message, false); }
+  }));
+
+  function wireGroupTotalSave(btnId, inputId, section) {
+    document.getElementById(btnId).addEventListener('click', withLoading(document.getElementById(btnId), async () => {
+      const msg = document.getElementById('houseSettingsMsg');
+      const total = document.getElementById(inputId).value;
+      try {
+        await api('adminSetGroupEventsTotal', { section, total });
+        setMsg(msg, 'Saved.', true);
+        await renderAdminHouseStandings();
+      } catch (err) { setMsg(msg, err.message, false); }
+    }));
+  }
+  wireGroupTotalSave('saveSportsTotalBtn', 'sportsGroupTotalInput', 'SPORTS');
+  wireGroupTotalSave('saveCulturalTotalBtn', 'culturalGroupTotalInput', 'CULTURAL');
+
+  async function renderAdminHouseStandings() {
+    const box = document.getElementById('adminHouseStandings');
+    try {
+      const data = await api('getHouseStandings', {});
+      if (!data.standings.length) {
+        box.innerHTML = 'No houses have scored yet.';
+        return;
+      }
+      const championLine = data.allDone && data.champions.length
+        ? `<div style="font-family:'Anton',sans-serif;font-size:16px;color:var(--court-navy);margin-bottom:12px;">🏆 Champion${data.champions.length > 1 ? 's' : ''}: ${data.champions.map(escapeHtml).join(' & ')}</div>`
+        : '';
+      box.innerHTML = championLine + `
+        <table>
+          <thead><tr><th>House</th><th>Sports</th><th>Cultural</th><th>Total</th></tr></thead>
+          <tbody>
+            ${data.standings.map(s => `<tr><td>${escapeHtml(s.name)}</td><td>${s.sportsPoints}</td><td>${s.culturalPoints}</td><td style="font-weight:700;">${s.totalPoints}</td></tr>`).join('')}
+          </tbody>
+        </table>`;
+    } catch (err) { box.innerHTML = err.message; }
+  }
+
   // Opens the results editor for a specific event — used both by the
   // dropdown's change handler and by "Edit" on an already-published result
   // (which intentionally isn't in the dropdown's option list).
@@ -2186,19 +2520,42 @@
     document.getElementById('matchPeriodsList').appendChild(renderMatchPeriodRow({}));
   });
 
-  function updateMatchWinnerOptions(selectedToken) {
-    const teamA = document.getElementById('matchTeamAInput').value.trim();
-    const teamB = document.getElementById('matchTeamBInput').value.trim();
+  // ---------- HOUSES (shared cache used by results editor + add-players + Houses tab) ----------
+  let housesCache = []; // [{houseId, name}]
+  async function loadHousesCache() {
+    try {
+      const data = await api('adminListHouses', {});
+      housesCache = data.houses || [];
+    } catch (e) { housesCache = []; }
+    return housesCache;
+  }
+  function houseSelectOptions(selected) {
+    if (!housesCache.length) return '<option value="">Select house…</option>';
+    return '<option value="">Select house…</option>' + housesCache.map(h =>
+      `<option value="${escapeHtml(h.name)}" ${h.name === selected ? 'selected' : ''}>${escapeHtml(h.name)}</option>`
+    ).join('');
+  }
+  function populateMatchTeamSelects(selectedA, selectedB) {
+    document.getElementById('matchTeamASelect').innerHTML = houseSelectOptions(selectedA);
+    document.getElementById('matchTeamBSelect').innerHTML = houseSelectOptions(selectedB);
+    document.getElementById('matchNoHousesHint').style.display = housesCache.length ? 'none' : 'block';
+  }
+
+  function updateMatchWinnerOptions(selectedWinner) {
+    const teamA = document.getElementById('matchTeamASelect').value.trim();
+    const teamB = document.getElementById('matchTeamBSelect').value.trim();
     const sel = document.getElementById('matchWinnerSelect');
-    const prev = selectedToken !== undefined ? selectedToken : sel.value;
+    const prev = selectedWinner !== undefined ? selectedWinner : sel.value;
+    // No "Draw" option — a published group event must resolve to exactly
+    // one house so the house-points tally stays unambiguous (see the guide
+    // text above the House selects).
     sel.innerHTML = '<option value="">Select winner…</option>'
-      + (teamA ? `<option value="TEAM_A">${escapeHtml(teamA)}</option>` : '')
-      + (teamB ? `<option value="TEAM_B">${escapeHtml(teamB)}</option>` : '')
-      + '<option value="DRAW">Draw</option>';
+      + (teamA ? `<option value="${escapeHtml(teamA)}">${escapeHtml(teamA)}</option>` : '')
+      + (teamB ? `<option value="${escapeHtml(teamB)}">${escapeHtml(teamB)}</option>` : '');
     sel.value = prev || '';
   }
-  document.getElementById('matchTeamAInput').addEventListener('input', () => updateMatchWinnerOptions());
-  document.getElementById('matchTeamBInput').addEventListener('input', () => updateMatchWinnerOptions());
+  document.getElementById('matchTeamASelect').addEventListener('change', () => updateMatchWinnerOptions());
+  document.getElementById('matchTeamBSelect').addEventListener('change', () => updateMatchWinnerOptions());
 
   async function loadResultsEditorContent(eventId) {
     const editor = document.getElementById('resultsEditor');
@@ -2208,7 +2565,8 @@
     try {
       const [regsData, savedResults] = await Promise.all([
         api('adminListRegistrations', { eventId }),
-        api('adminGetEventResults', { eventId })
+        api('adminGetEventResults', { eventId }),
+        loadHousesCache()
       ]);
 
       currentResultsEventCategory = String(savedResults.category || '').toUpperCase();
@@ -2218,17 +2576,12 @@
 
       if (isGroup) {
         const m = savedResults.match || {};
-        document.getElementById('matchTeamAInput').value = m.teamA || '';
-        document.getElementById('matchTeamBInput').value = m.teamB || '';
+        populateMatchTeamSelects(m.teamA || '', m.teamB || '');
         const list = document.getElementById('matchPeriodsList');
         list.innerHTML = '';
         const periods = (m.periods && m.periods.length) ? m.periods : [{}];
         periods.forEach(p => list.appendChild(renderMatchPeriodRow(p)));
-        let winnerToken = '';
-        if (m.winner && m.teamA && m.winner === m.teamA) winnerToken = 'TEAM_A';
-        else if (m.winner && m.teamB && m.winner === m.teamB) winnerToken = 'TEAM_B';
-        else if (m.winner) winnerToken = 'DRAW';
-        updateMatchWinnerOptions(winnerToken);
+        updateMatchWinnerOptions(m.winner || '');
       } else {
         const options = ['<option value="">— pick a registered student (optional) —</option>'].concat(
           regsData.registrations.map(r => `<option value="${escapeHtml(r.regNo)}|${escapeHtml(r.name)}">${escapeHtml(r.name)} (${escapeHtml(r.regNo)})</option>`)
@@ -2275,11 +2628,11 @@
     const payload = { eventId: currentResultsEventId, resultsPublished };
 
     if (currentResultsEventCategory === 'GROUP') {
-      const teamA = document.getElementById('matchTeamAInput').value.trim();
-      const teamB = document.getElementById('matchTeamBInput').value.trim();
-      const winnerToken = document.getElementById('matchWinnerSelect').value;
-      const winner = winnerToken === 'TEAM_A' ? teamA : winnerToken === 'TEAM_B' ? teamB : winnerToken === 'DRAW' ? 'Draw' : '';
-      if (resultsPublished && (!teamA || !teamB)) { setMsg(msg, 'Enter both team/house names before publishing.', false); return; }
+      const teamA = document.getElementById('matchTeamASelect').value.trim();
+      const teamB = document.getElementById('matchTeamBSelect').value.trim();
+      const winner = document.getElementById('matchWinnerSelect').value.trim();
+      if (resultsPublished && (!teamA || !teamB)) { setMsg(msg, 'Pick both houses before publishing.', false); return; }
+      if (resultsPublished && (!winner || (winner !== teamA && winner !== teamB))) { setMsg(msg, 'Pick a winner before publishing — group events need a decided result.', false); return; }
       const periods = Array.from(document.querySelectorAll('#matchPeriodsList [data-period-row]')).map(row => ({
         label: row.querySelector('.mp-label').value.trim(),
         scoreA: row.querySelector('.mp-scoreA').value.trim(),

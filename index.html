@@ -30,6 +30,18 @@
   .btn-danger{background:#b7401b;color:#fff;}
   .card{background:#fff;border:1px solid var(--line);}
   main{padding:40px 0 80px;}
+  .home-hero{padding-top:6vh;}
+  .home-stack{display:flex;flex-direction:column;gap:16px;max-width:640px;margin:28px auto 0;}
+  .home-stack .card{padding:30px 32px !important;transition:box-shadow .15s,transform .15s;}
+  .home-stack .card:hover{box-shadow:0 6px 18px rgba(11,37,69,.08);transform:translateY(-1px);}
+  .home-stack .card .event-name{font-size:23px !important;margin-bottom:6px !important;}
+  .home-stack .card .mono{font-size:12.5px !important;}
+  @media (max-width:640px){
+    .home-hero{padding-top:3vh;}
+    .home-stack{max-width:100%;}
+    .home-stack .card{padding:22px 20px !important;}
+    .home-stack .card .event-name{font-size:19px !important;}
+  }
   .center-box{max-width:380px;margin:80px auto;padding:32px;}
   .field{margin-bottom:16px;}
   .field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
@@ -171,9 +183,6 @@
     .nav-right #navName{width:100%;text-align:right;font-size:10.5px;order:-1;}
     .nav-right .btn-small{padding:5px 9px;font-size:10px;}
 
-    #goRegistrationsBtn, #goResultsBtn, #goSportsBtn, #goCulturalBtn, #goHousePointsBtn, #goGroupEventsBtn{padding:16px !important;min-width:0 !important;}
-    #goRegistrationsBtn .event-name, #goResultsBtn .event-name, #goSportsBtn .event-name, #goCulturalBtn .event-name, #goHousePointsBtn .event-name, #goGroupEventsBtn .event-name{font-size:17px !important;}
-    #goRegistrationsBtn .mono, #goResultsBtn .mono, #goSportsBtn .mono, #goCulturalBtn .mono, #goHousePointsBtn .mono, #goGroupEventsBtn .mono{font-size:11px !important;}
     .lb-podium-name{font-size:11.5px;}
     .lb-podium-pts{font-size:13px;}
     .lb-podium-medal{font-size:18px;}
@@ -369,21 +378,21 @@
   </div>
 
   <!-- DASHBOARD HOME -->
-  <div id="sectionHomeView" class="wrap hidden">
+  <div id="sectionHomeView" class="wrap hidden home-hero">
     <p class="hello">Welcome back</p>
     <h1 class="page-title" id="sectionHomeName">—</h1>
-    <div style="display:flex;flex-direction:column;gap:14px;margin-top:8px;max-width:520px;">
-      <button class="card" id="goSportsBtn" style="padding:24px 28px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
-        <div class="event-name" style="font-size:22px;margin-bottom:4px;">🏅 Sports</div>
-        <div class="mono" style="font-size:12px;color:var(--muted);">Track, Field, Marathon &amp; more</div>
+    <div class="home-stack">
+      <button class="card" id="goSportsBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name">🏅 Sports</div>
+        <div class="mono" style="color:var(--muted);">Track, Field, Marathon &amp; more</div>
       </button>
-      <button class="card" id="goCulturalBtn" style="padding:24px 28px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
-        <div class="event-name" style="font-size:22px;margin-bottom:4px;">🎭 Cultural</div>
-        <div class="mono" style="font-size:12px;color:var(--muted);">Solo, group &amp; other performances</div>
+      <button class="card" id="goCulturalBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name">🎭 Cultural</div>
+        <div class="mono" style="color:var(--muted);">Solo, group &amp; other performances</div>
       </button>
-      <button class="card" id="goHousePointsBtn" style="padding:24px 28px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
-        <div class="event-name" style="font-size:22px;margin-bottom:4px;">🏆 House Points</div>
-        <div class="mono" style="font-size:12px;color:var(--muted);">Standings &amp; the House Championship</div>
+      <button class="card" id="goHousePointsBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name">🏆 House Points</div>
+        <div class="mono" style="color:var(--muted);">Standings &amp; the House Championship</div>
       </button>
     </div>
   </div>
@@ -400,25 +409,25 @@
     <div class="card" id="houseStandingsCard" style="padding:22px;"></div>
   </div>
 
-  <div id="dashboardHomeView" class="wrap hidden">
+  <div id="dashboardHomeView" class="wrap hidden home-hero">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
       <button class="btn btn-outline btn-small back-btn" data-back-to="sectionHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button>
       <button class="btn btn-outline btn-small switch-section-btn" id="switchSectionBtn" style="border-color:var(--line);color:var(--graphite);"></button>
     </div>
     <p class="hello" id="dashHomeSection">Welcome back</p>
     <h1 class="page-title" id="dashHomeName">—</h1>
-    <div style="display:flex;flex-direction:column;gap:14px;margin-top:8px;max-width:520px;">
-      <button class="card" id="goRegistrationsBtn" style="padding:22px 26px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
-        <div class="event-name" style="font-size:20px;margin-bottom:4px;">Registrations</div>
-        <div class="mono" style="font-size:12px;color:var(--muted);">Browse events, register, or unregister</div>
+    <div class="home-stack">
+      <button class="card" id="goRegistrationsBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name">Registrations</div>
+        <div class="mono" style="color:var(--muted);">Browse events, register, or unregister</div>
       </button>
-      <button class="card" id="goResultsBtn" style="padding:22px 26px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
-        <div class="event-name" style="font-size:20px;margin-bottom:4px;">Results</div>
-        <div class="mono" style="font-size:12px;color:var(--muted);">See published results for completed events</div>
+      <button class="card" id="goResultsBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name">Results</div>
+        <div class="mono" style="color:var(--muted);">See published results for completed events</div>
       </button>
-      <button class="card" id="goGroupEventsBtn" style="padding:22px 26px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
-        <div class="event-name" style="font-size:20px;margin-bottom:4px;">Group Events</div>
-        <div class="mono" style="font-size:12px;color:var(--muted);">House-vs-house team events &amp; rosters</div>
+      <button class="card" id="goGroupEventsBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name">Group Events</div>
+        <div class="mono" style="color:var(--muted);">House-vs-house team events &amp; rosters</div>
       </button>
     </div>
   </div>
@@ -534,10 +543,11 @@
       <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
         <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" id="exportAllRegsBtn">Export all registrations (CSV, event-wise)</button>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:12px;" id="adminSectionFilterBar">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;" id="adminSectionFilterBar">
         <button class="btn btn-orange btn-small admin-section-filter-btn" data-section-filter="ALL">All</button>
         <button class="btn btn-outline btn-small admin-section-filter-btn" style="border-color:var(--line);color:var(--graphite);" data-section-filter="SPORTS">🏅 Sports</button>
         <button class="btn btn-outline btn-small admin-section-filter-btn" style="border-color:var(--line);color:var(--graphite);" data-section-filter="CULTURAL">🎭 Cultural</button>
+        <button class="btn btn-outline btn-small admin-section-filter-btn" style="border-color:var(--line);color:var(--graphite);" data-section-filter="GROUP">👥 Group events (both sections)</button>
       </div>
       <div class="card" id="adminEventsList"></div>
     </div>
@@ -824,6 +834,19 @@
     return [...events].sort((a, b) => {
       if (!!a.completed !== !!b.completed) return a.completed ? 1 : -1;
       return eventSortTimestamp(a) - eventSortTimestamp(b);
+    });
+  }
+
+  // Admin's "Manage Season" events list: ordered purely by competition
+  // (event) date, latest first — regardless of completed/registration
+  // status, since an admin scanning the full season wants to see the most
+  // recent/upcoming event day at a glance. Events with no event day set yet
+  // ("To be decided") sort to the very end, since there's no date to rank them by.
+  function sortAdminEventsByDate(events) {
+    return [...events].sort((a, b) => {
+      const ta = a.competitionDate ? new Date(a.competitionDate).getTime() : -Infinity;
+      const tb = b.competitionDate ? new Date(b.competitionDate).getTime() : -Infinity;
+      return tb - ta;
     });
   }
 
@@ -1524,18 +1547,34 @@
         card.innerHTML = '<div class="mono" style="color:var(--muted);font-size:13px;">No houses have scored yet — points are awarded once a group event\'s result is published.</div>';
         return;
       }
-      card.innerHTML = `
-        <table>
-          <thead><tr><th>House</th><th>🏅 Sports</th><th>🎭 Cultural</th><th>Total</th></tr></thead>
-          <tbody>
-            ${data.standings.map(s => `<tr>
-              <td style="font-weight:600;">${escapeHtml(s.name)}</td>
-              <td class="mono">${s.sportsPoints}</td>
-              <td class="mono">${s.culturalPoints}</td>
-              <td class="mono" style="font-weight:700;">${s.totalPoints}</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>`;
+      // One card per house, side by side, each with its own Sports/Cultural
+      // sub-columns and a Total — rather than a plain table row per house —
+      // so it reads like a scoreboard and the leading house(s) can be
+      // highlighted directly on their own card.
+      const topScore = data.standings[0].totalPoints;
+      card.innerHTML = `<div style="display:flex;gap:16px;flex-wrap:wrap;">
+        ${data.standings.map(s => {
+          const isLeading = topScore > 0 && s.totalPoints === topScore;
+          return `<div style="flex:1;min-width:190px;border:1px solid ${isLeading ? '#e8c468' : 'var(--line)'};border-radius:4px;padding:18px 16px;${isLeading ? 'background:#fff9ec;' : 'background:#fff;'}">
+            ${isLeading ? '<div class="mono" style="font-size:10px;letter-spacing:.06em;color:#a9660a;margin-bottom:4px;">🏆 LEADING</div>' : ''}
+            <div style="font-family:'Anton',sans-serif;font-size:20px;margin-bottom:14px;">${escapeHtml(s.name)}</div>
+            <div style="display:flex;gap:18px;">
+              <div style="flex:1;">
+                <div class="mono" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">🏅 Sports</div>
+                <div style="font-size:22px;font-weight:700;margin-top:2px;">${s.sportsPoints}</div>
+              </div>
+              <div style="flex:1;">
+                <div class="mono" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">🎭 Cultural</div>
+                <div style="font-size:22px;font-weight:700;margin-top:2px;">${s.culturalPoints}</div>
+              </div>
+            </div>
+            <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;align-items:baseline;">
+              <span class="mono" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Total</span>
+              <span style="font-size:26px;font-weight:800;">${s.totalPoints}</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
     } catch (err) {
       card.innerHTML = `<div style="color:#b7401b;">${err.message}</div>`;
     }
@@ -1832,6 +1871,7 @@
   let currentRegsForCopy = [];
   let currentModalEventId = null;
   let currentModalCategory = '';
+  let currentModalReadOnly = false;
 
   function showRegsModal(eventName, registrations, eventId) {
     currentModalMode = 'event';
@@ -1918,16 +1958,22 @@
         }));
       });
     }
-    document.getElementById('regsModalAddRow').classList.remove('hidden');
+    document.getElementById('regsModalAddRow').classList.toggle('hidden', currentModalReadOnly);
     document.getElementById('addRegNoInput').value = '';
     setMsg(document.getElementById('addRegNoMsg'), '', true);
     document.getElementById('addRegNoMsg').style.display = 'none';
-    document.getElementById('regsModalBulkRow').classList.remove('hidden');
+    document.getElementById('regsModalBulkRow').classList.toggle('hidden', currentModalReadOnly);
     document.getElementById('bulkRegNosInput').value = '';
     document.getElementById('bulkRegsMsg').textContent = '';
     populateAllUsersDatalist();
+    // Read-only mode (viewing the other section's group event via the
+    // cross-section Group filter): no adding, no removing — this modal is
+    // purely informational there.
+    if (currentModalReadOnly) {
+      body.querySelectorAll('[data-remove-reg]').forEach(btn => btn.style.display = 'none');
+    }
     const houseRow = document.getElementById('regsModalHouseRow');
-    if (currentModalCategory === 'GROUP') {
+    if (currentModalCategory === 'GROUP' && !currentModalReadOnly) {
       houseRow.classList.remove('hidden');
       loadHousesCache().then(() => {
         document.getElementById('regsModalHouseSelect').innerHTML = houseSelectOptions('');
@@ -2161,17 +2207,36 @@
     const titleEl = document.getElementById('adminPanelTitle');
     const filterBar = document.getElementById('adminSectionFilterBar');
     const sectionSelect = document.getElementById('newEventSection');
+    const allBtn = filterBar.querySelector('[data-section-filter="ALL"]');
+    const sportsBtn = filterBar.querySelector('[data-section-filter="SPORTS"]');
+    const culturalBtn = filterBar.querySelector('[data-section-filter="CULTURAL"]');
     if (lock) {
       titleEl.textContent = lock === 'CULTURAL' ? 'Manage cultural season' : 'Manage sports season';
       adminSectionFilter = lock;
-      filterBar.classList.add('hidden');
+      // A section-locked admin has no use for "All" or the other section's
+      // button — but they can still see (read-only) every group event
+      // across both sections via the Group button, so that one stays.
+      allBtn.classList.add('hidden');
+      (lock === 'SPORTS' ? culturalBtn : sportsBtn).classList.add('hidden');
+      (lock === 'SPORTS' ? sportsBtn : culturalBtn).classList.remove('hidden');
       sectionSelect.value = lock;
       sectionSelect.disabled = true;
     } else {
       titleEl.textContent = 'Manage season';
-      filterBar.classList.remove('hidden');
+      allBtn.classList.remove('hidden');
+      sportsBtn.classList.remove('hidden');
+      culturalBtn.classList.remove('hidden');
+      adminSectionFilter = 'ALL';
       sectionSelect.disabled = false;
     }
+    // Reset the visual active state to match adminSectionFilter above.
+    document.querySelectorAll('.admin-section-filter-btn').forEach(b => {
+      const isActive = b.dataset.sectionFilter === adminSectionFilter;
+      b.classList.toggle('btn-orange', isActive);
+      b.classList.toggle('btn-outline', !isActive);
+      b.style.borderColor = isActive ? '' : 'var(--line)';
+      b.style.color = isActive ? '' : 'var(--graphite)';
+    });
     applyEventCategoryOptions();
     showView('adminView');
     await Promise.all([loadAdminEvents(), loadAdminUsers()]);
@@ -2794,21 +2859,33 @@
     container.innerHTML = skeletonRows(2);
     try {
       const data = await api('listEvents', {});
-      let filteredEvents = data.events;
-      if (adminSectionFilter !== 'ALL') {
-        filteredEvents = filteredEvents.filter(ev => (ev.section || 'SPORTS') === adminSectionFilter);
+      const lock = myAdminSectionLock();
+      let filteredEvents;
+      if (adminSectionFilter === 'GROUP') {
+        // The one exception to the section lock: every admin can SEE every
+        // group event in both sections here, to coordinate across sections —
+        // but editing is still gated per-row below (canEdit).
+        filteredEvents = data.events.filter(ev => String(ev.category || '').toUpperCase() === 'GROUP');
+      } else if (adminSectionFilter !== 'ALL') {
+        filteredEvents = data.events.filter(ev => (ev.section || 'SPORTS') === adminSectionFilter);
+      } else {
+        filteredEvents = data.events;
       }
-      const sortedEvents = sortEventsForDisplay(filteredEvents);
+      const sortedEvents = sortAdminEventsByDate(filteredEvents);
       container.innerHTML = sortedEvents.map(ev => {
         const cat = String(ev.category || 'OTHER').toUpperCase();
         const isGroup = cat === 'GROUP';
+        // Allowed to edit this row? Always true, except when browsing the
+        // cross-section Group list and looking at an event outside your
+        // own locked section (view-only there).
+        const canEdit = !lock || (ev.section || 'SPORTS') === lock;
         // Group events (Sports or Cultural) don't need a registration deadline —
         // players/teams can be added any time, so deadline is ignored entirely.
         const deadlineTbd = !isGroup && ev.deadline === DEADLINE_TBD;
         const deadlineVal = deadlineTbd ? 'Yet to open' : (ev.deadline ? fmtDate(new Date(ev.deadline), true) : '—');
         const compDateVal = ev.competitionDate ? fmtDate(parseDateOnly(ev.competitionDate)) : 'To be decided';
-        const isEditingDeadline = editingDeadlineId === ev.eventId;
-        const isEditingCompDate = editingCompDateId === ev.eventId;
+        const isEditingDeadline = canEdit && editingDeadlineId === ev.eventId;
+        const isEditingCompDate = canEdit && editingCompDateId === ev.eventId;
         const regStatusLabel = !ev.active ? 'Closed' : (deadlineTbd ? 'Yet to open' : 'Active');
         const regStatusClass = !ev.active ? 'closed' : (deadlineTbd ? 'pending' : 'open');
         return `<div class="event-row">
@@ -2842,14 +2919,15 @@
             <span class="pill ${regStatusClass}">${regStatusLabel}</span>
             ${ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : ''}
             ${ev.section === 'CULTURAL' && ev.requiresMaterials ? '<span class="pill" style="background:rgba(255,90,31,.12);color:var(--ball-orange);">🎨 Materials</span>' : ''}
-            ${!isGroup && !isEditingDeadline ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
-            ${!isEditingCompDate ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-compdate="${ev.eventId}">Edit event day</button>` : ''}
-            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>
-            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-completed="${ev.eventId}" data-completed="${ev.completed}">${ev.completed ? 'Mark not completed' : 'Mark completed'}</button>
-            ${ev.section === 'CULTURAL' ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-materials="${ev.eventId}" data-requires-materials="${ev.requiresMaterials}">${ev.requiresMaterials ? 'Materials: on' : 'Materials: off'}</button>` : ''}
-            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}" data-view-regs-category="${ev.category}">${isGroup ? 'Add players' : 'View regs'}</button>
-            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-export-event="${ev.eventId}">Export CSV</button>
-            <button class="btn btn-danger btn-small" data-delete="${ev.eventId}">Delete</button>
+            ${!canEdit ? '<span class="pill" style="background:rgba(0,0,0,.06);color:var(--muted);">👁 View only — the other section\'s admin manages this one</span>' : ''}
+            ${canEdit && !isGroup && !isEditingDeadline ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
+            ${canEdit && !isEditingCompDate ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-compdate="${ev.eventId}">Edit event day</button>` : ''}
+            ${canEdit ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>` : ''}
+            ${canEdit ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-completed="${ev.eventId}" data-completed="${ev.completed}">${ev.completed ? 'Mark not completed' : 'Mark completed'}</button>` : ''}
+            ${canEdit && ev.section === 'CULTURAL' ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-materials="${ev.eventId}" data-requires-materials="${ev.requiresMaterials}">${ev.requiresMaterials ? 'Materials: on' : 'Materials: off'}</button>` : ''}
+            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}" data-view-regs-category="${ev.category}" data-view-regs-readonly="${!canEdit}">${!canEdit ? 'View roster' : (isGroup ? 'Add players' : 'View regs')}</button>
+            ${canEdit ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-export-event="${ev.eventId}">Export CSV</button>` : ''}
+            ${canEdit ? `<button class="btn btn-danger btn-small" data-delete="${ev.eventId}">Delete</button>` : ''}
           </div>
         </div>`;
       }).join('') || '<div class="event-row mono" style="color:var(--muted);">No events yet.</div>';
@@ -2883,6 +2961,7 @@
         btn.addEventListener('click', withLoading(btn, async () => {
           const eventName = btn.closest('.event-row').querySelector('.event-name').textContent;
           currentModalCategory = btn.dataset.viewRegsCategory || '';
+          currentModalReadOnly = btn.dataset.viewRegsReadonly === 'true';
           const data = await api('adminListRegistrations', { eventId: btn.dataset.viewRegs });
           showRegsModal(eventName, data.registrations, btn.dataset.viewRegs);
         }));

@@ -279,6 +279,17 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="groupRosterModal">
+  <div class="modal-box" style="max-width:960px;">
+    <div class="modal-head">
+      <h3 id="groupRosterTitle">Build roster</h3>
+      <button class="modal-close" id="groupRosterCloseX">×</button>
+    </div>
+    <div class="modal-body" id="groupRosterBody" style="padding:20px 22px;"></div>
+    <div class="modal-foot" id="groupRosterFoot"></div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="regsModal">
   <div class="modal-box">
     <div class="modal-head">
@@ -1529,12 +1540,27 @@
         } else {
           const roster = rosters[i].roster || [];
           const byHouse = {};
-          roster.forEach(r => { (byHouse[r.house || 'Unassigned'] = byHouse[r.house || 'Unassigned'] || []).push(r.name); });
-          rosterBlock = Object.keys(byHouse).map(house => `
-            <div style="margin-top:8px;">
-              <div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px;">${escapeHtml(house)}</div>
-              <div style="font-size:13px;">${byHouse[house].map(escapeHtml).join(', ')}</div>
-            </div>`).join('') || '<div class="mono" style="font-size:12px;color:var(--muted);margin-top:8px;">No players added yet.</div>';
+          roster.forEach(r => { (byHouse[r.house || 'Unassigned'] = byHouse[r.house || 'Unassigned'] || []).push(r); });
+          // Captain first, vice-captain second, then everyone else in the
+          // order they were added — one name per line, houses side by side.
+          const roleOrder = { 'Captain': 0, 'Vice-Captain': 1 };
+          Object.values(byHouse).forEach(list => list.sort((a, b) => (roleOrder[a.role] ?? 2) - (roleOrder[b.role] ?? 2)));
+          const roleTag = (role) => role === 'Captain'
+            ? ` <span class="pill" style="background:rgba(255,90,31,.14);color:var(--ball-orange);font-size:9.5px;padding:2px 6px;">C</span>`
+            : role === 'Vice-Captain'
+              ? ` <span class="pill" style="background:rgba(11,37,69,.08);color:var(--court-navy);font-size:9.5px;padding:2px 6px;">VC</span>`
+              : '';
+          rosterBlock = Object.keys(byHouse).length
+            ? `<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:18px;margin-top:8px;">
+                ${Object.keys(byHouse).map(house => `
+                  <div>
+                    <div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">${escapeHtml(house)}</div>
+                    <div style="font-size:13px;line-height:1.9;">
+                      ${byHouse[house].map(p => `<div>${escapeHtml(p.name)}${roleTag(p.role)}</div>`).join('')}
+                    </div>
+                  </div>`).join('')}
+              </div>`
+            : '<div class="mono" style="font-size:12px;color:var(--muted);margin-top:8px;">No players added yet.</div>';
         }
         const compDateText = ev.competitionDate ? fmtDate(parseDateOnly(ev.competitionDate)) : 'To be decided';
         const completedPill = ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : '';
@@ -1921,6 +1947,129 @@
   // ---------- REGISTRATIONS MODAL ----------
   let currentRegsForCopy = [];
   let currentModalEventId = null;
+  // ---------- GROUP ROSTER BUILDER (admin: captain/vice-captain + N player slots per house) ----------
+  let groupRosterEventId = null;
+  let groupRosterEventName = '';
+  let groupRosterSlotCount = 0;
+
+  function openGroupRosterBuilder(eventId, eventName) {
+    groupRosterEventId = eventId;
+    groupRosterEventName = eventName;
+    groupRosterSlotCount = 0;
+    document.getElementById('groupRosterTitle').textContent = 'Build roster — ' + eventName;
+    populateAllUsersDatalist();
+    renderGroupRosterSizeStep();
+    document.getElementById('groupRosterModal').classList.remove('hidden');
+  }
+  function hideGroupRosterModal() {
+    document.getElementById('groupRosterModal').classList.add('hidden');
+  }
+  function renderGroupRosterSizeStep() {
+    const body = document.getElementById('groupRosterBody');
+    const foot = document.getElementById('groupRosterFoot');
+    body.innerHTML = `
+      <p class="mono" style="font-size:12.5px;color:var(--muted);margin:0 0 14px;">How many player slots do you want per house? Captain and vice-captain get their own slots on top of this.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-orange btn-small" data-size-choice="15">15 players</button>
+        <button class="btn btn-orange btn-small" data-size-choice="20">20 players</button>
+        <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-size-choice="custom">Custom number…</button>
+      </div>
+      <div id="groupRosterCustomRow" class="hidden" style="margin-top:14px;display:flex;gap:8px;align-items:center;">
+        <input id="groupRosterCustomInput" type="number" min="1" max="60" placeholder="e.g. 12" style="width:120px;padding:9px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:13px;border-radius:2px;">
+        <button class="btn btn-dark btn-small" id="groupRosterCustomGo">Continue</button>
+      </div>
+      <p class="msg" id="groupRosterSizeMsg" style="margin-top:10px;"></p>
+    `;
+    foot.innerHTML = `<button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="groupRosterCancelBtn">Cancel</button>`;
+    document.getElementById('groupRosterCancelBtn').addEventListener('click', hideGroupRosterModal);
+    body.querySelectorAll('[data-size-choice]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.sizeChoice === 'custom') {
+          document.getElementById('groupRosterCustomRow').classList.remove('hidden');
+          document.getElementById('groupRosterCustomInput').focus();
+          return;
+        }
+        groupRosterSlotCount = parseInt(btn.dataset.sizeChoice, 10);
+        renderGroupRosterFormStep();
+      });
+    });
+    document.getElementById('groupRosterCustomGo').addEventListener('click', () => {
+      const val = parseInt(document.getElementById('groupRosterCustomInput').value, 10);
+      const msg = document.getElementById('groupRosterSizeMsg');
+      if (!val || val < 1) { setMsg(msg, 'Enter a number of players (1 or more).', false); return; }
+      groupRosterSlotCount = val;
+      renderGroupRosterFormStep();
+    });
+  }
+  async function renderGroupRosterFormStep() {
+    const body = document.getElementById('groupRosterBody');
+    const foot = document.getElementById('groupRosterFoot');
+    body.innerHTML = '<div class="msg">Loading houses…</div>';
+    await loadHousesCache();
+    if (!housesCache.length) {
+      body.innerHTML = '<div class="msg err">No houses set up yet — add houses in the Houses tab first.</div>';
+      foot.innerHTML = `<button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="groupRosterCancelBtn">Close</button>`;
+      document.getElementById('groupRosterCancelBtn').addEventListener('click', hideGroupRosterModal);
+      return;
+    }
+    const houseColumn = (house) => `
+      <div style="flex:1;min-width:280px;">
+        <div class="mono" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;border-bottom:1px solid var(--line);padding-bottom:6px;">${escapeHtml(house.name)}</div>
+        <div style="margin-bottom:8px;">
+          <label class="mono" style="font-size:10.5px;color:var(--ball-orange);text-transform:uppercase;letter-spacing:.4px;">Captain</label>
+          <input list="allUsersDatalist" data-house="${escapeHtml(house.name)}" data-role="Captain" placeholder="Reg no or name" style="width:100%;padding:9px 10px;margin-top:3px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        </div>
+        <div style="margin-bottom:14px;">
+          <label class="mono" style="font-size:10.5px;color:var(--ball-orange);text-transform:uppercase;letter-spacing:.4px;">Vice-captain</label>
+          <input list="allUsersDatalist" data-house="${escapeHtml(house.name)}" data-role="Vice-Captain" placeholder="Reg no or name" style="width:100%;padding:9px 10px;margin-top:3px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        </div>
+        ${Array.from({ length: groupRosterSlotCount }).map((_, i) => `
+          <input list="allUsersDatalist" data-house="${escapeHtml(house.name)}" data-role="" placeholder="Player ${i + 1} — reg no or name" style="width:100%;padding:8px 10px;margin-bottom:6px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12px;border-radius:2px;">
+        `).join('')}
+      </div>`;
+    body.innerHTML = `
+      <p class="mono" style="font-size:11.5px;color:var(--muted);margin:0 0 14px;">${groupRosterSlotCount} player slot${groupRosterSlotCount === 1 ? '' : 's'} per house, plus captain &amp; vice-captain. Leave any box blank to skip it.</p>
+      <div style="display:flex;gap:24px;flex-wrap:wrap;max-height:52vh;overflow-y:auto;padding-right:4px;">
+        ${housesCache.map(houseColumn).join('')}
+      </div>
+      <p class="msg" id="groupRosterSaveMsg" style="margin-top:14px;white-space:pre-line;"></p>
+    `;
+    foot.innerHTML = `
+      <button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="groupRosterBackBtn">Back</button>
+      <button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="groupRosterCancelBtn2">Cancel</button>
+      <button class="btn btn-dark" id="groupRosterSaveBtn">Save roster</button>
+    `;
+    document.getElementById('groupRosterBackBtn').addEventListener('click', renderGroupRosterSizeStep);
+    document.getElementById('groupRosterCancelBtn2').addEventListener('click', hideGroupRosterModal);
+    document.getElementById('groupRosterSaveBtn').addEventListener('click', withLoading(document.getElementById('groupRosterSaveBtn'), saveGroupRoster));
+  }
+  async function saveGroupRoster() {
+    const msg = document.getElementById('groupRosterSaveMsg');
+    const inputs = Array.from(document.querySelectorAll('#groupRosterBody input[data-house]'))
+      .map(inp => ({ house: inp.dataset.house, role: inp.dataset.role, raw: inp.value.trim() }))
+      .filter(x => x.raw);
+    if (!inputs.length) { setMsg(msg, 'Fill in at least one player before saving.', false); return; }
+    let added = 0;
+    const failures = [];
+    for (const entry of inputs) {
+      const regNo = entry.raw.split('—')[0].split(' ')[0].trim();
+      if (!regNo) continue;
+      try {
+        await api('adminAddRegistration', { eventId: groupRosterEventId, regNo, groupLabel: entry.house, materials: entry.role });
+        added++;
+      } catch (err) {
+        failures.push(`${regNo} (${entry.house}${entry.role ? ', ' + entry.role : ''}): ${err.message}`);
+      }
+    }
+    const summary = `Added ${added} of ${inputs.length}.` + (failures.length ? `\n\nSkipped:\n${failures.join('\n')}` : '');
+    setMsg(msg, summary, failures.length === 0);
+    await loadAdminEvents();
+  }
+  document.getElementById('groupRosterCloseX').addEventListener('click', hideGroupRosterModal);
+  document.getElementById('groupRosterModal').addEventListener('click', (e) => {
+    if (e.target.id === 'groupRosterModal') hideGroupRosterModal();
+  });
+
   let currentModalCategory = '';
   let currentModalReadOnly = false;
 
@@ -1986,10 +2135,10 @@
           <div style="display:flex;align-items:center;gap:14px;">
             <div class="idx mono">${String(i + 1).padStart(2, '0')}</div>
             <div>
-              <div class="rname">${escapeHtml(r.name)}</div>
+              <div class="rname">${escapeHtml(r.name)} ${currentModalCategory === 'GROUP' && (r.materials === 'Captain' || r.materials === 'Vice-Captain') ? `<span class="pill" style="background:rgba(255,90,31,.14);color:var(--ball-orange);margin-left:6px;">${r.materials}</span>` : ''}</div>
               <div class="rreg">${escapeHtml(r.regNo)}</div>
               ${r.groupLabel ? `<div class="rreg" style="color:var(--muted);">Team: ${escapeHtml(r.groupLabel)}</div>` : ''}
-              ${r.materials ? `<div class="rreg" style="color:var(--muted);">Materials: ${escapeHtml(r.materials)}</div>` : ''}
+              ${r.materials && currentModalCategory !== 'GROUP' ? `<div class="rreg" style="color:var(--muted);">Materials: ${escapeHtml(r.materials)}</div>` : ''}
             </div>
           </div>
           <button class="btn btn-outline btn-small" style="border-color:var(--line);color:#b7401b;" data-remove-reg="${escapeHtml(r.regNo)}" data-remove-team-id="${escapeHtml(r.teamId || '')}">Remove</button>
@@ -2856,7 +3005,8 @@
     grid.innerHTML = '<span class="mono" style="font-size:11.5px;color:var(--muted);">Loading…</span>';
     try {
       const data = await api('adminListEventPhotos', { eventId });
-      countLabel.textContent = `(${data.photos.length}/10)`;
+      const photoCap = currentResultsEventCategory === 'GROUP' ? 20 : 10;
+      countLabel.textContent = `(${data.photos.length}/${photoCap})`;
       if (!data.photos.length) {
         grid.innerHTML = '<span class="mono" style="font-size:11.5px;color:var(--muted);">No photos yet.</span>';
         return;
@@ -3052,7 +3202,8 @@
             ${canEdit ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-completed="${ev.eventId}" data-completed="${ev.completed}">${ev.completed ? 'Mark not completed' : 'Mark completed'}</button>` : ''}
             ${canEdit && ev.section === 'CULTURAL' ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-materials="${ev.eventId}" data-requires-materials="${ev.requiresMaterials}">${ev.requiresMaterials ? 'Materials: on' : 'Materials: off'}</button>` : ''}
             ${canEdit && ev.section === 'CULTURAL' && isGroup ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-mass-event="${ev.eventId}" data-mass-event="${ev.massEvent}">${ev.massEvent ? 'Mass event: on' : 'Mass event: off'}</button>` : ''}
-            ${!ev.massEvent ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}" data-view-regs-category="${ev.category}" data-view-regs-readonly="${!canEdit}">${!canEdit ? 'View roster' : (isGroup ? 'Add players' : 'View regs')}</button>` : ''}
+            ${!ev.massEvent && canEdit && isGroup ? `<button class="btn btn-orange btn-small" data-build-roster="${ev.eventId}" data-build-roster-name="${escapeHtml(ev.name)}">Build roster</button>` : ''}
+            ${!ev.massEvent ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}" data-view-regs-category="${ev.category}" data-view-regs-readonly="${!canEdit}">${!canEdit ? 'View roster' : (isGroup ? 'View / edit roster' : 'View regs')}</button>` : ''}
             ${canEdit ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-export-event="${ev.eventId}">Export CSV</button>` : ''}
             ${canEdit ? `<button class="btn btn-danger btn-small" data-delete="${ev.eventId}">Delete</button>` : ''}
           </div>
@@ -3089,6 +3240,11 @@
           await api('adminDeleteEvent', { eventId: btn.dataset.delete });
           await loadAdminEvents();
         }));
+      });
+      container.querySelectorAll('[data-build-roster]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          openGroupRosterBuilder(btn.dataset.buildRoster, btn.dataset.buildRosterName);
+        });
       });
       container.querySelectorAll('[data-view-regs]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {

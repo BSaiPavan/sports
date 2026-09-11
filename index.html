@@ -585,10 +585,12 @@
 
     <!-- ADMINS TAB -->
     <div class="admin-tab hidden" id="tab-admins">
-      <div class="card admin-write" style="padding:22px;">
+      <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
         <h3>Grant / revoke admin access</h3>
         <p class="mono" style="font-size:12px;color:var(--muted);">Find the user in the Users tab and use the Make Admin / Remove Admin button there.</p>
       </div>
+
+      <div class="card" style="padding:22px;" id="adminGuideBox"></div>
     </div>
 
     <!-- NOTICE TAB -->
@@ -2237,6 +2239,7 @@
       tab.classList.add('active');
       document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
       document.getElementById('tab-' + tab.dataset.tab).classList.remove('hidden');
+      if (tab.dataset.tab === 'admins') renderAdminGuide();
       if (tab.dataset.tab === 'notice') loadNoticeAdmin();
       if (tab.dataset.tab === 'results') loadResultsAdminTab();
       if (tab.dataset.tab === 'houses') loadHousesAdminTab();
@@ -2297,6 +2300,71 @@
     selectEl.innerHTML = '<option value="">None</option>' + data.events.map(ev =>
       `<option value="${ev.eventId}" ${String(ev.eventId) === String(selectedId || '') ? 'selected' : ''}>${escapeHtml(ev.name)} ${ev.active ? '' : '(disabled)'}</option>`
     ).join('');
+  }
+
+  // Shows only the signed-in admin's own role guide — a Sports Admin never
+  // sees Cultural or Boss content and vice versa, so each tier's list stays
+  // self-contained with nothing referencing the other roles.
+  function renderAdminGuide() {
+    const box = document.getElementById('adminGuideBox');
+    if (!box) return;
+    const sec = (label, items) => `
+      <h4 style="font-size:13px;margin:18px 0 6px;">${label}</h4>
+      <ul style="margin:0 0 4px;padding-left:20px;font-size:13px;line-height:1.7;color:var(--graphite);">
+        ${items.map(i => `<li>${i}</li>`).join('')}
+      </ul>`;
+
+    const sportsSections = [
+      sec('Events', ['Create, edit, and delete Sports events', 'Publish or unpublish a Sports event', 'Mark a Sports event as completed']),
+      sec('Registrations', ["View registrations for any Sports event", "Add or remove a student's registration (single or bulk)", 'For group events: add or remove players on a house roster']),
+      sec('Results', ['Set 1st / 2nd / 3rd place results for a Sports event', 'Publish results so students can see them']),
+      sec('Photos', ['Upload photos to a Sports event', 'Delete photos from a Sports event']),
+      sec('Season planning', ['Set how many group events are planned this season, for Sports']),
+      sec('Notices &amp; general', ['View the notice board, and post/edit/delete notices if given that access', 'View the House Championship standings and the list of Houses', 'View the full user list for reference'])
+    ].join('');
+
+    const culturalSections = [
+      sec('Events', ['Create, edit, and delete Cultural events', 'Publish or unpublish a Cultural event', 'Mark a Cultural event as completed']),
+      sec('Registrations', ["View registrations for any Cultural event", "Add or remove a student's registration (single or bulk)", 'For group events: add or remove participants on a house roster']),
+      sec('Results', ['Set 1st / 2nd / 3rd place results for a Cultural event', 'Publish results so students can see them']),
+      sec('Photos', ['Upload photos to a Cultural event', 'Delete photos from a Cultural event']),
+      sec('Season planning', ['Set how many group events are planned this season, for Cultural']),
+      sec('Notices &amp; general', ['View the notice board, and post/edit/delete notices if given that access', 'View the House Championship standings and the list of Houses', 'View the full user list for reference'])
+    ].join('');
+
+    const bossSections = [
+      sec('Events (Sports &amp; Cultural)', ['Create, edit, and delete events in either section', 'Publish or unpublish an event in either section', 'Mark an event as completed in either section']),
+      sec('Registrations (Sports &amp; Cultural)', ['View registrations for any event in either section', "Add or remove a student's registration (single or bulk)", 'For group events: add or remove players/participants on a house roster']),
+      sec('Results (Sports &amp; Cultural)', ['Set 1st / 2nd / 3rd place results for any event', 'Publish results so students can see them']),
+      sec('Photos (Sports &amp; Cultural)', ['Upload photos to any event', 'Delete photos from any event']),
+      sec('Season planning (Sports &amp; Cultural)', ['Set how many group events are planned this season, for either section']),
+      sec('Notices', ['Post, edit, and delete notices for the whole campus']),
+      `<h4 style="font-size:13px;margin:18px 0 6px;">Extra powers — only you have these</h4>
+       <div style="background:var(--chalk);border-left:3px solid var(--graphite);padding:2px 16px;">
+         <ul style="margin:8px 0;padding-left:20px;font-size:13px;line-height:1.7;">
+           <li><b>Grant / revoke admin access</b> — promote or demote any user to Sports Admin, Cultural Admin, or Boss, or remove admin rights entirely</li>
+           <li><b>Manage Houses</b> — add or delete Houses (the shared list used for house-point tallies in both sections)</li>
+           <li><b>Manage user accounts</b> — create single or bulk users, reset passwords, edit or delete user records</li>
+           <li>Not locked to one section — can view and act on Sports and Cultural data side by side</li>
+         </ul>
+       </div>`
+    ].join('');
+
+    let tagColor = '#d7e8ff', tagText = '#1450a3', roleName = 'Sports Admin', body = sportsSections, note = 'Your access covers Sports-section events, registrations and results only.';
+    if (state.adminRole === 'CULTURAL_ADMIN') {
+      tagColor = '#ffe0d1'; tagText = '#b3450d'; roleName = 'Cultural Admin'; body = culturalSections;
+      note = 'Your access covers Cultural-section events, registrations and results only.';
+    } else if (state.adminRole === 'BOSS') {
+      tagColor = 'var(--graphite)'; tagText = '#fff'; roleName = 'Main Admin (Boss)'; body = bossSections;
+      note = 'Your access covers both Sports and Cultural sections, plus extra admin-panel powers.';
+    }
+
+    box.innerHTML = `
+      <h3 style="margin-bottom:4px;">What you can do</h3>
+      <span class="pill" style="background:${tagColor};color:${tagText};display:inline-block;margin:4px 0 8px;">${roleName}</span>
+      <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 4px;">${note}</p>
+      ${body}
+    `;
   }
 
   async function loadNoticeAdmin() {

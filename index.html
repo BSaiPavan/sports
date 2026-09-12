@@ -20,7 +20,28 @@
   nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px;}
   .brand{color:var(--chalk);font-family:'Anton',sans-serif;font-size:20px;}
   .brand span{color:var(--ball-orange);}
-  .nav-right{display:flex;align-items:center;gap:14px;color:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+
+  /* ---------- hamburger menu + left sidebar (replaces the old inline nav-right buttons) ---------- */
+  .hamburger-btn{background:transparent;border:1px solid rgba(245,243,236,.35);border-radius:3px;width:38px;height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;padding:0;}
+  .hamburger-btn span{display:block;width:18px;height:2px;background:var(--chalk);border-radius:1px;}
+  .sidebar-backdrop{position:fixed;inset:0;background:rgba(11,37,69,.45);z-index:900;opacity:0;pointer-events:none;transition:opacity .18s ease;}
+  .sidebar-backdrop.open{opacity:1;pointer-events:auto;}
+  .app-sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;max-width:82vw;background:var(--court-navy);z-index:901;transform:translateX(-100%);transition:transform .2s ease;display:flex;flex-direction:column;box-shadow:2px 0 18px rgba(0,0,0,.25);}
+  .app-sidebar.open{transform:translateX(0);}
+  .app-sidebar-head{padding:20px 18px;border-bottom:1px solid rgba(245,243,236,.15);display:flex;align-items:center;justify-content:space-between;}
+  .app-sidebar-brand{color:var(--chalk);font-family:'Anton',sans-serif;font-size:16px;}
+  .app-sidebar-brand span{color:var(--ball-orange);}
+  .sidebar-close-btn{background:transparent;border:none;color:var(--chalk);font-size:20px;line-height:1;cursor:pointer;padding:4px 6px;}
+  .sidebar-user{padding:16px 18px;border-bottom:1px solid rgba(245,243,236,.15);color:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+  .sidebar-user .label{display:block;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(245,243,236,.55);margin-bottom:4px;}
+  .sidebar-nav{flex:1;padding:10px 0;overflow-y:auto;}
+  .sidebar-link{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:none;color:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.3px;text-decoration:none;padding:13px 18px;cursor:pointer;}
+  .sidebar-link:hover{background:rgba(245,243,236,.08);}
+  .sidebar-link .icon{width:18px;text-align:center;flex-shrink:0;}
+  .sidebar-link .soon-tag{margin-left:auto;font-size:9px;letter-spacing:.5px;color:rgba(245,243,236,.5);border:1px solid rgba(245,243,236,.3);border-radius:10px;padding:2px 7px;text-transform:uppercase;}
+  .sidebar-foot{padding:14px 18px;border-top:1px solid rgba(245,243,236,.15);}
+  .sidebar-foot .sidebar-link{padding:10px 0;color:#ffb199;}
+  @media(min-width:769px){ .app-sidebar{width:280px;} }
   .btn{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;letter-spacing:.5px;text-transform:uppercase;border:none;border-radius:2px;padding:10px 16px;cursor:pointer;text-decoration:none;display:inline-block;}
   .btn-orange{background:var(--ball-orange);color:#fff;}
   .btn-orange:hover{background:#e64f18;}
@@ -173,15 +194,11 @@
     display: none !important;
   }
 
-  /* mobile fixes — nav bar was overflowing on narrow phone widths, pushing
-     the Logout button off-screen. Shrink brand/nav text and let the nav
-     row wrap onto two lines instead of forcing a horizontal scrollbar. */
+  /* mobile fixes — nav bar was overflowing on narrow phone widths before the
+     hamburger menu replaced the inline buttons; kept minimal now. */
   @media (max-width: 480px) {
-    nav .wrap{height:auto;flex-wrap:wrap;row-gap:8px;padding:10px 14px;}
+    nav .wrap{height:56px;padding:10px 14px;}
     .brand{font-size:14px;}
-    .nav-right{font-size:10px;gap:6px;flex-wrap:wrap;width:100%;justify-content:flex-end;}
-    .nav-right #navName{width:100%;text-align:right;font-size:10.5px;order:-1;}
-    .nav-right .btn-small{padding:5px 9px;font-size:10px;}
 
     .lb-podium-name{font-size:11.5px;}
     .lb-podium-pts{font-size:13px;}
@@ -326,15 +343,32 @@
 
 <nav>
   <div class="wrap">
-    <div class="brand" id="navBrand" style="cursor:pointer;">Nandigiri<span>SportsSphere</span>2K26</div>
-    <div class="nav-right hidden" id="navUserBox">
-      <span id="navName"></span>
-      <a class="btn btn-outline btn-small" id="navHomeBtn" href="#">Home</a>
-      <a class="btn btn-outline btn-small" id="navAdminBtn" href="#" style="display:none;">Admin</a>
-      <a class="btn btn-outline btn-small" id="navLogoutBtn" href="#">Log out</a>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="hamburger-btn hidden" id="navMenuBtn" aria-label="Menu"><span></span><span></span><span></span></button>
+      <div class="brand" id="navBrand" style="cursor:pointer;">Nandigiri<span>SportsSphere</span>2K26</div>
     </div>
   </div>
 </nav>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<div class="app-sidebar" id="appSidebar">
+  <div class="app-sidebar-head">
+    <div class="app-sidebar-brand">Nandigiri<span>SportsSphere</span>2K26</div>
+    <button class="sidebar-close-btn" id="sidebarCloseBtn">✕</button>
+  </div>
+  <div class="sidebar-user">
+    <span class="label">Signed in as</span>
+    <span id="navName"></span>
+  </div>
+  <div class="sidebar-nav">
+    <a class="sidebar-link" id="navHomeBtn" href="#"><span class="icon">🏠</span> Home</a>
+    <a class="sidebar-link" id="navAdminBtn" href="#" style="display:none;"><span class="icon">🛠</span> Admin</a>
+    <a class="sidebar-link" id="navArchivesBtn" href="#"><span class="icon">🗂</span> Archives <span class="soon-tag">Soon</span></a>
+  </div>
+  <div class="sidebar-foot">
+    <a class="sidebar-link" id="navLogoutBtn" href="#"><span class="icon">↪</span> Log out</a>
+  </div>
+</div>
 
 <main>
   <!-- LANDING -->
@@ -1097,16 +1131,35 @@
     });
   });
 
-  // ---------- NAV ----------
+  // ---------- NAV / SIDEBAR ----------
+  function openSidebar() {
+    document.getElementById('appSidebar').classList.add('open');
+    document.getElementById('sidebarBackdrop').classList.add('open');
+  }
+  function closeSidebar() {
+    document.getElementById('appSidebar').classList.remove('open');
+    document.getElementById('sidebarBackdrop').classList.remove('open');
+  }
+  document.getElementById('navMenuBtn').addEventListener('click', openSidebar);
+  document.getElementById('sidebarCloseBtn').addEventListener('click', closeSidebar);
+  document.getElementById('sidebarBackdrop').addEventListener('click', closeSidebar);
+
+  document.getElementById('navArchivesBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    alert('Archives is coming soon.');
+  });
+
   document.getElementById('navLogoutBtn').addEventListener('click', (e) => {
     e.preventDefault();
+    closeSidebar();
     clearSession();
     stopNoticePolling();
-    document.getElementById('navUserBox').classList.add('hidden');
+    document.getElementById('navMenuBtn').classList.add('hidden');
     showView('landingView');
   });
   document.getElementById('navAdminBtn').addEventListener('click', (e) => {
     e.preventDefault();
+    closeSidebar();
     enterAdmin();
   });
 
@@ -1119,6 +1172,7 @@
   }
   document.getElementById('navHomeBtn').addEventListener('click', (e) => {
     e.preventDefault();
+    closeSidebar();
     goHome();
   });
   document.getElementById('navBrand').addEventListener('click', (e) => {
@@ -1133,7 +1187,7 @@
 
   // ---------- DASHBOARD ----------
   async function enterDashboard() {
-    document.getElementById('navUserBox').classList.remove('hidden');
+    document.getElementById('navMenuBtn').classList.remove('hidden');
     document.getElementById('navName').textContent = state.name;
     document.body.classList.toggle('teacher-mode', state.isTeacher);
     const adminBtn = document.getElementById('navAdminBtn');
@@ -1613,10 +1667,10 @@
               </div>
             </div>`;
         } else {
-          // Default: two boxes to choose from.
+          // Default: only the Results entry point here — Players already has
+          // its own quick-access button up next to Gallery on the event card.
           area.innerHTML = `
             <div style="border-top:1px solid var(--line);padding-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
-              ${!ev.massEvent ? `<button class="btn btn-outline btn-small group-panel-btn" data-panel="players" data-event-id="${eventId}" style="border-color:var(--line);color:var(--graphite);">👥 Players</button>` : ''}
               ${hasResult
                 ? `<button class="btn btn-outline btn-small group-panel-btn" data-panel="results" data-event-id="${eventId}" style="border-color:var(--line);color:var(--graphite);">🏆 Results</button>`
                 : `<span class="pill" style="background:rgba(0,0,0,.06);color:var(--muted);">Results not published yet</span>`}

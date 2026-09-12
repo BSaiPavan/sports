@@ -1524,74 +1524,130 @@
       }
       const rostersByEvent = data.rostersByEvent || {};
       const resultsByEvent = data.resultsByEvent || {};
+      const photosByEvent = data.photosByEvent || {};
 
-      list.innerHTML = groupEvents.map((ev, i) => {
-        let rosterBlock;
-        if (ev.massEvent) {
-          rosterBlock = '<div class="mono" style="font-size:12px;color:var(--muted);margin-top:8px;">🎭 Mass event — the whole house takes part; there\'s no individual player list for this one.</div>';
-        } else {
-          const roster = rostersByEvent[ev.eventId] || [];
-          const byHouse = {};
-          roster.forEach(r => { (byHouse[r.house || 'Unassigned'] = byHouse[r.house || 'Unassigned'] || []).push(r); });
-          // Captain first, vice-captain second, then everyone else in the
-          // order they were added — one name per line, houses side by side.
-          const roleOrder = { 'Captain': 0, 'Vice-Captain': 1 };
-          Object.values(byHouse).forEach(list => list.sort((a, b) => (roleOrder[a.role] ?? 2) - (roleOrder[b.role] ?? 2)));
-          const roleTag = (role) => role === 'Captain'
-            ? ` <span class="pill" style="background:rgba(255,90,31,.14);color:var(--ball-orange);font-size:9.5px;padding:2px 6px;">C</span>`
-            : role === 'Vice-Captain'
-              ? ` <span class="pill" style="background:rgba(11,37,69,.08);color:var(--court-navy);font-size:9.5px;padding:2px 6px;">VC</span>`
-              : '';
-          rosterBlock = Object.keys(byHouse).length
-            ? `<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:18px;margin-top:8px;">
-                ${Object.keys(byHouse).map(house => `
-                  <div>
-                    <div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">${escapeHtml(house)}</div>
-                    <div style="font-size:13px;line-height:1.9;">
-                      ${byHouse[house].map(p => `<div>${escapeHtml(p.name)}${roleTag(p.role)}</div>`).join('')}
-                    </div>
-                  </div>`).join('')}
-              </div>`
-            : '<div class="mono" style="font-size:12px;color:var(--muted);margin-top:8px;">No players added yet.</div>';
-        }
+      list.innerHTML = groupEvents.map((ev) => {
         const compDateText = ev.competitionDate ? fmtDate(parseDateOnly(ev.competitionDate)) : 'To be decided';
         const completedPill = ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : '';
         const result = resultsByEvent[ev.eventId];
-        const resultsControl = result
-          ? `<button class="btn btn-outline btn-small group-results-btn" style="border-color:var(--line);color:var(--graphite);" data-event-id="${ev.eventId}">View results</button>`
-          : '<span class="pill" style="background:rgba(0,0,0,.06);color:var(--muted);">Results not published yet</span>';
+        const hasResult = !!result;
+        const photos = photosByEvent[ev.eventId] || [];
+        const playersBtnTop = !ev.massEvent
+          ? `<button class="btn btn-outline btn-small group-panel-btn" data-panel="players" data-event-id="${ev.eventId}" style="border-color:var(--line);color:var(--graphite);">Players</button>`
+          : '';
+        const galleryBtnTop = photos.length
+          ? `<button class="btn btn-outline btn-small group-gallery-btn" data-event-id="${ev.eventId}" data-event-name="${escapeHtml(ev.name)}" style="border-color:var(--line);color:var(--graphite);">🖼 Gallery (${photos.length})</button>`
+          : '';
         return `<div class="event-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
           <div style="display:flex;justify-content:space-between;width:100%;align-items:center;flex-wrap:wrap;gap:8px;">
             <div class="event-name">${escapeHtml(ev.name)}</div>
             <div style="display:flex;gap:8px;align-items:center;">
-              <span class="pill cat-group">Group</span>${completedPill}
+              <span class="pill cat-group">Group</span>${completedPill}${playersBtnTop}${galleryBtnTop}
             </div>
           </div>
           <div class="event-meta">Event day: ${compDateText}</div>
-          <div style="width:100%;">${rosterBlock}</div>
-          <div style="width:100%;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
-            ${resultsControl}
-            <div class="hidden group-results-panel" data-panel-for="${ev.eventId}" style="margin-top:10px;"></div>
-          </div>
+          <div class="group-panel-area" data-panel-area-for="${ev.eventId}" style="width:100%;margin-top:8px;"></div>
         </div>`;
       }).join('');
 
-      list.querySelectorAll('.group-results-btn').forEach(btn => {
+      list.querySelectorAll('.group-gallery-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          const panel = list.querySelector(`.group-results-panel[data-panel-for="${btn.dataset.eventId}"]`);
-          const nowHidden = panel.classList.toggle('hidden');
-          if (!nowHidden && !panel.dataset.rendered) {
-            const result = resultsByEvent[btn.dataset.eventId];
-            panel.innerHTML = renderMatchScoreboard(result.match);
-            panel.dataset.rendered = '1';
-          }
-          btn.textContent = nowHidden ? 'View results' : 'Hide results';
+          openGalleryModal(btn.dataset.eventName, photosByEvent[btn.dataset.eventId] || []);
         });
       });
+
+      // ---------- panel state machine: null (choice) / 'players' / 'results' ----------
+      const groupPanelState = {};
+      function renderGroupPanel(eventId) {
+        const area = list.querySelector(`.group-panel-area[data-panel-area-for="${eventId}"]`);
+        if (!area) return;
+        const ev = groupEvents.find(e => e.eventId === eventId);
+        const result = resultsByEvent[eventId];
+        const hasResult = !!result;
+        const state = groupPanelState[eventId] || null;
+
+        if (state === 'players') {
+          let rosterBlock;
+          if (ev.massEvent) {
+            rosterBlock = '<div class="mono" style="font-size:12px;color:var(--muted);">🎭 Mass event — the whole house takes part; there\'s no individual player list for this one.</div>';
+          } else {
+            const roster = rostersByEvent[eventId] || [];
+            const byHouse = {};
+            roster.forEach(r => { (byHouse[r.house || 'Unassigned'] = byHouse[r.house || 'Unassigned'] || []).push(r); });
+            const roleOrder = { 'Captain': 0, 'Vice-Captain': 1 };
+            Object.values(byHouse).forEach(l => l.sort((a, b) => (roleOrder[a.role] ?? 2) - (roleOrder[b.role] ?? 2)));
+            const roleTag = (role) => role === 'Captain'
+              ? ` <span class="pill" style="background:rgba(255,90,31,.14);color:var(--ball-orange);font-size:9.5px;padding:2px 6px;">C</span>`
+              : role === 'Vice-Captain'
+                ? ` <span class="pill" style="background:rgba(11,37,69,.08);color:var(--court-navy);font-size:9.5px;padding:2px 6px;">VC</span>`
+                : '';
+            rosterBlock = Object.keys(byHouse).length
+              ? `<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:18px;">
+                  ${Object.keys(byHouse).map(house => `
+                    <div>
+                      <div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">${escapeHtml(house)}</div>
+                      <div style="font-size:13px;line-height:1.9;">
+                        ${byHouse[house].map(p => `<div>${escapeHtml(p.name)}${roleTag(p.role)}</div>`).join('')}
+                      </div>
+                    </div>`).join('')}
+                </div>`
+              : '<div class="mono" style="font-size:12px;color:var(--muted);">No players added yet.</div>';
+          }
+          area.innerHTML = `
+            <div style="border-top:1px solid var(--line);padding-top:10px;">
+              ${rosterBlock}
+              <div style="margin-top:12px;display:flex;gap:8px;">
+                <button class="btn btn-outline btn-small group-panel-btn" data-panel="back" data-event-id="${eventId}" style="border-color:var(--line);color:var(--graphite);">← Back</button>
+                ${!ev.massEvent ? (hasResult
+                  ? `<button class="btn btn-outline btn-small group-panel-btn" data-panel="results" data-event-id="${eventId}" style="border-color:var(--line);color:var(--graphite);">Results</button>`
+                  : `<span class="pill" style="background:rgba(0,0,0,.06);color:var(--muted);">Results not published yet</span>`) : ''}
+              </div>
+            </div>`;
+        } else if (state === 'results') {
+          area.innerHTML = `
+            <div style="border-top:1px solid var(--line);padding-top:10px;">
+              ${renderMatchScoreboard(result ? result.match : null)}
+              <div style="margin-top:12px;display:flex;gap:8px;">
+                <button class="btn btn-outline btn-small group-panel-btn" data-panel="back" data-event-id="${eventId}" style="border-color:var(--line);color:var(--graphite);">← Back</button>
+                ${!ev.massEvent ? `<button class="btn btn-outline btn-small group-panel-btn" data-panel="players" data-event-id="${eventId}" style="border-color:var(--line);color:var(--graphite);">Players</button>` : ''}
+              </div>
+            </div>`;
+        } else {
+          // Default: two boxes to choose from.
+          area.innerHTML = `
+            <div style="border-top:1px solid var(--line);padding-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+              ${!ev.massEvent ? `<button class="btn btn-outline btn-small group-panel-btn" data-panel="players" data-event-id="${eventId}" style="border-color:var(--line);color:var(--graphite);">👥 Players</button>` : ''}
+              ${hasResult
+                ? `<button class="btn btn-outline btn-small group-panel-btn" data-panel="results" data-event-id="${eventId}" style="border-color:var(--line);color:var(--graphite);">🏆 Results</button>`
+                : `<span class="pill" style="background:rgba(0,0,0,.06);color:var(--muted);">Results not published yet</span>`}
+            </div>`;
+        }
+      }
+
+      groupEvents.forEach(ev => renderGroupPanel(ev.eventId));
+
+      // Delegate once per DOM element (list.innerHTML above wipes the buttons
+      // but not the element itself) — guard so repeat visits don't stack
+      // duplicate listeners that'd fire renderGroupPanel multiple times.
+      if (!list.dataset.panelDelegated) {
+        list.dataset.panelDelegated = '1';
+        list.addEventListener('click', (e) => {
+          const btn = e.target.closest('.group-panel-btn');
+          if (!btn) return;
+          const eventId = btn.dataset.eventId;
+          groupPanelStateRef.state[eventId] = btn.dataset.panel === 'back' ? null : btn.dataset.panel;
+          groupPanelStateRef.render(eventId);
+        });
+      }
+      groupPanelStateRef.state = groupPanelState;
+      groupPanelStateRef.render = renderGroupPanel;
     } catch (err) {
       list.innerHTML = `<div class="event-row" style="color:#b7401b;">${err.message}</div>`;
     }
   }
+  // Holds the *current* load's state/render fn so the one delegated listener
+  // above always calls into the latest data even after a reload replaces it.
+  const groupPanelStateRef = { state: {}, render: () => {} };
 
   // ---------- HOUSE POINTS ----------
   async function loadHouseStandings() {

@@ -840,7 +840,7 @@
   // create a new row, where a silent retry could duplicate it.
   const RETRY_SAFE_ACTIONS = new Set([
     'login', 'changePassword', 'listEvents', 'registerEvent', 'unregisterEvent',
-    'getNotices', 'getResults',
+    'getNotices', 'getResults', 'getGroupEventsData',
     'adminListUsers', 'adminListRegistrations', 'adminListUserRegistrations', 'adminListNotices',
     'adminGetEventResults', 'adminSetResults', 'adminToggleEvent', 'adminToggleCompleted',
     'adminSetAdmin', 'adminResetPassword', 'adminEditEvent', 'adminEditNotice',
@@ -1511,7 +1511,9 @@
     const list = document.getElementById('groupEventsList');
     list.innerHTML = skeletonRows(2);
     try {
-      const data = await api('listEvents', {});
+      // One combined call instead of listEvents + one getGroupRoster per
+      // event + getResults — see getGroupEventsData in Code.gs for why.
+      const data = await api('getGroupEventsData', {});
       if (data.season) currentSeasonCache = data.season;
       const groupEvents = sortEventsForDisplay(
         data.events.filter(ev => (ev.section || 'SPORTS') === state.activeSection && String(ev.category || '').toUpperCase() === 'GROUP')
@@ -1520,25 +1522,15 @@
         list.innerHTML = '<div class="event-row"><span class="mono" style="color:var(--muted);">No group events yet — check back soon.</span></div>';
         return;
       }
-      // Only fetch rosters for events that actually have one — a mass event
-      // (e.g. Orchestra, Drama) has no individual player list at all.
-      const rosters = await Promise.all(groupEvents.map(ev =>
-        ev.massEvent ? Promise.resolve({ roster: [] }) : api('getGroupRoster', { eventId: ev.eventId }).catch(() => ({ roster: [] }))
-      ));
-      // Group results now live here instead of the Results tab — fetch once
-      // and reveal per-event via the "View results" button below.
-      let resultsByEvent = {};
-      try {
-        const resultsData = await api('getResults', {});
-        resultsData.results.forEach(r => { resultsByEvent[r.eventId] = r; });
-      } catch (e) { /* results just won't be revealable if this fails */ }
+      const rostersByEvent = data.rostersByEvent || {};
+      const resultsByEvent = data.resultsByEvent || {};
 
       list.innerHTML = groupEvents.map((ev, i) => {
         let rosterBlock;
         if (ev.massEvent) {
           rosterBlock = '<div class="mono" style="font-size:12px;color:var(--muted);margin-top:8px;">🎭 Mass event — the whole house takes part; there\'s no individual player list for this one.</div>';
         } else {
-          const roster = rosters[i].roster || [];
+          const roster = rostersByEvent[ev.eventId] || [];
           const byHouse = {};
           roster.forEach(r => { (byHouse[r.house || 'Unassigned'] = byHouse[r.house || 'Unassigned'] || []).push(r); });
           // Captain first, vice-captain second, then everyone else in the

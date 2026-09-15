@@ -769,8 +769,8 @@
             </div>
             <p class="field-hint" id="matchNoHousesHint" style="display:none;margin:-6px 0 14px;">No houses set up yet — add them in the Houses tab first.</p>
             <label style="font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Scores</label>
-            <div id="matchPeriodsList" style="margin:8px 0 10px;"></div>
-            <button class="btn btn-outline btn-small" id="addMatchPeriodBtn" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">+ Add score row</button>
+            <p class="mono" style="font-size:10.5px;color:var(--muted);margin:2px 0 10px;">Match 3 is optional — only fill it in if the series wasn't already decided 2–0 in Match 1 &amp; 2.</p>
+            <div id="matchColumns" style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;"></div>
             <div class="field" style="margin-bottom:4px;">
               <label>🏆 Winner</label>
               <select id="matchWinnerSelect" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;">
@@ -1781,13 +1781,26 @@
     }
     const isWinnerA = match.winner && match.winner === match.teamA;
     const isWinnerB = match.winner && match.winner === match.teamB;
-    const rows = (match.periods || []).map(p => `
-      <div style="display:flex;align-items:center;gap:10px;padding:5px 0;font-size:13px;">
-        <span class="mono" style="width:110px;flex-shrink:0;color:var(--muted);font-size:11px;">${escapeHtml(p.label)}</span>
-        <span style="font-weight:600;">${escapeHtml(p.scoreA || '—')}</span>
-        <span style="color:var(--muted);">–</span>
-        <span style="font-weight:600;">${escapeHtml(p.scoreB || '—')}</span>
+    // Group the flat periods list back into Match 1/2/3 columns for display,
+    // side by side — same "M-<n> (Set-<i>)" label parsing the editor uses.
+    const buckets = { 1: [], 2: [], 3: [] };
+    (match.periods || []).forEach(p => {
+      const m = /^M-(\d+)\s*\(Set-(\d+)\)$/i.exec(String(p.label || '').trim());
+      const matchNo = m ? Math.min(3, Math.max(1, parseInt(m[1], 10))) : 1;
+      buckets[matchNo].push(p);
+    });
+    const matchCols = [1, 2, 3].filter(n => buckets[n].length).map(n => `
+      <div style="min-width:110px;">
+        <div class="mono" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px;">Match ${n}</div>
+        ${buckets[n].map((p, i) => `
+          <div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:13px;">
+            <span class="mono" style="width:32px;flex-shrink:0;color:var(--muted);font-size:10.5px;">S${i + 1}</span>
+            <span style="font-weight:600;">${escapeHtml(p.scoreA || '—')}</span>
+            <span style="color:var(--muted);">–</span>
+            <span style="font-weight:600;">${escapeHtml(p.scoreB || '—')}</span>
+          </div>`).join('')}
       </div>`).join('');
+    const rows = matchCols ? `<div style="display:flex;gap:26px;flex-wrap:wrap;margin-top:2px;">${matchCols}</div>` : '';
     const winnerBox = match.winner ? `
       <div style="margin-top:10px;padding:8px 12px;background:#fff7e8;border:1px solid #e8c468;border-radius:3px;display:inline-flex;align-items:center;gap:8px;">
         <span style="font-size:15px;">🏆</span>
@@ -2932,27 +2945,80 @@
   }));
 
   let currentResultsEventCategory = '';
-  let matchPeriodRowCounter = 0;
 
-  function renderMatchPeriodRow(period) {
-    matchPeriodRowCounter++;
-    const id = 'mp' + matchPeriodRowCounter;
-    const row = document.createElement('div');
-    row.className = 'inline-form';
-    row.style.margin = '0 0 8px';
-    row.dataset.periodRow = id;
-    row.innerHTML = `
-      <div class="field" style="flex:2;"><input class="mp-label" placeholder="e.g. Set 1 / 1st Half / Q1 / 1st Innings" value="${escapeHtml(period.label || '')}"></div>
-      <div class="field" style="flex:1;"><input class="mp-scoreA" placeholder="Team A score" value="${escapeHtml(period.scoreA || '')}"></div>
-      <div class="field" style="flex:1;"><input class="mp-scoreB" placeholder="Team B score" value="${escapeHtml(period.scoreB || '')}"></div>
-      <button type="button" class="btn btn-outline btn-small mp-remove" style="border-color:var(--line);color:var(--graphite);">✕</button>
+  // ---------- Match 1/2/3 score columns (each holds its own set rows) ----------
+  // Storage stays the flat periods array it always was — label "M-<n> (Set-<i>)",
+  // scoreA, scoreB — so no backend/schema change. This just structures entry
+  // and display around fixed Match 1/2/3 columns instead of one long list.
+  function buildMatchColumn(matchNo) {
+    const isOptional = matchNo === 3;
+    const col = document.createElement('div');
+    col.className = 'match-col';
+    col.dataset.matchNo = matchNo;
+    col.style.cssText = 'flex:1;min-width:180px;border:1px solid var(--line);border-radius:3px;padding:12px;';
+    col.innerHTML = `
+      <div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">
+        Match ${matchNo}${isOptional ? ' <span style="opacity:.7;">(optional)</span>' : ''}
+      </div>
+      <div class="match-col-sets"></div>
+      <button type="button" class="btn btn-outline btn-small mc-add-set" style="border-color:var(--line);color:var(--graphite);width:100%;margin-top:4px;">+ Add set</button>
     `;
-    row.querySelector('.mp-remove').addEventListener('click', () => row.remove());
-    return row;
+    col.querySelector('.mc-add-set').addEventListener('click', () => {
+      addSetRow(col, {});
+    });
+    return col;
   }
-  document.getElementById('addMatchPeriodBtn').addEventListener('click', () => {
-    document.getElementById('matchPeriodsList').appendChild(renderMatchPeriodRow({}));
-  });
+  function addSetRow(col, set) {
+    const sets = col.querySelector('.match-col-sets');
+    const row = document.createElement('div');
+    row.className = 'mc-set-row';
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:6px;';
+    row.innerHTML = `
+      <span class="mono" style="font-size:10.5px;color:var(--muted);width:38px;flex-shrink:0;">Set ${sets.children.length + 1}</span>
+      <input class="mc-scoreA" placeholder="A" value="${escapeHtml(set.scoreA || '')}" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+      <span style="color:var(--muted);">–</span>
+      <input class="mc-scoreB" placeholder="B" value="${escapeHtml(set.scoreB || '')}" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+      <button type="button" class="btn btn-outline btn-small mc-remove-set" style="border-color:var(--line);color:var(--graphite);padding:4px 8px;">✕</button>
+    `;
+    row.querySelector('.mc-remove-set').addEventListener('click', () => {
+      row.remove();
+      // Renumber remaining "Set N" labels in this column after a removal.
+      Array.from(sets.children).forEach((r, i) => { r.querySelector('.mono').textContent = 'Set ' + (i + 1); });
+    });
+    sets.appendChild(row);
+  }
+  function resetMatchColumns() {
+    const wrap = document.getElementById('matchColumns');
+    wrap.innerHTML = '';
+    [1, 2, 3].forEach(n => wrap.appendChild(buildMatchColumn(n)));
+  }
+  // Flat periods -> up to 3 match columns, parsing the "M-<n> (Set-<i>)"
+  // label this has always used. Anything from before this structure existed
+  // (or a label that doesn't match) safely falls back into Match 1 so old
+  // saved results still load instead of silently disappearing.
+  function loadPeriodsIntoMatchColumns(periods) {
+    resetMatchColumns();
+    const wrap = document.getElementById('matchColumns');
+    const cols = { 1: wrap.querySelector('[data-match-no="1"]'), 2: wrap.querySelector('[data-match-no="2"]'), 3: wrap.querySelector('[data-match-no="3"]') };
+    (periods || []).forEach(p => {
+      const m = /^M-(\d+)\s*\(Set-(\d+)\)$/i.exec(String(p.label || '').trim());
+      const matchNo = m ? Math.min(3, Math.max(1, parseInt(m[1], 10))) : 1;
+      addSetRow(cols[matchNo], p);
+    });
+  }
+  function collectPeriodsFromMatchColumns() {
+    const periods = [];
+    document.querySelectorAll('#matchColumns .match-col').forEach(col => {
+      const matchNo = col.dataset.matchNo;
+      Array.from(col.querySelectorAll('.mc-set-row')).forEach((row, i) => {
+        const scoreA = row.querySelector('.mc-scoreA').value.trim();
+        const scoreB = row.querySelector('.mc-scoreB').value.trim();
+        if (!scoreA && !scoreB) return;
+        periods.push({ label: `M-${matchNo} (Set-${i + 1})`, scoreA, scoreB });
+      });
+    });
+    return periods;
+  }
 
   // ---------- HOUSES (shared cache used by results editor + add-players + Houses tab) ----------
   let housesCache = []; // [{houseId, name}]
@@ -3011,10 +3077,7 @@
       if (isGroup) {
         const m = savedResults.match || {};
         populateMatchTeamSelects(m.teamA || '', m.teamB || '');
-        const list = document.getElementById('matchPeriodsList');
-        list.innerHTML = '';
-        const periods = (m.periods && m.periods.length) ? m.periods : [{}];
-        periods.forEach(p => list.appendChild(renderMatchPeriodRow(p)));
+        loadPeriodsIntoMatchColumns(m.periods || []);
         updateMatchWinnerOptions(m.winner || '');
       } else {
         const isDoubles = currentResultsEventCategory === 'DOUBLES';
@@ -3072,11 +3135,7 @@
       const winner = document.getElementById('matchWinnerSelect').value.trim();
       if (resultsPublished && (!teamA || !teamB)) { setMsg(msg, 'Pick both houses before publishing.', false); return; }
       if (resultsPublished && (!winner || (winner !== teamA && winner !== teamB))) { setMsg(msg, 'Pick a winner before publishing — group events need a decided result.', false); return; }
-      const periods = Array.from(document.querySelectorAll('#matchPeriodsList [data-period-row]')).map(row => ({
-        label: row.querySelector('.mp-label').value.trim(),
-        scoreA: row.querySelector('.mp-scoreA').value.trim(),
-        scoreB: row.querySelector('.mp-scoreB').value.trim()
-      })).filter(p => p.label);
+      const periods = collectPeriodsFromMatchColumns();
       payload.match = { teamA, teamB, winner, periods };
     } else {
       const isDoubles = currentResultsEventCategory === 'DOUBLES';

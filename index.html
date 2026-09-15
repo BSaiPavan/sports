@@ -1239,6 +1239,16 @@
     await loadGroupEventsStudent();
   }
 
+  // Set right before navigating in from a "House won this" link (House
+  // Points page) — loadGroupEventsStudent checks this once it has rendered
+  // and jumps straight to that event's Results panel.
+  let pendingGroupEventFocus = null;
+  async function goToGroupEvent(section, eventId) {
+    state.activeSection = section;
+    pendingGroupEventFocus = eventId;
+    await openGroupEvents();
+  }
+
   async function openHousePoints() {
     showView('housePointsView');
     await loadHouseStandings();
@@ -1680,6 +1690,17 @@
 
       groupEvents.forEach(ev => renderGroupPanel(ev.eventId));
 
+      // If we got here via a "House won this event" link from House Points,
+      // jump straight to that event's Results panel and scroll it into view.
+      if (pendingGroupEventFocus && groupEvents.some(ev => ev.eventId === pendingGroupEventFocus)) {
+        const focusId = pendingGroupEventFocus;
+        pendingGroupEventFocus = null;
+        groupPanelState[focusId] = 'results';
+        renderGroupPanel(focusId);
+        const area = list.querySelector(`.group-panel-area[data-panel-area-for="${focusId}"]`);
+        if (area) area.closest('.event-row').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
       // Delegate once per DOM element (list.innerHTML above wipes the buttons
       // but not the element itself) — guard so repeat visits don't stack
       // duplicate listeners that'd fire renderGroupPanel multiple times.
@@ -1742,18 +1763,32 @@
       card.innerHTML = `<div style="display:flex;gap:16px;flex-wrap:wrap;">
         ${data.standings.map(s => {
           const isLeading = topScore > 0 && s.totalPoints === topScore;
+          const sportsWon = (s.wonEvents && s.wonEvents.sports) || [];
+          const culturalWon = (s.wonEvents && s.wonEvents.cultural) || [];
+          const wonEventBtns = (list, section) => list.map(ev => `
+            <button class="btn btn-outline btn-small house-won-event-btn" data-section="${section}" data-event-id="${escapeHtml(ev.eventId)}" style="border-color:var(--line);color:var(--graphite);width:100%;text-align:left;margin-bottom:6px;">${escapeHtml(ev.name)}</button>`).join('');
           return `<div style="flex:1;min-width:190px;border:1px solid ${isLeading ? '#e8c468' : 'var(--line)'};border-radius:4px;padding:18px 16px;${isLeading ? 'background:#fff9ec;' : 'background:#fff;'}">
             ${isLeading ? '<div class="mono" style="font-size:10px;letter-spacing:.06em;color:#a9660a;margin-bottom:4px;">🏆 LEADING</div>' : ''}
             <div style="font-family:'Anton',sans-serif;font-size:20px;margin-bottom:14px;">${escapeHtml(s.name)}</div>
             <div style="display:flex;gap:18px;">
               <div style="flex:1;">
-                <div class="mono" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">🏅 Sports</div>
-                <div style="font-size:22px;font-weight:700;margin-top:2px;">${s.sportsPoints}</div>
+                <button class="btn btn-outline btn-small house-won-toggle-btn" data-house="${escapeHtml(s.name)}" data-section="sports" style="border-color:var(--line);color:var(--graphite);width:100%;padding:8px 6px;${sportsWon.length ? '' : 'opacity:.55;cursor:default;'}">
+                  <div class="mono" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">🏅 Sports</div>
+                  <div style="font-size:20px;font-weight:700;margin-top:2px;">${s.sportsPoints}</div>
+                </button>
               </div>
               <div style="flex:1;">
-                <div class="mono" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">🎭 Cultural</div>
-                <div style="font-size:22px;font-weight:700;margin-top:2px;">${s.culturalPoints}</div>
+                <button class="btn btn-outline btn-small house-won-toggle-btn" data-house="${escapeHtml(s.name)}" data-section="cultural" style="border-color:var(--line);color:var(--graphite);width:100%;padding:8px 6px;${culturalWon.length ? '' : 'opacity:.55;cursor:default;'}">
+                  <div class="mono" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">🎭 Cultural</div>
+                  <div style="font-size:20px;font-weight:700;margin-top:2px;">${s.culturalPoints}</div>
+                </button>
               </div>
+            </div>
+            <div class="house-won-panel hidden" data-house-panel="${escapeHtml(s.name)}-sports" style="margin-top:10px;">
+              ${wonEventBtns(sportsWon, 'SPORTS')}
+            </div>
+            <div class="house-won-panel hidden" data-house-panel="${escapeHtml(s.name)}-cultural" style="margin-top:10px;">
+              ${wonEventBtns(culturalWon, 'CULTURAL')}
             </div>
             <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;align-items:baseline;">
               <span class="mono" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Total</span>
@@ -1762,6 +1797,20 @@
           </div>`;
         }).join('')}
       </div>`;
+
+      card.querySelectorAll('.house-won-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = `${btn.dataset.house}-${btn.dataset.section}`;
+          const panel = card.querySelector(`.house-won-panel[data-house-panel="${key}"]`);
+          if (!panel || !panel.children.length) return; // nothing won in this section yet
+          panel.classList.toggle('hidden');
+        });
+      });
+      card.querySelectorAll('.house-won-event-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          goToGroupEvent(btn.dataset.section, btn.dataset.eventId);
+        });
+      });
     } catch (err) {
       card.innerHTML = `<div style="color:#b7401b;">${err.message}</div>`;
     }

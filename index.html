@@ -481,8 +481,7 @@
        admins add players from the Admin panel's Events tab) -->
   <div id="groupEventsView" class="wrap hidden">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-      <button class="btn btn-outline btn-small back-btn" data-back-to="dashboardHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button>
-      <button class="btn btn-outline btn-small switch-section-btn" id="switchSectionBtnGroup" style="border-color:var(--line);color:var(--graphite);"></button>
+      <button class="btn btn-outline btn-small back-btn" id="groupEventsBackBtn" data-back-to="dashboardHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button>
     </div>
     <p class="hello" id="groupEventsHomeSection">Group Events</p>
     <h1 class="page-title">Group Events</h1>
@@ -1246,6 +1245,7 @@
   async function goToGroupEvent(section, eventId) {
     state.activeSection = section;
     pendingGroupEventFocus = eventId;
+    groupEventsBackOverride = 'housePointsView';
     await openGroupEvents();
   }
 
@@ -1277,7 +1277,21 @@
   document.getElementById('goResultsBtn').addEventListener('click', openResults);
   document.getElementById('goGroupEventsBtn').addEventListener('click', openGroupEvents);
   document.querySelectorAll('.back-btn').forEach(btn => {
+    if (btn.id === 'groupEventsBackBtn') return; // handled separately below — its back target can change
     btn.addEventListener('click', () => showView(btn.dataset.backTo));
+  });
+  // Group Events' Back button normally returns to the dashboard home, but
+  // when we got here via a "House won this event" link from House Points,
+  // it should return there instead — one-shot override, cleared after use.
+  let groupEventsBackOverride = null;
+  document.getElementById('groupEventsBackBtn').addEventListener('click', () => {
+    const target = groupEventsBackOverride || 'dashboardHomeView';
+    groupEventsBackOverride = null;
+    if (target === 'housePointsView') {
+      openHousePoints();
+    } else {
+      showView(target);
+    }
   });
 
   // ---------- NOTICE TOAST ----------

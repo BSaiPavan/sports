@@ -442,16 +442,29 @@
     </div>
   </div>
 
-  <!-- HOUSE POINTS (season-wide, not per-section) -->
+  <!-- HOUSE (season-wide, not per-section) -->
   <div id="housePointsView" class="wrap hidden">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
       <button class="btn btn-outline btn-small back-btn" data-back-to="sectionHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button>
     </div>
     <p class="hello" id="housePointsSeason">Season</p>
-    <h1 class="page-title">House Points</h1>
-    <div class="card hidden" id="houseChampionBanner" style="padding:18px 22px;margin-bottom:16px;background:#fff7e8;border-color:#e8c468;"></div>
-    <div class="card mono" id="houseProgressBanner" style="padding:14px 22px;margin-bottom:16px;font-size:12px;color:var(--muted);"></div>
-    <div class="card" id="houseStandingsCard" style="padding:22px;"></div>
+    <h1 class="page-title">House</h1>
+
+    <div class="tabs" style="margin:14px 0 20px;border-bottom:1px solid var(--line);display:flex;gap:22px;">
+      <div class="tab active" data-house-tab="points">House Points</div>
+      <div class="tab" data-house-tab="details">House Details</div>
+    </div>
+
+    <div id="housePointsSubview">
+      <div class="card hidden" id="houseChampionBanner" style="padding:18px 22px;margin-bottom:16px;background:#fff7e8;border-color:#e8c468;"></div>
+      <div class="card mono" id="houseProgressBanner" style="padding:14px 22px;margin-bottom:16px;font-size:12px;color:var(--muted);"></div>
+      <div class="card" id="houseStandingsCard" style="padding:22px;"></div>
+    </div>
+
+    <div id="houseDetailsSubview" class="hidden">
+      <div id="houseDetailsList" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;"></div>
+      <div id="houseDetailsPanel"></div>
+    </div>
   </div>
 
   <div id="dashboardHomeView" class="wrap hidden home-hero">
@@ -874,7 +887,7 @@
   // create a new row, where a silent retry could duplicate it.
   const RETRY_SAFE_ACTIONS = new Set([
     'login', 'changePassword', 'listEvents', 'registerEvent', 'unregisterEvent',
-    'getNotices', 'getResults', 'getGroupEventsData',
+    'getNotices', 'getResults', 'getGroupEventsData', 'getHouseStandings', 'getHouseDetails',
     'adminListUsers', 'adminListRegistrations', 'adminListUserRegistrations', 'adminListNotices',
     'adminGetEventResults', 'adminSetResults', 'adminToggleEvent', 'adminToggleCompleted',
     'adminSetAdmin', 'adminResetPassword', 'adminEditEvent', 'adminEditNotice',
@@ -1252,7 +1265,83 @@
 
   async function openHousePoints() {
     showView('housePointsView');
+    document.querySelectorAll('#housePointsView [data-house-tab]').forEach(t => t.classList.remove('active'));
+    document.querySelector('#housePointsView [data-house-tab="points"]').classList.add('active');
+    document.getElementById('housePointsSubview').classList.remove('hidden');
+    document.getElementById('houseDetailsSubview').classList.add('hidden');
     await loadHouseStandings();
+  }
+
+  document.querySelectorAll('#housePointsView [data-house-tab]').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('#housePointsView [data-house-tab]').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const showingDetails = tab.dataset.houseTab === 'details';
+      document.getElementById('housePointsSubview').classList.toggle('hidden', showingDetails);
+      document.getElementById('houseDetailsSubview').classList.toggle('hidden', !showingDetails);
+      if (showingDetails) loadHouseDetails();
+    });
+  });
+
+  let houseDetailsCache = [];
+  let houseDetailsSelectedId = null;
+  async function loadHouseDetails() {
+    const list = document.getElementById('houseDetailsList');
+    const panel = document.getElementById('houseDetailsPanel');
+    list.innerHTML = '<div class="mono" style="font-size:12px;color:var(--muted);">Loading…</div>';
+    panel.innerHTML = '';
+    try {
+      const data = await api('getHouseDetails', {});
+      houseDetailsCache = data.houses || [];
+      renderHouseDetailsList();
+      if (houseDetailsCache.length) {
+        houseDetailsSelectedId = houseDetailsCache[0].houseId;
+        renderHouseDetailsPanel();
+      }
+    } catch (err) {
+      list.innerHTML = `<div class="mono" style="font-size:12px;color:#b7401b;">${err.message}</div>`;
+    }
+  }
+  function renderHouseDetailsList() {
+    const list = document.getElementById('houseDetailsList');
+    list.innerHTML = houseDetailsCache.map(h => `
+      <button class="btn ${h.houseId === houseDetailsSelectedId ? 'btn-orange' : 'btn-outline'} btn-small house-select-btn" data-house-id="${h.houseId}" style="${h.houseId === houseDetailsSelectedId ? '' : 'border-color:var(--line);color:var(--graphite);'}font-size:14px;padding:10px 22px;">${escapeHtml(h.name)}</button>
+    `).join('');
+    list.querySelectorAll('.house-select-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        houseDetailsSelectedId = btn.dataset.houseId;
+        renderHouseDetailsList();
+        renderHouseDetailsPanel();
+      });
+    });
+  }
+  function renderHouseDetailsPanel() {
+    const panel = document.getElementById('houseDetailsPanel');
+    const h = houseDetailsCache.find(x => x.houseId === houseDetailsSelectedId);
+    if (!h) { panel.innerHTML = ''; return; }
+    const nameOrTbd = (p) => p ? escapeHtml(p.name) : '<span style="color:var(--muted);font-weight:400;">Not set yet</span>';
+    panel.innerHTML = `
+      <div class="card" style="padding:26px 28px;">
+        <div style="font-family:'Anton',sans-serif;font-size:26px;margin-bottom:18px;">${escapeHtml(h.name)}</div>
+        <div style="display:flex;gap:36px;flex-wrap:wrap;margin-bottom:18px;">
+          <div>
+            <div class="mono" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px;">🏵 Captain</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;">${nameOrTbd(h.captain)}</div>
+          </div>
+          <div>
+            <div class="mono" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px;">🎗 Vice-Captain</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;">${nameOrTbd(h.viceCaptain)}</div>
+          </div>
+        </div>
+        <button class="btn btn-outline btn-small" id="houseMembersToggleBtn" style="border-color:var(--line);color:var(--graphite);">👥 Members (${h.members.length})</button>
+        <div id="houseMembersList" class="hidden" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:8px 18px;">
+          ${h.members.length ? h.members.map(m => `<div style="font-size:13.5px;">${escapeHtml(m.name)}</div>`).join('') : '<div class="mono" style="font-size:12px;color:var(--muted);">No members added yet.</div>'}
+        </div>
+      </div>
+    `;
+    document.getElementById('houseMembersToggleBtn').addEventListener('click', () => {
+      document.getElementById('houseMembersList').classList.toggle('hidden');
+    });
   }
 
   document.getElementById('switchSectionBtn').addEventListener('click', () => {
@@ -2561,12 +2650,17 @@
   });
 
   // ---------- ADMIN ----------
-  document.querySelectorAll('.tab').forEach(tab => {
+  // Scoped to elements with data-tab (the admin panel's own tabs) — guards
+  // against other .tab-styled controls elsewhere (e.g. the House page tabs)
+  // being swept up by this same generic selector and hitting a missing
+  // 'tab-<name>' element.
+  document.querySelectorAll('.tab[data-tab]').forEach(tab => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
-      document.getElementById('tab-' + tab.dataset.tab).classList.remove('hidden');
+      const target = document.getElementById('tab-' + tab.dataset.tab);
+      if (target) target.classList.remove('hidden');
       if (tab.dataset.tab === 'admins') renderAdminGuide();
       if (tab.dataset.tab === 'notice') loadNoticeAdmin();
       if (tab.dataset.tab === 'results') loadResultsAdminTab();
@@ -2928,9 +3022,15 @@
       return;
     }
     box.innerHTML = housesCache.map(h => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">
-        <span style="font-weight:600;font-size:13.5px;">${escapeHtml(h.name)}</span>
-        ${isBoss ? `<button class="btn btn-outline btn-small delete-house-btn" data-house-id="${h.houseId}" style="border-color:#b7401b;color:#b7401b;">Remove</button>` : ''}
+      <div style="padding:8px 0;border-bottom:1px solid var(--line);">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:600;font-size:13.5px;">${escapeHtml(h.name)}</span>
+          <div style="display:flex;gap:8px;">
+            ${isBoss ? `<button class="btn btn-outline btn-small house-roster-toggle-btn" data-house-id="${h.houseId}" data-house-name="${escapeHtml(h.name)}" style="border-color:var(--line);color:var(--graphite);">Captain / VC / Members</button>` : ''}
+            ${isBoss ? `<button class="btn btn-outline btn-small delete-house-btn" data-house-id="${h.houseId}" style="border-color:#b7401b;color:#b7401b;">Remove</button>` : ''}
+          </div>
+        </div>
+        <div class="hidden house-roster-editor" data-house-editor="${h.houseId}" style="margin-top:10px;padding:12px;background:var(--chalk);border-radius:3px;"></div>
       </div>`).join('');
     box.querySelectorAll('.delete-house-btn').forEach(btn => {
       btn.addEventListener('click', withLoading(btn, async () => {
@@ -2941,6 +3041,59 @@
         await renderAdminHouseStandings();
       }));
     });
+    box.querySelectorAll('.house-roster-toggle-btn').forEach(btn => {
+      btn.addEventListener('click', withLoading(btn, () => openHouseRosterEditor(btn.dataset.houseId, btn.dataset.houseName)));
+    });
+  }
+
+  // BOSS-only: set a house's captain, vice-captain, and full member list for
+  // the year (separate from any one event's per-event roster).
+  async function openHouseRosterEditor(houseId, houseName) {
+    const editor = document.querySelector(`.house-roster-editor[data-house-editor="${houseId}"]`);
+    if (!editor) return;
+    if (!editor.classList.contains('hidden')) { editor.classList.add('hidden'); return; }
+    document.querySelectorAll('.house-roster-editor').forEach(e => e.classList.add('hidden'));
+    editor.innerHTML = '<div class="mono" style="font-size:12px;color:var(--muted);">Loading…</div>';
+    editor.classList.remove('hidden');
+    populateAllUsersDatalist();
+    let current = { captain: null, viceCaptain: null, members: [] };
+    try {
+      const data = await api('getHouseDetails', {});
+      current = (data.houses || []).find(h => h.houseId === houseId) || current;
+    } catch (err) { /* fall back to empty editor */ }
+    editor.innerHTML = `
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+        <div style="flex:1;min-width:160px;">
+          <label class="mono" style="font-size:10.5px;color:var(--muted);text-transform:uppercase;">Captain — reg no</label>
+          <input list="allUsersDatalist" id="hrCaptainInput" value="${escapeHtml(current.captain ? current.captain.regNo : '')}" placeholder="Reg no or name" style="width:100%;padding:8px 9px;margin-top:3px;border:1px solid var(--line);background:#fff;font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        </div>
+        <div style="flex:1;min-width:160px;">
+          <label class="mono" style="font-size:10.5px;color:var(--muted);text-transform:uppercase;">Vice-captain — reg no</label>
+          <input list="allUsersDatalist" id="hrViceCaptainInput" value="${escapeHtml(current.viceCaptain ? current.viceCaptain.regNo : '')}" placeholder="Reg no or name" style="width:100%;padding:8px 9px;margin-top:3px;border:1px solid var(--line);background:#fff;font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        </div>
+      </div>
+      <label class="mono" style="font-size:10.5px;color:var(--muted);text-transform:uppercase;">Members — one reg no per line (or comma-separated)</label>
+      <textarea id="hrMembersInput" rows="4" placeholder="234207&#10;234208&#10;..." style="width:100%;margin-top:3px;padding:8px 9px;border:1px solid var(--line);background:#fff;font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;resize:vertical;">${escapeHtml(current.members.map(m => m.regNo).join('\n'))}</textarea>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
+        <button class="btn btn-dark btn-small" id="hrSaveBtn">Save roster</button>
+        <span class="msg" id="hrMsg"></span>
+      </div>
+    `;
+    document.getElementById('hrSaveBtn').addEventListener('click', withLoading(document.getElementById('hrSaveBtn'), async () => {
+      const msg = document.getElementById('hrMsg');
+      const captainRaw = document.getElementById('hrCaptainInput').value.trim();
+      const vcRaw = document.getElementById('hrViceCaptainInput').value.trim();
+      const captainRegNo = captainRaw.split('—')[0].split(' ')[0].trim();
+      const viceCaptainRegNo = vcRaw.split('—')[0].split(' ')[0].trim();
+      const memberRegNos = document.getElementById('hrMembersInput').value
+        .split(/[\n,]/).map(s => s.split('—')[0].split(' ')[0].trim()).filter(Boolean);
+      try {
+        await api('adminSetHouseRoster', { houseId, captainRegNo, viceCaptainRegNo, memberRegNos });
+        setMsg(msg, 'Saved.', true);
+      } catch (err) {
+        setMsg(msg, err.message, false);
+      }
+    }));
   }
 
   document.getElementById('addHouseBtn').addEventListener('click', withLoading(document.getElementById('addHouseBtn'), async () => {

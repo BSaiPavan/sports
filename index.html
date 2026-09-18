@@ -450,12 +450,12 @@
     <p class="hello" id="housePointsSeason">Season</p>
     <h1 class="page-title">House</h1>
 
-    <div id="houseChoiceSubview" style="margin-top:20px;display:flex;gap:16px;flex-wrap:wrap;">
-      <button class="card" id="houseChoicePointsBtn" style="flex:1;min-width:220px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+    <div id="houseChoiceSubview" class="home-stack">
+      <button class="card" id="houseChoicePointsBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
         <div class="event-name">🏆 House Points</div>
         <div class="mono" style="color:var(--muted);">Standings &amp; the House Championship</div>
       </button>
-      <button class="card" id="houseChoiceDetailsBtn" style="flex:1;min-width:220px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+      <button class="card" id="houseChoiceDetailsBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
         <div class="event-name">🏠 House Details</div>
         <div class="mono" style="color:var(--muted);">Captains, vice-captains &amp; members</div>
       </button>
@@ -1578,11 +1578,13 @@
         const registered = data.myRegistrations.includes(ev.eventId);
         const cat = String(ev.category || 'OTHER').toUpperCase();
         const isGroup = cat === 'GROUP';
+        const isCultural = String(ev.section || '').toUpperCase() === 'CULTURAL';
         // Group events (Sports or Cultural) don't need a registration deadline —
-        // a team can be entered any time before the event, so we ignore deadline
-        // gating entirely for this category.
-        const deadlineTbd = !isGroup && ev.deadline === DEADLINE_TBD;
-        const deadlinePassed = !isGroup && ev.deadline && !deadlineTbd && new Date() > new Date(ev.deadline);
+        // a team can be entered any time before the event. Cultural events in
+        // general don't use deadlines either — only the event date matters there.
+        const skipDeadline = isGroup || isCultural;
+        const deadlineTbd = !skipDeadline && ev.deadline === DEADLINE_TBD;
+        const deadlinePassed = !skipDeadline && ev.deadline && !deadlineTbd && new Date() > new Date(ev.deadline);
 
         // Would registering push this student over a cap? (server has final say,
         // this just avoids letting them click into an obvious rejection)
@@ -1626,7 +1628,7 @@
         return `<div class="event-row" id="event-row-${ev.eventId}">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
-            ${isGroup ? '' : `<div class="event-meta">DEADLINE: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>`}
+            ${skipDeadline ? '' : `<div class="event-meta">DEADLINE: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>`}
             <div class="event-meta">Event day: ${compDateText}</div>
             ${groupLabel ? `<div class="event-meta">Team: ${escapeHtml(groupLabel)}</div>` : ''}
             ${partnerLabel ? `<div class="event-meta">Partner: ${escapeHtml(partnerLabel)}</div>` : ''}
@@ -3543,13 +3545,16 @@
       container.innerHTML = sortedEvents.map(ev => {
         const cat = String(ev.category || 'OTHER').toUpperCase();
         const isGroup = cat === 'GROUP';
+        const isCultural = ev.section === 'CULTURAL';
         // Allowed to edit this row? Always true, except when browsing the
         // cross-section Group list and looking at an event outside your
         // own locked section (view-only there).
         const canEdit = !lock || (ev.section || 'SPORTS') === lock;
         // Group events (Sports or Cultural) don't need a registration deadline —
-        // players/teams can be added any time, so deadline is ignored entirely.
-        const deadlineTbd = !isGroup && ev.deadline === DEADLINE_TBD;
+        // players/teams can be added any time. Cultural events skip deadlines
+        // entirely too — only the event date matters there.
+        const skipDeadline = isGroup || isCultural;
+        const deadlineTbd = !skipDeadline && ev.deadline === DEADLINE_TBD;
         const deadlineVal = deadlineTbd ? 'Yet to open' : (ev.deadline ? fmtDate(new Date(ev.deadline), true) : '—');
         const compDateVal = ev.competitionDate ? fmtDate(parseDateOnly(ev.competitionDate)) : 'To be decided';
         const isEditingDeadline = canEdit && editingDeadlineId === ev.eventId;
@@ -3559,7 +3564,7 @@
         return `<div class="event-row">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
-            ${isGroup ? '' : (isEditingDeadline
+            ${skipDeadline ? '' : (isEditingDeadline
               ? `<div class="event-meta" style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
                    <input type="datetime-local" data-deadline-input="${ev.eventId}" value="${toDatetimeLocalValue(ev.deadline)}" ${deadlineTbd ? 'disabled' : ''} style="padding:8px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13px;border-radius:2px;">
                    <label style="display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-transform:none;">
@@ -3589,7 +3594,7 @@
             ${ev.section === 'CULTURAL' && ev.requiresMaterials ? '<span class="pill" style="background:rgba(255,90,31,.12);color:var(--ball-orange);">🎨 Materials</span>' : ''}
             ${ev.massEvent ? '<span class="pill" style="background:rgba(140,82,255,.14);color:#6a3ec9;">👥 Mass event — no roster</span>' : ''}
             ${!canEdit ? '<span class="pill" style="background:rgba(0,0,0,.06);color:var(--muted);">👁 View only — the other section\'s admin manages this one</span>' : ''}
-            ${canEdit && !isGroup && !isEditingDeadline ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
+            ${canEdit && !skipDeadline && !isEditingDeadline ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
             ${canEdit && !isEditingCompDate ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-compdate="${ev.eventId}">Edit event day</button>` : ''}
             ${canEdit ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>` : ''}
             ${canEdit ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-completed="${ev.eventId}" data-completed="${ev.completed}">${ev.completed ? 'Mark not completed' : 'Mark completed'}</button>` : ''}
@@ -3756,7 +3761,7 @@
     try {
       await api('adminAddEvent', {
         name, section, category,
-        deadline: category === 'GROUP' ? '' : (deadlineTbd ? DEADLINE_TBD : (deadline ? new Date(deadline).toISOString() : '')),
+        deadline: (category === 'GROUP' || section === 'CULTURAL') ? '' : (deadlineTbd ? DEADLINE_TBD : (deadline ? new Date(deadline).toISOString() : '')),
         competitionDate: (!compDateTbd && compDate) ? compDate : '',
         requiresMaterials, massEvent
       });
@@ -3796,8 +3801,12 @@
   function toggleDeadlineFieldForCategory() {
     const section = document.getElementById('newEventSection').value;
     const isGroup = document.getElementById('newEventCategory').value === 'GROUP';
-    document.getElementById('newEventDeadlineField').classList.toggle('hidden', isGroup);
-    if (isGroup) {
+    // Cultural events never need a registration deadline — only the event
+    // date matters there. Group events (either section) skip it too since a
+    // team can be entered any time.
+    const skipDeadline = isGroup || section === 'CULTURAL';
+    document.getElementById('newEventDeadlineField').classList.toggle('hidden', skipDeadline);
+    if (skipDeadline) {
       document.getElementById('newEventDeadline').value = '';
       document.getElementById('newEventDeadlineTbd').checked = false;
     }

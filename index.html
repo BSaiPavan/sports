@@ -1320,6 +1320,12 @@
 
   let houseDetailsCache = [];
   let houseDetailsSelectedId = null;
+  function houseColor(name) {
+    const n = (name || '').toLowerCase();
+    if (n.includes('surya')) return { base: '#D62828', dark: '#8f1c1c', soft: 'rgba(214,40,40,.10)' };
+    if (n.includes('varuna')) return { base: '#1D63D8', dark: '#123a8f', soft: 'rgba(29,99,216,.10)' };
+    return { base: 'var(--court-navy)', dark: '#123a6b', soft: 'rgba(11,37,69,.08)' };
+  }
   async function loadHouseDetails() {
     const list = document.getElementById('houseDetailsList');
     const panel = document.getElementById('houseDetailsPanel');
@@ -1340,9 +1346,11 @@
   function renderHouseDetailsList() {
     const list = document.getElementById('houseDetailsList');
     list.className = 'house-tabs';
-    list.innerHTML = houseDetailsCache.map(h => `
-      <button class="house-tab-btn house-select-btn ${h.houseId === houseDetailsSelectedId ? 'active' : ''}" data-house-id="${h.houseId}">${escapeHtml(h.name)}</button>
-    `).join('');
+    list.innerHTML = houseDetailsCache.map(h => {
+      const c = houseColor(h.name);
+      const active = h.houseId === houseDetailsSelectedId;
+      return `<button class="house-tab-btn house-select-btn ${active ? 'active' : ''}" data-house-id="${h.houseId}" style="${active ? `background:${c.base};border-color:${c.base};box-shadow:0 4px 14px ${c.soft};` : `color:${c.base};border-color:${c.base};`}">${escapeHtml(h.name)}</button>`;
+    }).join('');
     list.querySelectorAll('.house-select-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         houseDetailsSelectedId = btn.dataset.houseId;
@@ -1356,33 +1364,34 @@
     const h = houseDetailsCache.find(x => x.houseId === houseDetailsSelectedId);
     if (!h) { panel.innerHTML = ''; return; }
     const nameOrTbd = (p) => p ? escapeHtml(p.name) : '<span style="color:var(--muted);font-weight:500;font-family:\'Inter\',sans-serif;font-size:15px;">Not set yet</span>';
+    const c = houseColor(h.name);
     panel.innerHTML = `
-      <div class="house-hero-card">
-        <div class="house-hero-top">
+      <div class="house-hero-card" style="border-color:${c.base};">
+        <div class="house-hero-top" style="background:linear-gradient(135deg,${c.base} 0%,${c.dark} 100%);">
           <div class="house-hero-eyebrow">Season House</div>
           <div class="house-hero-name">${escapeHtml(h.name)}</div>
         </div>
         <div class="house-hero-body">
           <div class="house-lead-grid">
-            <div class="house-lead-card">
-              <div class="house-lead-icon">🏵</div>
+            <div class="house-lead-card" style="border-left:3px solid ${c.base};">
+              <div class="house-lead-icon" style="border-color:${c.base};color:${c.base};">🏵</div>
               <div>
                 <div class="house-lead-role">Captain</div>
                 <div class="house-lead-name">${nameOrTbd(h.captain)}</div>
               </div>
             </div>
-            <div class="house-lead-card">
-              <div class="house-lead-icon">🎗</div>
+            <div class="house-lead-card" style="border-left:3px solid ${c.base};">
+              <div class="house-lead-icon" style="border-color:${c.base};color:${c.base};">🎗</div>
               <div>
                 <div class="house-lead-role">Vice-Captain</div>
                 <div class="house-lead-name">${nameOrTbd(h.viceCaptain)}</div>
               </div>
             </div>
           </div>
-          <button class="house-members-toggle" id="houseMembersToggleBtn">👥 Members <span class="mono">(${h.members.length})</span></button>
+          <button class="house-members-toggle" id="houseMembersToggleBtn" style="border-color:${c.base};color:${c.base};">👥 Members <span class="mono">(${h.members.length})</span></button>
           <div id="houseMembersList" class="hidden house-members-wrap">
             <div class="house-members-grid">
-              ${h.members.length ? h.members.map(m => `<div class="house-member-chip"><span class="dot"></span>${escapeHtml(m.name)}</div>`).join('') : '<div class="mono" style="font-size:12px;color:var(--muted);">No members added yet.</div>'}
+              ${h.members.length ? h.members.map(m => `<div class="house-member-chip"><span class="dot" style="background:${c.base};"></span>${escapeHtml(m.name)}</div>`).join('') : '<div class="mono" style="font-size:12px;color:var(--muted);">No members added yet.</div>'}
             </div>
           </div>
         </div>

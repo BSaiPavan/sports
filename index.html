@@ -238,6 +238,30 @@
   .landing-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-600);font-weight:700;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;}
   .landing-title{font-family:'Cormorant Garamond',serif;font-weight:700;text-transform:none;letter-spacing:0;font-size:clamp(30px,5vw,42px);line-height:1.1;color:var(--maroon-900);max-width:680px;margin:0 auto;}
   .landing-motto{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold-600);font-size:17px;margin-top:12px;}
+
+  /* ---------- House Details (redesign) ---------- */
+  .house-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+  .house-tab-btn{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;padding:11px 22px;border-radius:999px;border:1.5px solid var(--line);background:#fff;color:var(--graphite);cursor:pointer;transition:all .15s ease;}
+  .house-tab-btn:hover{border-color:var(--ball-orange);}
+  .house-tab-btn.active{background:var(--court-navy);border-color:var(--court-navy);color:#fff;box-shadow:0 4px 14px rgba(11,37,69,.25);}
+  .house-hero-card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 2px 20px rgba(11,37,69,.06);}
+  .house-hero-top{position:relative;padding:30px 30px 26px;background:linear-gradient(135deg,var(--court-navy) 0%,#123a6b 100%);color:var(--chalk);}
+  .house-hero-top::after{content:'';position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:rgba(255,90,31,.15);}
+  .house-hero-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,243,236,.55);margin-bottom:6px;position:relative;}
+  .house-hero-name{font-family:'Anton',sans-serif;font-size:clamp(30px,5vw,40px);letter-spacing:.5px;position:relative;}
+  .house-hero-body{padding:26px 30px 28px;}
+  .house-lead-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px;}
+  @media(max-width:480px){ .house-lead-grid{grid-template-columns:1fr;} }
+  .house-lead-card{display:flex;align-items:center;gap:14px;padding:16px 16px;border:1px solid var(--line);border-radius:8px;background:var(--chalk);}
+  .house-lead-icon{width:42px;height:42px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:#fff;border:1.5px solid var(--line);}
+  .house-lead-role{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+  .house-lead-name{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:20px;line-height:1.15;color:var(--graphite);}
+  .house-members-toggle{display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;padding:10px 18px;border-radius:999px;border:1.5px solid var(--court-navy);background:#fff;color:var(--court-navy);cursor:pointer;transition:all .15s ease;}
+  .house-members-toggle:hover{background:var(--court-navy);color:#fff;}
+  .house-members-wrap{margin-top:18px;padding-top:18px;border-top:1px dashed var(--line);}
+  .house-members-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(190px, 1fr));gap:10px;}
+  .house-member-chip{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--chalk);font-size:13px;font-weight:500;}
+  .house-member-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--ball-orange);flex-shrink:0;}
   .landing-desc{color:var(--muted);max-width:560px;margin:18px auto 0;font-size:15px;line-height:1.55;}
 </style>
 </head>
@@ -1315,8 +1339,9 @@
   }
   function renderHouseDetailsList() {
     const list = document.getElementById('houseDetailsList');
+    list.className = 'house-tabs';
     list.innerHTML = houseDetailsCache.map(h => `
-      <button class="btn ${h.houseId === houseDetailsSelectedId ? 'btn-orange' : 'btn-outline'} btn-small house-select-btn" data-house-id="${h.houseId}" style="${h.houseId === houseDetailsSelectedId ? '' : 'border-color:var(--line);color:var(--graphite);'}font-size:14px;padding:10px 22px;">${escapeHtml(h.name)}</button>
+      <button class="house-tab-btn house-select-btn ${h.houseId === houseDetailsSelectedId ? 'active' : ''}" data-house-id="${h.houseId}">${escapeHtml(h.name)}</button>
     `).join('');
     list.querySelectorAll('.house-select-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1330,23 +1355,36 @@
     const panel = document.getElementById('houseDetailsPanel');
     const h = houseDetailsCache.find(x => x.houseId === houseDetailsSelectedId);
     if (!h) { panel.innerHTML = ''; return; }
-    const nameOrTbd = (p) => p ? escapeHtml(p.name) : '<span style="color:var(--muted);font-weight:400;">Not set yet</span>';
+    const nameOrTbd = (p) => p ? escapeHtml(p.name) : '<span style="color:var(--muted);font-weight:500;font-family:\'Inter\',sans-serif;font-size:15px;">Not set yet</span>';
     panel.innerHTML = `
-      <div class="card" style="padding:26px 28px;">
-        <div style="font-family:'Anton',sans-serif;font-size:26px;margin-bottom:18px;">${escapeHtml(h.name)}</div>
-        <div style="display:flex;gap:36px;flex-wrap:wrap;margin-bottom:18px;">
-          <div>
-            <div class="mono" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px;">🏵 Captain</div>
-            <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;">${nameOrTbd(h.captain)}</div>
-          </div>
-          <div>
-            <div class="mono" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px;">🎗 Vice-Captain</div>
-            <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;">${nameOrTbd(h.viceCaptain)}</div>
-          </div>
+      <div class="house-hero-card">
+        <div class="house-hero-top">
+          <div class="house-hero-eyebrow">Season House</div>
+          <div class="house-hero-name">${escapeHtml(h.name)}</div>
         </div>
-        <button class="btn btn-outline btn-small" id="houseMembersToggleBtn" style="border-color:var(--line);color:var(--graphite);">👥 Members (${h.members.length})</button>
-        <div id="houseMembersList" class="hidden" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:8px 18px;">
-          ${h.members.length ? h.members.map(m => `<div style="font-size:13.5px;">${escapeHtml(m.name)}</div>`).join('') : '<div class="mono" style="font-size:12px;color:var(--muted);">No members added yet.</div>'}
+        <div class="house-hero-body">
+          <div class="house-lead-grid">
+            <div class="house-lead-card">
+              <div class="house-lead-icon">🏵</div>
+              <div>
+                <div class="house-lead-role">Captain</div>
+                <div class="house-lead-name">${nameOrTbd(h.captain)}</div>
+              </div>
+            </div>
+            <div class="house-lead-card">
+              <div class="house-lead-icon">🎗</div>
+              <div>
+                <div class="house-lead-role">Vice-Captain</div>
+                <div class="house-lead-name">${nameOrTbd(h.viceCaptain)}</div>
+              </div>
+            </div>
+          </div>
+          <button class="house-members-toggle" id="houseMembersToggleBtn">👥 Members <span class="mono">(${h.members.length})</span></button>
+          <div id="houseMembersList" class="hidden house-members-wrap">
+            <div class="house-members-grid">
+              ${h.members.length ? h.members.map(m => `<div class="house-member-chip"><span class="dot"></span>${escapeHtml(m.name)}</div>`).join('') : '<div class="mono" style="font-size:12px;color:var(--muted);">No members added yet.</div>'}
+            </div>
+          </div>
         </div>
       </div>
     `;

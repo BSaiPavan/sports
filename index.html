@@ -803,7 +803,7 @@
           </div>
 
           <div id="matchResultsSection" class="hidden">
-            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Pick the two houses, then pick the winner. A published group result must have a decided winner — that's what earns the house its championship point. For set-based sports (badminton, volleyball, table tennis…) add a score row per set/half/quarter. For football/handball, enter the 1st Half and 2nd Half score directly — if the aggregate ends level, fill in the Penalties column too.</p>
+            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Pick the two houses, then pick the winner. A published group result must have a decided winner — that's what earns the house its championship point. For set-based sports (badminton, volleyball, table tennis…) add a score row per set/half/quarter. For football/handball, enter each match's 1st Half and 2nd Half score directly — Match 2 &amp; 3 also let you add a penalty shootout score if that match was drawn.</p>
             <div class="inline-form" style="margin:0 0 14px;">
               <div class="field" style="flex:1;"><label>House A</label>
                 <select id="matchTeamASelect" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;"><option value="">Select house…</option></select>
@@ -1998,20 +1998,22 @@
     }
     const isWinnerA = match.winner && match.winner === match.teamA;
     const isWinnerB = match.winner && match.winner === match.teamB;
-    // Group the flat periods list back for display. Two label shapes are
-    // parsed: "M-<n> (Set-<i>)" for set-based sports (badminton, volleyball…),
-    // and "1st Half" / "2nd Half" / "Penalties" for direct-score sports
-    // (football, handball) — the latter gets its own scorecard layout,
-    // aggregating both halves into one final score like a real scoreboard.
+    // Group the flat periods list back into Match 1/2/3 columns for display.
+    // Two label shapes are parsed: "M-<n> (Set-<i>)" for set-based sports,
+    // and "M-<n> (1st Half)" / "M-<n> (2nd Half)" / "M-<n> (Penalty)" for
+    // direct-score sports (football, handball) — the latter aggregates each
+    // match's two halves into that match's own full-time scorecard.
     const buckets = { 1: [], 2: [], 3: [] };
-    const halfScores = {};
+    const scoreBuckets = { 1: {}, 2: {}, 3: {} };
     let isScoreMode = false;
     (match.periods || []).forEach(p => {
       const setM = /^M-(\d+)\s*\(Set-(\d+)\)$/i.exec(String(p.label || '').trim());
-      const label = String(p.label || '').trim().toLowerCase();
-      if (['1st half', '2nd half', 'penalties'].includes(label)) {
+      const scoreM = /^M-(\d+)\s*\((1st Half|2nd Half|Penalty)\)$/i.exec(String(p.label || '').trim());
+      if (scoreM) {
         isScoreMode = true;
-        halfScores[label] = p;
+        const matchNo = Math.min(3, Math.max(1, parseInt(scoreM[1], 10)));
+        const kind = scoreM[2].toLowerCase();
+        scoreBuckets[matchNo][kind === '1st half' ? 'h1' : kind === '2nd half' ? 'h2' : 'penalty'] = p;
       } else {
         const matchNo = setM ? Math.min(3, Math.max(1, parseInt(setM[1], 10))) : 1;
         buckets[matchNo].push(p);
@@ -2019,24 +2021,27 @@
     });
     let rows = '';
     if (isScoreMode) {
-      const h1 = halfScores['1st half'], h2 = halfScores['2nd half'], pen = halfScores['penalties'];
       const numOr0 = (v) => { const n = parseInt(v, 10); return isNaN(n) ? 0 : n; };
-      const aggA = numOr0(h1 && h1.scoreA) + numOr0(h2 && h2.scoreA);
-      const aggB = numOr0(h1 && h1.scoreB) + numOr0(h2 && h2.scoreB);
-      const htLine = (h1 || h2) ? `<div class="mono" style="text-align:center;font-size:10.5px;color:var(--muted);margin-top:6px;">HT ${escapeHtml((h1 && h1.scoreA) || '0')}–${escapeHtml((h1 && h1.scoreB) || '0')}</div>` : '';
-      const penLine = pen ? `<div class="mono" style="text-align:center;font-size:10.5px;color:var(--muted);margin-top:2px;">Penalties ${escapeHtml(pen.scoreA || '0')} – ${escapeHtml(pen.scoreB || '0')}</div>` : '';
-      rows = `
-        <div style="border:1px solid var(--line);border-radius:6px;padding:14px 18px;max-width:340px;background:#fff;margin-top:8px;">
-          <div class="mono" style="font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;text-align:center;">Full-time</div>
-          <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
-            <div style="flex:1;text-align:right;font-size:13px;font-weight:600;${isWinnerA ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamA || 'Team A')}</div>
-            <div style="display:flex;align-items:center;gap:9px;font-family:'Anton',sans-serif;font-size:28px;flex-shrink:0;">
-              <span>${aggA}</span><span style="color:var(--muted);font-size:17px;">–</span><span>${aggB}</span>
+      const cards = [1, 2, 3].filter(n => scoreBuckets[n].h1 || scoreBuckets[n].h2).map(n => {
+        const h1 = scoreBuckets[n].h1, h2 = scoreBuckets[n].h2, pen = scoreBuckets[n].penalty;
+        const aggA = numOr0(h1 && h1.scoreA) + numOr0(h2 && h2.scoreA);
+        const aggB = numOr0(h1 && h1.scoreB) + numOr0(h2 && h2.scoreB);
+        const htLine = (h1 || h2) ? `<div class="mono" style="text-align:center;font-size:10px;color:var(--muted);margin-top:6px;">HT ${escapeHtml((h1 && h1.scoreA) || '0')}–${escapeHtml((h1 && h1.scoreB) || '0')}</div>` : '';
+        return `
+        <div style="border:1px solid var(--line);border-radius:6px;padding:12px 16px;min-width:190px;background:#fff;">
+          <div class="mono" style="font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;text-align:center;">Match ${n}</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
+            <div style="flex:1;text-align:right;font-size:12.5px;font-weight:600;${isWinnerA ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamA || 'Team A')}</div>
+            <div style="display:flex;align-items:center;gap:8px;font-family:'Anton',sans-serif;font-size:24px;flex-shrink:0;">
+              <span>${aggA}</span><span style="color:var(--muted);font-size:15px;">–</span><span>${aggB}</span>
             </div>
-            <div style="flex:1;text-align:left;font-size:13px;font-weight:600;${isWinnerB ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamB || 'Team B')}</div>
+            <div style="flex:1;text-align:left;font-size:12.5px;font-weight:600;${isWinnerB ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamB || 'Team B')}</div>
           </div>
-          ${htLine}${penLine}
+          ${htLine}
+          ${pen ? `<div class="mono" style="text-align:center;font-size:10.5px;color:var(--muted);margin-top:2px;">Penalties ${escapeHtml(pen.scoreA || '0')} – ${escapeHtml(pen.scoreB || '0')}</div>` : ''}
         </div>`;
+      }).join('');
+      rows = cards ? `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">${cards}</div>` : '';
     } else {
       const matchCols = [1, 2, 3].filter(n => buckets[n].length).map(n => `
         <div style="min-width:110px;">
@@ -3270,52 +3275,97 @@
     return n.includes('football') || n.includes('handball');
   }
 
-  // ---------- Score-mode columns (football/handball: 1st half + 2nd half, with an optional penalty shootout column if the aggregate is drawn) ----------
-  function buildScoreColumn(label, key, isOptional) {
+  // ---------- Score-mode match columns (football/handball: each match is 1st Half + 2nd Half, with an optional penalty toggle on Match 2 & 3 if that match is drawn) ----------
+  function buildScoreMatchColumn(matchNo) {
+    const isOptional = matchNo === 3;
+    const allowPenalty = matchNo === 2 || matchNo === 3;
     const col = document.createElement('div');
     col.className = 'match-col';
-    col.dataset.scoreKey = key;
-    col.style.cssText = 'flex:1;min-width:170px;border:1px solid var(--line);border-radius:3px;padding:12px;';
+    col.dataset.matchNo = matchNo;
+    col.dataset.mode = 'score';
+    col.style.cssText = 'flex:1;min-width:190px;border:1px solid var(--line);border-radius:3px;padding:12px;';
     col.innerHTML = `
       <div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">
-        ${label}${isOptional ? ' <span style="opacity:.7;">(optional — if drawn)</span>' : ''}
+        Match ${matchNo}${isOptional ? ' <span style="opacity:.7;">(optional)</span>' : ''}
       </div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <input class="mc-score-a" placeholder="A" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <span class="mono" style="font-size:10.5px;color:var(--muted);width:46px;flex-shrink:0;">1st Half</span>
+        <input class="mc-h1-a" placeholder="A" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
         <span style="color:var(--muted);">–</span>
-        <input class="mc-score-b" placeholder="B" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        <input class="mc-h1-b" placeholder="B" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
       </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:${allowPenalty ? '8px' : '0'};">
+        <span class="mono" style="font-size:10.5px;color:var(--muted);width:46px;flex-shrink:0;">2nd Half</span>
+        <input class="mc-h2-a" placeholder="A" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        <span style="color:var(--muted);">–</span>
+        <input class="mc-h2-b" placeholder="B" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+      </div>
+      ${allowPenalty ? `
+        <div class="mc-pen-wrap hidden" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <span class="mono" style="font-size:10.5px;color:var(--muted);width:46px;flex-shrink:0;">Pens</span>
+          <input class="mc-pen-a" placeholder="A" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+          <span style="color:var(--muted);">–</span>
+          <input class="mc-pen-b" placeholder="B" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+          <button type="button" class="btn btn-outline btn-small mc-remove-pen" style="border-color:var(--line);color:var(--graphite);padding:4px 8px;">✕</button>
+        </div>
+        <button type="button" class="btn btn-outline btn-small mc-add-pen" style="border-color:var(--line);color:var(--graphite);width:100%;">+ Add penalties (if drawn)</button>
+      ` : ''}
     `;
+    if (allowPenalty) {
+      col.querySelector('.mc-add-pen').addEventListener('click', () => {
+        col.querySelector('.mc-pen-wrap').classList.remove('hidden');
+        col.querySelector('.mc-add-pen').classList.add('hidden');
+      });
+      col.querySelector('.mc-remove-pen').addEventListener('click', () => {
+        col.querySelector('.mc-pen-a').value = '';
+        col.querySelector('.mc-pen-b').value = '';
+        col.querySelector('.mc-pen-wrap').classList.add('hidden');
+        col.querySelector('.mc-add-pen').classList.remove('hidden');
+      });
+    }
     return col;
   }
-  const SCORE_COLUMN_DEFS = [
-    { key: 'half1', label: '1st Half', optional: false },
-    { key: 'half2', label: '2nd Half', optional: false },
-    { key: 'penalties', label: 'Penalties', optional: true },
-  ];
   function loadScorePeriodsIntoColumns(periods) {
     const wrap = document.getElementById('matchColumns');
     wrap.innerHTML = '';
-    SCORE_COLUMN_DEFS.forEach(d => wrap.appendChild(buildScoreColumn(d.label, d.key, d.optional)));
-    const byLabel = {};
-    (periods || []).forEach(p => { byLabel[String(p.label || '').trim().toLowerCase()] = p; });
-    SCORE_COLUMN_DEFS.forEach(d => {
-      const p = byLabel[d.label.toLowerCase()];
-      if (!p) return;
-      const col = wrap.querySelector(`[data-score-key="${d.key}"]`);
-      col.querySelector('.mc-score-a').value = p.scoreA || '';
-      col.querySelector('.mc-score-b').value = p.scoreB || '';
+    [1, 2, 3].forEach(n => wrap.appendChild(buildScoreMatchColumn(n)));
+    const cols = { 1: wrap.querySelector('[data-match-no="1"]'), 2: wrap.querySelector('[data-match-no="2"]'), 3: wrap.querySelector('[data-match-no="3"]') };
+    (periods || []).forEach(p => {
+      const m = /^M-(\d+)\s*\((1st Half|2nd Half|Penalty)\)$/i.exec(String(p.label || '').trim());
+      if (!m) return;
+      const col = cols[Math.min(3, Math.max(1, parseInt(m[1], 10)))];
+      if (!col) return;
+      const kind = m[2].toLowerCase();
+      if (kind === '1st half') {
+        col.querySelector('.mc-h1-a').value = p.scoreA || '';
+        col.querySelector('.mc-h1-b').value = p.scoreB || '';
+      } else if (kind === '2nd half') {
+        col.querySelector('.mc-h2-a').value = p.scoreA || '';
+        col.querySelector('.mc-h2-b').value = p.scoreB || '';
+      } else if (col.querySelector('.mc-pen-wrap')) {
+        col.querySelector('.mc-pen-a').value = p.scoreA || '';
+        col.querySelector('.mc-pen-b').value = p.scoreB || '';
+        col.querySelector('.mc-pen-wrap').classList.remove('hidden');
+        col.querySelector('.mc-add-pen').classList.add('hidden');
+      }
     });
   }
   function collectScorePeriods() {
-    const wrap = document.getElementById('matchColumns');
     const periods = [];
-    SCORE_COLUMN_DEFS.forEach(d => {
-      const col = wrap.querySelector(`[data-score-key="${d.key}"]`);
-      if (!col) return;
-      const scoreA = col.querySelector('.mc-score-a').value.trim();
-      const scoreB = col.querySelector('.mc-score-b').value.trim();
-      if (scoreA || scoreB) periods.push({ label: d.label, scoreA, scoreB });
+    document.querySelectorAll('#matchColumns .match-col').forEach(col => {
+      const matchNo = col.dataset.matchNo;
+      const h1a = col.querySelector('.mc-h1-a').value.trim();
+      const h1b = col.querySelector('.mc-h1-b').value.trim();
+      if (h1a || h1b) periods.push({ label: `M-${matchNo} (1st Half)`, scoreA: h1a, scoreB: h1b });
+      const h2a = col.querySelector('.mc-h2-a').value.trim();
+      const h2b = col.querySelector('.mc-h2-b').value.trim();
+      if (h2a || h2b) periods.push({ label: `M-${matchNo} (2nd Half)`, scoreA: h2a, scoreB: h2b });
+      const penWrap = col.querySelector('.mc-pen-wrap');
+      if (penWrap && !penWrap.classList.contains('hidden')) {
+        const penA = col.querySelector('.mc-pen-a').value.trim();
+        const penB = col.querySelector('.mc-pen-b').value.trim();
+        if (penA || penB) periods.push({ label: `M-${matchNo} (Penalty)`, scoreA: penA, scoreB: penB });
+      }
     });
     return periods;
   }

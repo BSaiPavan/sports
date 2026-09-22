@@ -803,7 +803,7 @@
           </div>
 
           <div id="matchResultsSection" class="hidden">
-            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Pick the two houses, then pick the winner. A published group result must have a decided winner — that's what earns the house its championship point. For set-based sports (badminton, volleyball, table tennis…) add a score row per set/half/quarter. For football/handball, enter each match's 1st Half and 2nd Half score directly — Match 2 &amp; 3 also let you add a penalty shootout score if that match was drawn.</p>
+            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Pick the two houses, then pick the winner. A published group result must have a decided winner — that's what earns the house its championship point. For set-based sports (badminton, volleyball, table tennis…) add a score row per set/half/quarter. For football/handball, enter each match's 1st Half and 2nd Half score directly — Match 2 &amp; 3 also let you add a penalty shootout score if that match was drawn. For cultural group events, the score box per match is just optional — fill it in if there's a numeric score, otherwise skip straight to picking the winner.</p>
             <div class="inline-form" style="margin:0 0 14px;">
               <div class="field" style="flex:1;"><label>House A</label>
                 <select id="matchTeamASelect" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;"><option value="">Select house…</option></select>
@@ -1999,21 +1999,27 @@
     const isWinnerA = match.winner && match.winner === match.teamA;
     const isWinnerB = match.winner && match.winner === match.teamB;
     // Group the flat periods list back into Match 1/2/3 columns for display.
-    // Two label shapes are parsed: "M-<n> (Set-<i>)" for set-based sports,
-    // and "M-<n> (1st Half)" / "M-<n> (2nd Half)" / "M-<n> (Penalty)" for
-    // direct-score sports (football, handball) — the latter aggregates each
-    // match's two halves into that match's own full-time scorecard.
+    // Three label shapes are parsed: "M-<n> (Set-<i>)" for set-based sports,
+    // "M-<n> (1st Half)" / "M-<n> (2nd Half)" / "M-<n> (Penalty)" for
+    // direct-score sports (football, handball) — aggregated into each
+    // match's own full-time scorecard — and "M-<n> (Score)" for cultural
+    // group events, shown as a single plain score line per match.
     const buckets = { 1: [], 2: [], 3: [] };
     const scoreBuckets = { 1: {}, 2: {}, 3: {} };
-    let isScoreMode = false;
+    const simpleBuckets = { 1: null, 2: null, 3: null };
+    let isScoreMode = false, isSimpleMode = false;
     (match.periods || []).forEach(p => {
       const setM = /^M-(\d+)\s*\(Set-(\d+)\)$/i.exec(String(p.label || '').trim());
       const scoreM = /^M-(\d+)\s*\((1st Half|2nd Half|Penalty)\)$/i.exec(String(p.label || '').trim());
+      const simpleM = /^M-(\d+)\s*\(Score\)$/i.exec(String(p.label || '').trim());
       if (scoreM) {
         isScoreMode = true;
         const matchNo = Math.min(3, Math.max(1, parseInt(scoreM[1], 10)));
         const kind = scoreM[2].toLowerCase();
         scoreBuckets[matchNo][kind === '1st half' ? 'h1' : kind === '2nd half' ? 'h2' : 'penalty'] = p;
+      } else if (simpleM) {
+        isSimpleMode = true;
+        simpleBuckets[Math.min(3, Math.max(1, parseInt(simpleM[1], 10)))] = p;
       } else {
         const matchNo = setM ? Math.min(3, Math.max(1, parseInt(setM[1], 10))) : 1;
         buckets[matchNo].push(p);
@@ -2039,6 +2045,22 @@
           </div>
           ${htLine}
           ${pen ? `<div class="mono" style="text-align:center;font-size:10.5px;color:var(--muted);margin-top:2px;">Penalties ${escapeHtml(pen.scoreA || '0')} – ${escapeHtml(pen.scoreB || '0')}</div>` : ''}
+        </div>`;
+      }).join('');
+      rows = cards ? `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">${cards}</div>` : '';
+    } else if (isSimpleMode) {
+      const cards = [1, 2, 3].filter(n => simpleBuckets[n]).map(n => {
+        const s = simpleBuckets[n];
+        return `
+        <div style="border:1px solid var(--line);border-radius:6px;padding:12px 16px;min-width:190px;background:#fff;">
+          <div class="mono" style="font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;text-align:center;">Match ${n}</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
+            <div style="flex:1;text-align:right;font-size:12.5px;font-weight:600;${isWinnerA ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamA || 'Team A')}</div>
+            <div style="display:flex;align-items:center;gap:8px;font-family:'Anton',sans-serif;font-size:24px;flex-shrink:0;">
+              <span>${escapeHtml(s.scoreA || '—')}</span><span style="color:var(--muted);font-size:15px;">–</span><span>${escapeHtml(s.scoreB || '—')}</span>
+            </div>
+            <div style="flex:1;text-align:left;font-size:12.5px;font-weight:600;${isWinnerB ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamB || 'Team B')}</div>
+          </div>
         </div>`;
       }).join('');
       rows = cards ? `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">${cards}</div>` : '';
@@ -3264,15 +3286,24 @@
   }));
 
   let currentResultsEventCategory = '';
-  let currentResultsIsScoreMode = false;
+  let currentResultsScoreVariant = 'sets'; // 'sets' | 'halves' | 'simple'
 
   // Sports that play to a single match score rather than a series of sets
-  // (football, handball) get the direct-score + optional-penalty UI below,
-  // detected from the event name. Everything else keeps the existing
+  // (football, handball) get the halves + optional-penalty UI, detected
+  // from the event name. Cultural group events (any section === 'CULTURAL')
+  // get the simple optional-score UI regardless of name, since judged
+  // events like dance/skit/debate don't have sets, halves, or penalties —
+  // the score box there is just an optional reference number and the
+  // winner is always picked by hand. Everything else keeps the existing
   // set-based columns.
   function isScoreModeSport(name) {
     const n = String(name || '').toLowerCase();
     return n.includes('football') || n.includes('handball');
+  }
+  function scoreVariantFor(section, eventName) {
+    if (String(section || '').toUpperCase() === 'CULTURAL') return 'simple';
+    if (isScoreModeSport(eventName)) return 'halves';
+    return 'sets';
   }
 
   // ---------- Score-mode match columns (football/handball: each match is 1st Half + 2nd Half, with an optional penalty toggle on Match 2 & 3 if that match is drawn) ----------
@@ -3366,6 +3397,52 @@
         const penB = col.querySelector('.mc-pen-b').value.trim();
         if (penA || penB) periods.push({ label: `M-${matchNo} (Penalty)`, scoreA: penA, scoreB: penB });
       }
+    });
+    return periods;
+  }
+
+  // ---------- Simple score-mode columns (cultural group events: one optional score box per match, no sets/halves/penalties — the winner is always picked by hand) ----------
+  function buildSimpleScoreColumn(matchNo) {
+    const isOptional = matchNo === 3;
+    const col = document.createElement('div');
+    col.className = 'match-col';
+    col.dataset.matchNo = matchNo;
+    col.dataset.mode = 'simple';
+    col.style.cssText = 'flex:1;min-width:170px;border:1px solid var(--line);border-radius:3px;padding:12px;';
+    col.innerHTML = `
+      <div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">
+        Match ${matchNo}${isOptional ? ' <span style="opacity:.7;">(optional)</span>' : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="mono" style="font-size:10.5px;color:var(--muted);width:42px;flex-shrink:0;">Score</span>
+        <input class="mc-score-a" placeholder="A (optional)" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        <span style="color:var(--muted);">–</span>
+        <input class="mc-score-b" placeholder="B (optional)" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+      </div>
+    `;
+    return col;
+  }
+  function loadSimpleScorePeriodsIntoColumns(periods) {
+    const wrap = document.getElementById('matchColumns');
+    wrap.innerHTML = '';
+    [1, 2, 3].forEach(n => wrap.appendChild(buildSimpleScoreColumn(n)));
+    const cols = { 1: wrap.querySelector('[data-match-no="1"]'), 2: wrap.querySelector('[data-match-no="2"]'), 3: wrap.querySelector('[data-match-no="3"]') };
+    (periods || []).forEach(p => {
+      const m = /^M-(\d+)\s*\(Score\)$/i.exec(String(p.label || '').trim());
+      if (!m) return;
+      const col = cols[Math.min(3, Math.max(1, parseInt(m[1], 10)))];
+      if (!col) return;
+      col.querySelector('.mc-score-a').value = p.scoreA || '';
+      col.querySelector('.mc-score-b').value = p.scoreB || '';
+    });
+  }
+  function collectSimpleScorePeriods() {
+    const periods = [];
+    document.querySelectorAll('#matchColumns .match-col').forEach(col => {
+      const matchNo = col.dataset.matchNo;
+      const scoreA = col.querySelector('.mc-score-a').value.trim();
+      const scoreB = col.querySelector('.mc-score-b').value.trim();
+      if (scoreA || scoreB) periods.push({ label: `M-${matchNo} (Score)`, scoreA, scoreB });
     });
     return periods;
   }
@@ -3495,15 +3572,17 @@
 
       currentResultsEventCategory = String(savedResults.category || '').toUpperCase();
       const isGroup = currentResultsEventCategory === 'GROUP';
-      currentResultsIsScoreMode = isGroup && isScoreModeSport(savedResults.eventName || '');
+      currentResultsScoreVariant = isGroup ? scoreVariantFor(savedResults.section, savedResults.eventName) : 'sets';
       document.getElementById('positionResultsSection').classList.toggle('hidden', isGroup);
       document.getElementById('matchResultsSection').classList.toggle('hidden', !isGroup);
 
       if (isGroup) {
         const m = savedResults.match || {};
         populateMatchTeamSelects(m.teamA || '', m.teamB || '');
-        if (currentResultsIsScoreMode) {
+        if (currentResultsScoreVariant === 'halves') {
           loadScorePeriodsIntoColumns(m.periods || []);
+        } else if (currentResultsScoreVariant === 'simple') {
+          loadSimpleScorePeriodsIntoColumns(m.periods || []);
         } else {
           loadPeriodsIntoMatchColumns(m.periods || []);
         }
@@ -3564,7 +3643,9 @@
       const winner = document.getElementById('matchWinnerSelect').value.trim();
       if (resultsPublished && (!teamA || !teamB)) { setMsg(msg, 'Pick both houses before publishing.', false); return; }
       if (resultsPublished && (!winner || (winner !== teamA && winner !== teamB))) { setMsg(msg, 'Pick a winner before publishing — group events need a decided result.', false); return; }
-      const periods = currentResultsIsScoreMode ? collectScorePeriods() : collectPeriodsFromMatchColumns();
+      const periods = currentResultsScoreVariant === 'halves' ? collectScorePeriods()
+        : currentResultsScoreVariant === 'simple' ? collectSimpleScorePeriods()
+        : collectPeriodsFromMatchColumns();
       payload.match = { teamA, teamB, winner, periods };
     } else {
       const isDoubles = currentResultsEventCategory === 'DOUBLES';

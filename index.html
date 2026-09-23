@@ -803,7 +803,7 @@
           </div>
 
           <div id="matchResultsSection" class="hidden">
-            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Pick the two houses, then pick the winner. A published group result must have a decided winner — that's what earns the house its championship point. For set-based sports (badminton, volleyball, table tennis…) add a score row per set/half/quarter. For football/handball, enter each match's 1st Half and 2nd Half score directly — Match 2 &amp; 3 also let you add a penalty shootout score if that match was drawn. For cultural group events, the score box per match is just optional — fill it in if there's a numeric score, otherwise skip straight to picking the winner.</p>
+            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Pick the two houses, then pick the winner. A published group result must have a decided winner — that's what earns the house its championship point. For set-based sports (badminton, volleyball, table tennis…) add a score row per set/half/quarter. For football/handball, enter each match's 1st Half and 2nd Half score directly — Match 2 &amp; 3 also let you add a penalty shootout score if that match was drawn. For cultural group events, there's just one Score box for House A/B — fill it in if there's a numeric score, or skip straight to picking the winner. A "+ Add tiebreaker round" option appears if you need to break a tie.</p>
             <div class="inline-form" style="margin:0 0 14px;">
               <div class="field" style="flex:1;"><label>House A</label>
                 <select id="matchTeamASelect" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;"><option value="">Select house…</option></select>
@@ -814,7 +814,7 @@
             </div>
             <p class="field-hint" id="matchNoHousesHint" style="display:none;margin:-6px 0 14px;">No houses set up yet — add them in the Houses tab first.</p>
             <label style="font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Scores</label>
-            <p class="mono" style="font-size:10.5px;color:var(--muted);margin:2px 0 10px;">Match 3 is optional — only fill it in if the series wasn't already decided 2–0 in Match 1 &amp; 2.</p>
+            <p class="mono" id="matchColumnsHint" style="font-size:10.5px;color:var(--muted);margin:2px 0 10px;">Match 3 is optional — only fill it in if the series wasn't already decided 2–0 in Match 1 &amp; 2.</p>
             <div id="matchColumns" style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;"></div>
             <div class="field" style="margin-bottom:4px;">
               <label>🏆 Winner</label>
@@ -1998,28 +1998,28 @@
     }
     const isWinnerA = match.winner && match.winner === match.teamA;
     const isWinnerB = match.winner && match.winner === match.teamB;
-    // Group the flat periods list back into Match 1/2/3 columns for display.
-    // Three label shapes are parsed: "M-<n> (Set-<i>)" for set-based sports,
-    // "M-<n> (1st Half)" / "M-<n> (2nd Half)" / "M-<n> (Penalty)" for
-    // direct-score sports (football, handball) — aggregated into each
-    // match's own full-time scorecard — and "M-<n> (Score)" for cultural
-    // group events, shown as a single plain score line per match.
+    // Group the flat periods list back for display. Three label shapes are
+    // parsed: "M-<n> (Set-<i>)" for set-based sports, "M-<n> (1st Half)" /
+    // "M-<n> (2nd Half)" / "M-<n> (Penalty)" for direct-score sports
+    // (football, handball) — aggregated into each match's own full-time
+    // scorecard — and a plain "Score" / "Tiebreaker" pair for cultural
+    // group events (one score, no match numbers).
     const buckets = { 1: [], 2: [], 3: [] };
     const scoreBuckets = { 1: {}, 2: {}, 3: {} };
-    const simpleBuckets = { 1: null, 2: null, 3: null };
+    const simpleScores = {};
     let isScoreMode = false, isSimpleMode = false;
     (match.periods || []).forEach(p => {
       const setM = /^M-(\d+)\s*\(Set-(\d+)\)$/i.exec(String(p.label || '').trim());
       const scoreM = /^M-(\d+)\s*\((1st Half|2nd Half|Penalty)\)$/i.exec(String(p.label || '').trim());
-      const simpleM = /^M-(\d+)\s*\(Score\)$/i.exec(String(p.label || '').trim());
+      const label = String(p.label || '').trim().toLowerCase();
       if (scoreM) {
         isScoreMode = true;
         const matchNo = Math.min(3, Math.max(1, parseInt(scoreM[1], 10)));
         const kind = scoreM[2].toLowerCase();
         scoreBuckets[matchNo][kind === '1st half' ? 'h1' : kind === '2nd half' ? 'h2' : 'penalty'] = p;
-      } else if (simpleM) {
+      } else if (label === 'score' || label === 'tiebreaker') {
         isSimpleMode = true;
-        simpleBuckets[Math.min(3, Math.max(1, parseInt(simpleM[1], 10)))] = p;
+        simpleScores[label] = p;
       } else {
         const matchNo = setM ? Math.min(3, Math.max(1, parseInt(setM[1], 10))) : 1;
         buckets[matchNo].push(p);
@@ -2049,21 +2049,21 @@
       }).join('');
       rows = cards ? `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">${cards}</div>` : '';
     } else if (isSimpleMode) {
-      const cards = [1, 2, 3].filter(n => simpleBuckets[n]).map(n => {
-        const s = simpleBuckets[n];
-        return `
-        <div style="border:1px solid var(--line);border-radius:6px;padding:12px 16px;min-width:190px;background:#fff;">
-          <div class="mono" style="font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;text-align:center;">Match ${n}</div>
-          <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
-            <div style="flex:1;text-align:right;font-size:12.5px;font-weight:600;${isWinnerA ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamA || 'Team A')}</div>
-            <div style="display:flex;align-items:center;gap:8px;font-family:'Anton',sans-serif;font-size:24px;flex-shrink:0;">
-              <span>${escapeHtml(s.scoreA || '—')}</span><span style="color:var(--muted);font-size:15px;">–</span><span>${escapeHtml(s.scoreB || '—')}</span>
+      const s = simpleScores['score'];
+      const tb = simpleScores['tiebreaker'];
+      if (s) {
+        rows = `
+        <div style="border:1px solid var(--line);border-radius:6px;padding:14px 18px;max-width:340px;background:#fff;margin-top:8px;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
+            <div style="flex:1;text-align:right;font-size:13px;font-weight:600;${isWinnerA ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamA || 'Team A')}</div>
+            <div style="display:flex;align-items:center;gap:9px;font-family:'Anton',sans-serif;font-size:26px;flex-shrink:0;">
+              <span>${escapeHtml(s.scoreA || '—')}</span><span style="color:var(--muted);font-size:16px;">–</span><span>${escapeHtml(s.scoreB || '—')}</span>
             </div>
-            <div style="flex:1;text-align:left;font-size:12.5px;font-weight:600;${isWinnerB ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamB || 'Team B')}</div>
+            <div style="flex:1;text-align:left;font-size:13px;font-weight:600;${isWinnerB ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamB || 'Team B')}</div>
           </div>
+          ${tb ? `<div class="mono" style="text-align:center;font-size:10.5px;color:var(--muted);margin-top:8px;">Tiebreaker ${escapeHtml(tb.scoreA || '—')} – ${escapeHtml(tb.scoreB || '—')}</div>` : ''}
         </div>`;
-      }).join('');
-      rows = cards ? `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">${cards}</div>` : '';
+      }
     } else {
       const matchCols = [1, 2, 3].filter(n => buckets[n].length).map(n => `
         <div style="min-width:110px;">
@@ -3401,49 +3401,67 @@
     return periods;
   }
 
-  // ---------- Simple score-mode columns (cultural group events: one optional score box per match, no sets/halves/penalties — the winner is always picked by hand) ----------
-  function buildSimpleScoreColumn(matchNo) {
-    const isOptional = matchNo === 3;
-    const col = document.createElement('div');
-    col.className = 'match-col';
-    col.dataset.matchNo = matchNo;
-    col.dataset.mode = 'simple';
-    col.style.cssText = 'flex:1;min-width:170px;border:1px solid var(--line);border-radius:3px;padding:12px;';
-    col.innerHTML = `
-      <div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">
-        Match ${matchNo}${isOptional ? ' <span style="opacity:.7;">(optional)</span>' : ''}
-      </div>
+  // ---------- Simple score-mode block (cultural group events: one Score box, with an optional Tiebreaker box that only appears if the scores end up tied) ----------
+  function buildSimpleScoreInputRow(label, aClass, bClass) {
+    return `
+      <div class="mono" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">${label}</div>
       <div style="display:flex;align-items:center;gap:6px;">
-        <span class="mono" style="font-size:10.5px;color:var(--muted);width:42px;flex-shrink:0;">Score</span>
-        <input class="mc-score-a" placeholder="A (optional)" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        <input class="${aClass}" placeholder="A (optional)" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
         <span style="color:var(--muted);">–</span>
-        <input class="mc-score-b" placeholder="B (optional)" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        <input class="${bClass}" placeholder="B (optional)" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+      </div>`;
+  }
+  function resetSimpleScoreBlock() {
+    const wrap = document.getElementById('matchColumns');
+    wrap.innerHTML = `
+      <div style="flex:1;min-width:220px;border:1px solid var(--line);border-radius:3px;padding:12px;" data-mode="simple">
+        ${buildSimpleScoreInputRow('Score', 'simple-score-a', 'simple-score-b')}
+        <div class="simple-tiebreak-wrap hidden" style="margin-top:12px;">
+          ${buildSimpleScoreInputRow('Tiebreaker', 'simple-tb-a', 'simple-tb-b')}
+          <button type="button" class="btn btn-outline btn-small simple-remove-tb" style="border-color:var(--line);color:var(--graphite);margin-top:6px;">✕ Remove tiebreaker</button>
+        </div>
+        <button type="button" class="btn btn-outline btn-small simple-add-tb" style="border-color:var(--line);color:var(--graphite);width:100%;margin-top:12px;">+ Add tiebreaker round (if tied)</button>
       </div>
     `;
-    return col;
+    wrap.querySelector('.simple-add-tb').addEventListener('click', () => {
+      wrap.querySelector('.simple-tiebreak-wrap').classList.remove('hidden');
+      wrap.querySelector('.simple-add-tb').classList.add('hidden');
+    });
+    wrap.querySelector('.simple-remove-tb').addEventListener('click', () => {
+      wrap.querySelector('.simple-tb-a').value = '';
+      wrap.querySelector('.simple-tb-b').value = '';
+      wrap.querySelector('.simple-tiebreak-wrap').classList.add('hidden');
+      wrap.querySelector('.simple-add-tb').classList.remove('hidden');
+    });
   }
   function loadSimpleScorePeriodsIntoColumns(periods) {
+    resetSimpleScoreBlock();
     const wrap = document.getElementById('matchColumns');
-    wrap.innerHTML = '';
-    [1, 2, 3].forEach(n => wrap.appendChild(buildSimpleScoreColumn(n)));
-    const cols = { 1: wrap.querySelector('[data-match-no="1"]'), 2: wrap.querySelector('[data-match-no="2"]'), 3: wrap.querySelector('[data-match-no="3"]') };
     (periods || []).forEach(p => {
-      const m = /^M-(\d+)\s*\(Score\)$/i.exec(String(p.label || '').trim());
-      if (!m) return;
-      const col = cols[Math.min(3, Math.max(1, parseInt(m[1], 10)))];
-      if (!col) return;
-      col.querySelector('.mc-score-a').value = p.scoreA || '';
-      col.querySelector('.mc-score-b').value = p.scoreB || '';
+      const label = String(p.label || '').trim().toLowerCase();
+      if (label === 'score') {
+        wrap.querySelector('.simple-score-a').value = p.scoreA || '';
+        wrap.querySelector('.simple-score-b').value = p.scoreB || '';
+      } else if (label === 'tiebreaker') {
+        wrap.querySelector('.simple-tb-a').value = p.scoreA || '';
+        wrap.querySelector('.simple-tb-b').value = p.scoreB || '';
+        wrap.querySelector('.simple-tiebreak-wrap').classList.remove('hidden');
+        wrap.querySelector('.simple-add-tb').classList.add('hidden');
+      }
     });
   }
   function collectSimpleScorePeriods() {
+    const wrap = document.getElementById('matchColumns');
     const periods = [];
-    document.querySelectorAll('#matchColumns .match-col').forEach(col => {
-      const matchNo = col.dataset.matchNo;
-      const scoreA = col.querySelector('.mc-score-a').value.trim();
-      const scoreB = col.querySelector('.mc-score-b').value.trim();
-      if (scoreA || scoreB) periods.push({ label: `M-${matchNo} (Score)`, scoreA, scoreB });
-    });
+    const scoreA = wrap.querySelector('.simple-score-a').value.trim();
+    const scoreB = wrap.querySelector('.simple-score-b').value.trim();
+    if (scoreA || scoreB) periods.push({ label: 'Score', scoreA, scoreB });
+    const tbWrap = wrap.querySelector('.simple-tiebreak-wrap');
+    if (tbWrap && !tbWrap.classList.contains('hidden')) {
+      const tbA = wrap.querySelector('.simple-tb-a').value.trim();
+      const tbB = wrap.querySelector('.simple-tb-b').value.trim();
+      if (tbA || tbB) periods.push({ label: 'Tiebreaker', scoreA: tbA, scoreB: tbB });
+    }
     return periods;
   }
 
@@ -3579,6 +3597,7 @@
       if (isGroup) {
         const m = savedResults.match || {};
         populateMatchTeamSelects(m.teamA || '', m.teamB || '');
+        document.getElementById('matchColumnsHint').classList.toggle('hidden', currentResultsScoreVariant === 'simple');
         if (currentResultsScoreVariant === 'halves') {
           loadScorePeriodsIntoColumns(m.periods || []);
         } else if (currentResultsScoreVariant === 'simple') {

@@ -488,6 +488,7 @@
     <div id="housePointsSubview" class="hidden">
       <button class="btn btn-outline btn-small house-toggle-back-btn" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">← Back</button>
       <div class="card hidden" id="houseChampionBanner" style="padding:18px 22px;margin-bottom:16px;background:#fff7e8;border-color:#e8c468;"></div>
+      <div class="card hidden" id="sportsChampionBanner" style="padding:18px 22px;margin-bottom:16px;"></div>
       <div class="card mono" id="houseProgressBanner" style="padding:14px 22px;margin-bottom:16px;font-size:12px;color:var(--muted);"></div>
       <div class="card" id="houseStandingsCard" style="padding:22px;"></div>
     </div>
@@ -588,6 +589,22 @@
 
     <!-- EVENTS TAB -->
     <div class="admin-tab" id="tab-events">
+      <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
+        <h3>Add from library</h3>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">Reuse an event from a past season — just pick the name and set this season's deadline/date. New events you add below are automatically saved here for next time.</p>
+        <div class="inline-form">
+          <div class="field"><label>Event</label>
+            <select id="templateEventSelect" style="width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;">
+              <option value="">— pick from library —</option>
+            </select>
+          </div>
+          <div class="field" id="templateDeadlineField"><label>Registration deadline</label><input id="templateEventDeadline" type="datetime-local"></div>
+          <div class="field"><label>Event date</label><input id="templateEventDate" type="datetime-local"></div>
+          <button class="btn btn-dark" id="addFromTemplateBtn">Add</button>
+        </div>
+        <div class="msg" id="templateEventMsg"></div>
+      </div>
+
       <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
         <h3>Add event</h3>
         <div class="inline-form">
@@ -718,6 +735,11 @@
       <div class="card" style="padding:22px;margin-bottom:24px;">
         <h3>Set results for an event</h3>
         <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 18px;">Pick an event, choose who placed 1st/2nd/3rd from that event's registered list, then publish. Students only see results once published.</p>
+
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;" id="resultsSectionFilterBar">
+          <button class="btn btn-outline btn-small results-section-filter-btn" style="border-color:var(--line);color:var(--graphite);" data-results-section-filter="SPORTS">🏅 Sports</button>
+          <button class="btn btn-outline btn-small results-section-filter-btn" style="border-color:var(--line);color:var(--graphite);" data-results-section-filter="CULTURAL">🎭 Cultural</button>
+        </div>
 
         <div class="field">
           <label>Event</label>
@@ -874,6 +896,16 @@
           <button class="btn btn-dark" id="saveCulturalTotalBtn">Save</button>
         </div>
         <div class="msg" id="houseSettingsMsg"></div>
+      </div>
+
+      <div class="card admin-write" id="trackFieldCompleteCard" style="padding:22px;margin-bottom:24px;">
+        <h3>Track &amp; Field completion</h3>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 14px;">Tick this once every individual Track and Field event's result has been published for the season. This is what declares the Sports Champion and Runner-up (ranked by each house's Sports points) — it's independent of the group events total above.</p>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
+          <input type="checkbox" id="trackFieldCompleteCheckbox" style="width:16px;height:16px;">
+          All individual Track &amp; Field events completed
+        </label>
+        <div class="msg" id="trackFieldCompleteMsg"></div>
       </div>
 
       <div class="card" style="padding:22px;">
@@ -1906,6 +1938,21 @@
 
       progress.innerHTML = `🏅 Sports group events: <strong>${data.sportsCompleted}${data.sportsTotal ? ' / ' + data.sportsTotal : ''}</strong> completed &nbsp;·&nbsp; 🎭 Cultural group events: <strong>${data.culturalCompleted}${data.culturalTotal ? ' / ' + data.culturalTotal : ''}</strong> completed`;
 
+      const sportsBanner = document.getElementById('sportsChampionBanner');
+      if (data.trackFieldComplete && (data.sportsChampions.length || data.sportsRunnersUp.length)) {
+        sportsBanner.classList.remove('hidden');
+        sportsBanner.style.background = '#eef4ff';
+        sportsBanner.style.borderColor = '#8fb4ea';
+        sportsBanner.innerHTML = `
+          <div class="mono" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;">Track &amp; Field complete — Sports section decided</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            ${data.sportsChampions.length ? `<div class="pill" style="background:#fff2cf;color:#8a6a12;font-size:13px;padding:8px 14px;">🏆 Sports Champion${data.sportsChampions.length > 1 ? 's' : ''} — ${data.sportsChampions.map(escapeHtml).join(' & ')}</div>` : ''}
+            ${data.sportsRunnersUp.length ? `<div class="pill" style="background:#eef0f4;color:var(--court-navy);font-size:13px;padding:8px 14px;">🥈 Runner${data.sportsRunnersUp.length > 1 ? 's' : ''}-up — ${data.sportsRunnersUp.map(escapeHtml).join(' & ')}</div>` : ''}
+          </div>`;
+      } else {
+        sportsBanner.classList.add('hidden');
+      }
+
       if (data.allDone && data.champions.length) {
         banner.classList.remove('hidden');
         banner.innerHTML = `<div style="font-family:'Anton',sans-serif;font-size:20px;">🏆 House Champion${data.champions.length > 1 ? 's' : ''} — ${data.champions.map(escapeHtml).join(' & ')}</div>
@@ -1931,13 +1978,15 @@
       card.innerHTML = `<div style="display:flex;gap:16px;flex-wrap:wrap;">
         ${data.standings.map(s => {
           const isLeading = topScore > 0 && s.totalPoints === topScore;
+          const isSportsChamp = data.trackFieldComplete && data.sportsChampions.includes(s.name);
+          const isSportsRunnerUp = data.trackFieldComplete && !isSportsChamp && data.sportsRunnersUp.includes(s.name);
           const sportsWon = (s.wonEvents && s.wonEvents.sports) || [];
           const culturalWon = (s.wonEvents && s.wonEvents.cultural) || [];
           const wonEventBtns = (list, section) => list.map(ev => `
             <button class="btn btn-outline btn-small house-won-event-btn" data-section="${section}" data-event-id="${escapeHtml(ev.eventId)}" style="border-color:var(--line);color:var(--graphite);width:100%;text-align:left;margin-bottom:6px;">${escapeHtml(ev.name)}</button>`).join('');
           return `<div style="flex:1;min-width:190px;border:1px solid ${isLeading ? '#e8c468' : 'var(--line)'};border-radius:4px;padding:18px 16px;${isLeading ? 'background:#fff9ec;' : 'background:#fff;'}">
             ${isLeading ? '<div class="mono" style="font-size:10px;letter-spacing:.06em;color:#a9660a;margin-bottom:4px;">🏆 LEADING</div>' : ''}
-            <div style="font-family:'Anton',sans-serif;font-size:20px;margin-bottom:14px;">${escapeHtml(s.name)}</div>
+            <div style="font-family:'Anton',sans-serif;font-size:20px;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${escapeHtml(s.name)}${isSportsChamp ? '<span class="pill" style="font-family:\'IBM Plex Mono\',monospace;font-size:9.5px;background:#fff2cf;color:#8a6a12;">🏆 Sports Champion</span>' : ''}${isSportsRunnerUp ? '<span class="pill" style="font-family:\'IBM Plex Mono\',monospace;font-size:9.5px;background:#eef0f4;color:var(--court-navy);">🥈 Sports Runner-up</span>' : ''}</div>
             <div style="display:flex;gap:18px;">
               <div style="flex:1;">
                 <button class="btn btn-outline btn-small house-won-toggle-btn" data-house="${escapeHtml(s.name)}" data-section="sports" style="border-color:var(--line);color:var(--graphite);width:100%;padding:8px 6px;${sportsWon.length ? '' : 'opacity:.55;cursor:default;'}">
@@ -2835,9 +2884,26 @@
       b.style.borderColor = isActive ? '' : 'var(--line)';
       b.style.color = isActive ? '' : 'var(--graphite)';
     });
+
+    // Same idea for the Results tab's own Sports/Cultural filter — a
+    // locked admin only ever sees their own section's button and the
+    // filter can't be moved off it; BOSS/teacher get both and keep
+    // whichever one was last selected (defaulting to Sports).
+    const resultsFilterBar = document.getElementById('resultsSectionFilterBar');
+    const resultsSportsBtn = resultsFilterBar.querySelector('[data-results-section-filter="SPORTS"]');
+    const resultsCulturalBtn = resultsFilterBar.querySelector('[data-results-section-filter="CULTURAL"]');
+    if (lock) {
+      resultsSectionFilter = lock;
+      resultsSportsBtn.classList.toggle('hidden', lock !== 'SPORTS');
+      resultsCulturalBtn.classList.toggle('hidden', lock !== 'CULTURAL');
+    } else {
+      resultsSportsBtn.classList.remove('hidden');
+      resultsCulturalBtn.classList.remove('hidden');
+    }
+    applyResultsSectionFilterStyles();
     applyEventCategoryOptions();
     showView('adminView');
-    await Promise.all([loadAdminEvents(), loadAdminUsers()]);
+    await Promise.all([loadAdminEvents(), loadAdminUsers(), loadEventTemplatesForPicker()]);
   }
 
   // ---------- ADMIN: NOTICE BOARD ----------
@@ -3086,12 +3152,30 @@
   // ---------- ADMIN: RESULTS ----------
   let currentResultsEventId = null;
 
+  function applyResultsSectionFilterStyles() {
+    document.querySelectorAll('.results-section-filter-btn').forEach(b => {
+      const isActive = b.dataset.resultsSectionFilter === resultsSectionFilter;
+      b.classList.toggle('btn-orange', isActive);
+      b.classList.toggle('btn-outline', !isActive);
+      b.style.borderColor = isActive ? '' : 'var(--line)';
+      b.style.color = isActive ? '' : 'var(--graphite)';
+    });
+  }
+  document.querySelectorAll('.results-section-filter-btn').forEach(btn => {
+    btn.addEventListener('click', withLoading(btn, async () => {
+      resultsSectionFilter = btn.dataset.resultsSectionFilter;
+      applyResultsSectionFilterStyles();
+      document.getElementById('resultsEditor').classList.add('hidden');
+      await loadResultsAdminTab();
+    }));
+  });
+
   async function loadResultsAdminTab() {
     const select = document.getElementById('resultsEventSelect');
     try {
       const data = await api('adminListEventsWithStatus', {});
       const lock = myAdminSectionLock();
-      const inSection = lock ? data.events.filter(ev => (ev.section || 'SPORTS') === lock) : data.events;
+      const inSection = data.events.filter(ev => (ev.section || 'SPORTS') === (lock || resultsSectionFilter));
       // Only events that have actually happened and don't already have
       // published results — once published, editing happens via the
       // "Edit" button on the Published results list below instead, so this
@@ -3122,6 +3206,7 @@
     const editable = myGroupTotalSectionsEditable();
     document.getElementById('saveSportsTotalBtn').closest('.inline-form').style.display = editable.includes('SPORTS') ? '' : 'none';
     document.getElementById('saveCulturalTotalBtn').closest('.inline-form').style.display = editable.includes('CULTURAL') ? '' : 'none';
+    document.getElementById('trackFieldCompleteCard').style.display = editable.includes('SPORTS') ? '' : 'none';
 
     await loadHousesCache();
     renderHousesList();
@@ -3133,6 +3218,7 @@
       document.getElementById('culturalGroupTotalInput').value = settings.culturalTotal || '';
       document.getElementById('sportsGroupTotalInput').placeholder = settings.sportsCompleted + ' completed so far';
       document.getElementById('culturalGroupTotalInput').placeholder = settings.culturalCompleted + ' completed so far';
+      document.getElementById('trackFieldCompleteCheckbox').checked = settings.trackFieldComplete === true;
     } catch (err) { /* leave defaults */ }
 
     await renderAdminHouseStandings();
@@ -3248,6 +3334,16 @@
   wireGroupTotalSave('saveSportsTotalBtn', 'sportsGroupTotalInput', 'SPORTS');
   wireGroupTotalSave('saveCulturalTotalBtn', 'culturalGroupTotalInput', 'CULTURAL');
 
+  document.getElementById('trackFieldCompleteCheckbox').addEventListener('change', withLoading(document.getElementById('trackFieldCompleteCheckbox'), async () => {
+    const cb = document.getElementById('trackFieldCompleteCheckbox');
+    const msg = document.getElementById('trackFieldCompleteMsg');
+    try {
+      await api('adminSetTrackFieldComplete', { complete: cb.checked });
+      setMsg(msg, cb.checked ? 'Saved — Sports Champion/Runner-up are now shown.' : 'Saved.', true);
+      await renderAdminHouseStandings();
+    } catch (err) { cb.checked = !cb.checked; setMsg(msg, err.message, false); }
+  }));
+
   async function renderAdminHouseStandings() {
     const box = document.getElementById('adminHouseStandings');
     try {
@@ -3257,9 +3353,12 @@
         return;
       }
       const championLine = data.allDone && data.champions.length
-        ? `<div style="font-family:'Anton',sans-serif;font-size:16px;color:var(--court-navy);margin-bottom:12px;">🏆 Champion${data.champions.length > 1 ? 's' : ''}: ${data.champions.map(escapeHtml).join(' & ')}</div>`
+        ? `<div style="font-family:'Anton',sans-serif;font-size:16px;color:var(--court-navy);margin-bottom:8px;">🏆 Champion${data.champions.length > 1 ? 's' : ''}: ${data.champions.map(escapeHtml).join(' & ')}</div>`
         : '';
-      box.innerHTML = championLine + `
+      const sportsChampLine = data.trackFieldComplete && (data.sportsChampions.length || data.sportsRunnersUp.length)
+        ? `<div style="font-size:13px;margin-bottom:12px;">${data.sportsChampions.length ? `🏆 Sports Champion${data.sportsChampions.length > 1 ? 's' : ''}: <strong>${data.sportsChampions.map(escapeHtml).join(' & ')}</strong>` : ''}${data.sportsRunnersUp.length ? `&nbsp;&nbsp;·&nbsp;&nbsp;🥈 Runner-up${data.sportsRunnersUp.length > 1 ? 's' : ''}: <strong>${data.sportsRunnersUp.map(escapeHtml).join(' & ')}</strong>` : ''}</div>`
+        : '';
+      box.innerHTML = championLine + sportsChampLine + `
         <table>
           <thead><tr><th>House</th><th>Sports</th><th>Cultural</th><th>Total</th></tr></thead>
           <tbody>
@@ -3766,7 +3865,7 @@
     try {
       const data = await api('getResults', {});
       const lock = myAdminSectionLock();
-      const results = lock ? data.results.filter(r => (r.section || 'SPORTS') === lock) : data.results;
+      const results = data.results.filter(r => (r.section || 'SPORTS') === (lock || resultsSectionFilter));
       if (!results.length) {
         inner.textContent = 'Nothing published yet.';
         return;
@@ -3805,6 +3904,7 @@
   let editingCompDateId = null;
 
   let adminSectionFilter = 'ALL';
+  let resultsSectionFilter = 'SPORTS';
   document.querySelectorAll('.admin-section-filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       adminSectionFilter = btn.dataset.sectionFilter;
@@ -4071,6 +4171,48 @@
       document.getElementById('newEventRequiresMaterials').checked = false;
       document.getElementById('newEventMassEvent').checked = false;
       setMsg(msg, 'Event added.', true);
+      await loadAdminEvents();
+      await loadEventTemplatesForPicker();
+    } catch (err) { setMsg(msg, err.message, false); }
+  }));
+
+  // ---------- Add from library ----------
+  let eventTemplatesCache = [];
+  async function loadEventTemplatesForPicker() {
+    const select = document.getElementById('templateEventSelect');
+    try {
+      const lock = myAdminSectionLock();
+      const data = await api('adminListEventTemplates', lock ? { section: lock } : {});
+      eventTemplatesCache = data.templates;
+      select.innerHTML = '<option value="">— pick from library —</option>' + eventTemplatesCache.map(t =>
+        `<option value="${t.templateId}">${t.section === 'CULTURAL' ? '🎭' : '🏅'} ${escapeHtml(t.name)}</option>`
+      ).join('');
+    } catch (err) { /* leave default option */ }
+  }
+  document.getElementById('templateEventSelect').addEventListener('change', () => {
+    const t = eventTemplatesCache.find(x => x.templateId === document.getElementById('templateEventSelect').value);
+    // Same rule as the main Add form: Cultural events and any Group event
+    // skip the registration deadline entirely.
+    const skipDeadline = t && (t.section === 'CULTURAL' || t.category === 'GROUP');
+    document.getElementById('templateDeadlineField').classList.toggle('hidden', !!skipDeadline);
+  });
+  document.getElementById('addFromTemplateBtn').addEventListener('click', withLoading(document.getElementById('addFromTemplateBtn'), async () => {
+    const msg = document.getElementById('templateEventMsg');
+    const templateId = document.getElementById('templateEventSelect').value;
+    const deadline = document.getElementById('templateEventDeadline').value;
+    const competitionDate = document.getElementById('templateEventDate').value;
+    if (!templateId) { setMsg(msg, 'Pick an event from the library first.', false); return; }
+    try {
+      await api('adminCreateEventFromTemplate', {
+        templateId,
+        deadline: deadline ? new Date(deadline).toISOString() : '',
+        competitionDate: competitionDate || ''
+      });
+      document.getElementById('templateEventSelect').value = '';
+      document.getElementById('templateEventDeadline').value = '';
+      document.getElementById('templateEventDate').value = '';
+      document.getElementById('templateDeadlineField').classList.remove('hidden');
+      setMsg(msg, 'Event added from library.', true);
       await loadAdminEvents();
     } catch (err) { setMsg(msg, err.message, false); }
   }));

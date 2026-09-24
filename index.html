@@ -732,6 +732,30 @@
 
     <!-- RESULTS TAB -->
     <div class="admin-tab hidden" id="tab-results">
+      <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
+        <h3>Completion of Events (Sports or Cultural)</h3>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">Tick each once every event in that group has its result published for the season. Sports Champion/Runner-up (shown on House Standings) is declared once BOTH Sports boxes are ticked.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <label class="completion-flag-row" data-completion-section="SPORTS" style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
+            <input type="checkbox" class="completion-flag-checkbox" data-completion-flag="trackField" style="width:16px;height:16px;">
+            🏅 Track &amp; Field — all individual Track &amp; Field events completed
+          </label>
+          <label class="completion-flag-row" data-completion-section="SPORTS" style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
+            <input type="checkbox" class="completion-flag-checkbox" data-completion-flag="groupOtherSports" style="width:16px;height:16px;">
+            🏅 Group / Other Sports — Marathon, Other, Doubles, Group events completed
+          </label>
+          <label class="completion-flag-row" data-completion-section="CULTURAL" style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
+            <input type="checkbox" class="completion-flag-checkbox" data-completion-flag="culturalIndividual" style="width:16px;height:16px;">
+            🎭 Individual Cultural — all individual cultural events completed
+          </label>
+          <label class="completion-flag-row" data-completion-section="CULTURAL" style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
+            <input type="checkbox" class="completion-flag-checkbox" data-completion-flag="culturalGroup" style="width:16px;height:16px;">
+            🎭 Group Cultural — all group cultural events completed
+          </label>
+        </div>
+        <div class="msg" id="completionFlagsMsg"></div>
+      </div>
+
       <div class="card" style="padding:22px;margin-bottom:24px;">
         <h3>Set results for an event</h3>
         <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 18px;">Pick an event, choose who placed 1st/2nd/3rd from that event's registered list, then publish. Students only see results once published.</p>
@@ -896,16 +920,6 @@
           <button class="btn btn-dark" id="saveCulturalTotalBtn">Save</button>
         </div>
         <div class="msg" id="houseSettingsMsg"></div>
-      </div>
-
-      <div class="card admin-write" id="trackFieldCompleteCard" style="padding:22px;margin-bottom:24px;">
-        <h3>Track &amp; Field completion</h3>
-        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 14px;">Tick this once every individual Track and Field event's result has been published for the season. This is what declares the Sports Champion and Runner-up (ranked by each house's Sports points) — it's independent of the group events total above.</p>
-        <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
-          <input type="checkbox" id="trackFieldCompleteCheckbox" style="width:16px;height:16px;">
-          All individual Track &amp; Field events completed
-        </label>
-        <div class="msg" id="trackFieldCompleteMsg"></div>
       </div>
 
       <div class="card" style="padding:22px;">
@@ -3189,7 +3203,35 @@
       }
     } catch (err) { /* leave default option */ }
     await renderPublishedResultsAdmin();
+    await loadCompletionFlags();
   }
+
+  // Which section each completion checkbox belongs to is fixed by its
+  // data-completion-section attribute; a section-locked admin only sees
+  // their own section's rows, BOSS sees all four.
+  async function loadCompletionFlags() {
+    const lock = myAdminSectionLock();
+    document.querySelectorAll('.completion-flag-row').forEach(row => {
+      row.style.display = (!lock || row.dataset.completionSection === lock) ? '' : 'none';
+    });
+    try {
+      const settings = await api('adminGetSettings', {});
+      document.querySelector('[data-completion-flag="trackField"]').checked = settings.trackFieldComplete === true;
+      document.querySelector('[data-completion-flag="groupOtherSports"]').checked = settings.groupOtherSportsComplete === true;
+      document.querySelector('[data-completion-flag="culturalIndividual"]').checked = settings.culturalIndividualComplete === true;
+      document.querySelector('[data-completion-flag="culturalGroup"]').checked = settings.culturalGroupComplete === true;
+    } catch (err) { /* leave defaults */ }
+  }
+  document.querySelectorAll('.completion-flag-checkbox').forEach(cb => {
+    cb.addEventListener('change', withLoading(cb, async () => {
+      const msg = document.getElementById('completionFlagsMsg');
+      try {
+        await api('adminSetCompletionFlag', { flag: cb.dataset.completionFlag, complete: cb.checked });
+        setMsg(msg, 'Saved.', true);
+        await renderAdminHouseStandings();
+      } catch (err) { cb.checked = !cb.checked; setMsg(msg, err.message, false); }
+    }));
+  });
 
   // ---------- HOUSES TAB (admin) ----------
   function myGroupTotalSectionsEditable() {
@@ -3206,7 +3248,6 @@
     const editable = myGroupTotalSectionsEditable();
     document.getElementById('saveSportsTotalBtn').closest('.inline-form').style.display = editable.includes('SPORTS') ? '' : 'none';
     document.getElementById('saveCulturalTotalBtn').closest('.inline-form').style.display = editable.includes('CULTURAL') ? '' : 'none';
-    document.getElementById('trackFieldCompleteCard').style.display = editable.includes('SPORTS') ? '' : 'none';
 
     await loadHousesCache();
     renderHousesList();
@@ -3218,7 +3259,6 @@
       document.getElementById('culturalGroupTotalInput').value = settings.culturalTotal || '';
       document.getElementById('sportsGroupTotalInput').placeholder = settings.sportsCompleted + ' completed so far';
       document.getElementById('culturalGroupTotalInput').placeholder = settings.culturalCompleted + ' completed so far';
-      document.getElementById('trackFieldCompleteCheckbox').checked = settings.trackFieldComplete === true;
     } catch (err) { /* leave defaults */ }
 
     await renderAdminHouseStandings();
@@ -3333,16 +3373,6 @@
   }
   wireGroupTotalSave('saveSportsTotalBtn', 'sportsGroupTotalInput', 'SPORTS');
   wireGroupTotalSave('saveCulturalTotalBtn', 'culturalGroupTotalInput', 'CULTURAL');
-
-  document.getElementById('trackFieldCompleteCheckbox').addEventListener('change', withLoading(document.getElementById('trackFieldCompleteCheckbox'), async () => {
-    const cb = document.getElementById('trackFieldCompleteCheckbox');
-    const msg = document.getElementById('trackFieldCompleteMsg');
-    try {
-      await api('adminSetTrackFieldComplete', { complete: cb.checked });
-      setMsg(msg, cb.checked ? 'Saved — Sports Champion/Runner-up are now shown.' : 'Saved.', true);
-      await renderAdminHouseStandings();
-    } catch (err) { cb.checked = !cb.checked; setMsg(msg, err.message, false); }
-  }));
 
   async function renderAdminHouseStandings() {
     const box = document.getElementById('adminHouseStandings');

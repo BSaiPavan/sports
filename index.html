@@ -567,9 +567,13 @@
         <p class="hello" id="resultsHomeSection">Season 2026</p>
         <h1 class="page-title">Results</h1>
       </div>
-      <button class="btn btn-outline btn-small hidden" id="leaderboardToggleBtn" style="border-color:var(--line);color:var(--graphite);">🏆 Leaderboard</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-small hidden" id="leaderboardToggleBtn" style="border-color:var(--line);color:var(--graphite);">🏆 Leaderboard</button>
+        <button class="btn btn-outline btn-small hidden" id="championToggleBtn" style="border-color:var(--line);color:var(--graphite);">🏆 Champion &amp; Runner-up</button>
+      </div>
     </div>
     <div class="card hidden" id="leaderboardCard" style="margin-top:16px;padding:22px;"></div>
+    <div class="card hidden" id="championCard" style="margin-top:16px;padding:22px;"></div>
     <div class="card" id="resultsList" style="margin-top:16px;"></div>
   </div>
 
@@ -2162,7 +2166,11 @@
     const container = document.getElementById('resultsList');
     container.innerHTML = skeletonRows(2);
     try {
-      const data = await api('getResults', {});
+      const [data, standingsData] = await Promise.all([
+        api('getResults', {}),
+        api('getHouseStandings', {}).catch(() => null)
+      ]);
+      const champsUnlocked = !!standingsData && (state.activeSection === 'CULTURAL' ? standingsData.culturalIndividualComplete : standingsData.trackFieldComplete);
       data.results = data.results.filter(r => (r.section || 'SPORTS') === state.activeSection);
       // Most recently PUBLISHED first — this reflects when the result
       // actually went live, not the (sometimes stale) scheduled event day.
@@ -2177,10 +2185,11 @@
       data.results.sort((a, b) => sortKey(b) - sortKey(a));
       if (!data.results.length) {
         try { document.getElementById('leaderboardCard').classList.add('hidden'); } catch (e) {}
+        try { document.getElementById('championCard').classList.add('hidden'); document.getElementById('championToggleBtn').classList.add('hidden'); } catch (e) {}
         container.innerHTML = '<div class="event-row mono" style="color:var(--muted);">No results published yet.</div>';
         return;
       }
-      try { renderLeaderboard(data.results, state.activeSection); } catch (lbErr) { console.error('Leaderboard render failed (non-fatal):', lbErr); }
+      try { renderLeaderboard(data.results, state.activeSection, champsUnlocked); } catch (lbErr) { console.error('Leaderboard render failed (non-fatal):', lbErr); }
 
       const renderResultRow = (r) => {
         const cat = String(r.category || 'OTHER').toUpperCase();
@@ -2229,7 +2238,7 @@
   // track/field-style distinction there. Scoring either way: 1st = 5 pts,
   // 2nd = 3 pts, 3rd = 1 pt.
   const LB_POINTS = { 1: 5, 2: 3, 3: 1 };
-  function renderLeaderboard(results, section) {
+  function renderLeaderboard(results, section, champsUnlocked) {
     const card = document.getElementById('leaderboardCard');
     const toggleBtn = document.getElementById('leaderboardToggleBtn');
     const scores = {};
@@ -2242,10 +2251,11 @@
         const label = (p.name || '').trim();
         if (!label) return;
         const key = p.regNo ? ('R:' + p.regNo) : ('N:' + label.toLowerCase());
-        if (!scores[key]) scores[key] = { name: label, regNo: p.regNo || '', classCourse: p.classCourse || '', pts: 0, gold: 0, silver: 0, bronze: 0 };
+        if (!scores[key]) scores[key] = { name: label, regNo: p.regNo || '', classCourse: p.classCourse || '', pts: 0, gold: 0, silver: 0, bronze: 0, events: [] };
         scores[key].pts += pts;
         scores[key].name = label;
         scores[key].classCourse = p.classCourse || scores[key].classCourse;
+        scores[key].events.push({ name: r.name, place: p.place, pts });
         if (p.place === 1) scores[key].gold++;
         else if (p.place === 2) scores[key].silver++;
         else scores[key].bronze++;
@@ -2312,12 +2322,63 @@
       ${podiumHtml}
       ${restHtml}
     `;
+
+    renderChampionCard(groups, section, champsUnlocked);
   }
   document.getElementById('leaderboardToggleBtn').addEventListener('click', () => {
     const card = document.getElementById('leaderboardCard');
     const btn = document.getElementById('leaderboardToggleBtn');
     const nowOpen = card.classList.toggle('hidden') === false;
     btn.textContent = nowOpen ? '🏆 Hide Leaderboard' : '🏆 Leaderboard';
+    if (nowOpen) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  // Individual Champion/Runner-up card — same leaderboard tie-groups as
+  // above, just split into the #1 tie-group (Champion) and #2 tie-group
+  // (Runner-up), each with their full event-by-event breakdown. Gated on
+  // the relevant completion flag (Track & Field complete for Sports,
+  // Cultural Individual complete for Cultural) so it's only revealed once
+  // that section's individual program is actually finished for the
+  // season — the same signal that unlocks the House-level Sports
+  // Champion banner.
+  function renderChampionCard(groups, section, unlocked) {
+    const card = document.getElementById('championCard');
+    const toggleBtn = document.getElementById('championToggleBtn');
+    card.classList.add('hidden');
+    toggleBtn.classList.add('hidden');
+    toggleBtn.textContent = '🏆 Champion & Runner-up';
+    if (!unlocked || !groups.length || groups[0][0].pts <= 0) { card.innerHTML = ''; return; }
+
+    const champGroup = groups[0];
+    const runnerGroup = groups.length > 1 ? groups[1] : [];
+    const personBlock = (e, label, bg, fg) => `
+      <div style="margin-bottom:18px;">
+        <div class="pill" style="background:${bg};color:${fg};font-size:13px;padding:8px 14px;display:inline-block;margin-bottom:8px;">
+          ${label === 'Champion' ? '🏆' : '🥈'} ${label} — ${escapeHtml(e.name)}${e.regNo ? ` <span class="mono" style="font-size:11px;opacity:.75;">${escapeHtml(e.regNo)}</span>` : ''}
+        </div>
+        <div class="mono" style="font-size:12px;color:var(--muted);margin-bottom:6px;">${e.pts} total pts</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          ${e.events.map(ev => `
+            <div style="display:flex;justify-content:space-between;gap:10px;font-size:12.5px;">
+              <span>${MEDAL[ev.place] || ev.place} ${escapeHtml(ev.name)}</span>
+              <span class="mono">${ev.pts} pts</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+
+    card.innerHTML = `
+      <div class="lb-title">🏆 Champion &amp; Runner-up</div>
+      <div class="lb-subtitle">${section === 'CULTURAL' ? 'INDIVIDUAL CULTURAL COMPLETE' : 'TRACK &amp; FIELD COMPLETE'} · SEASON DECIDED</div>
+      ${champGroup.map(e => personBlock(e, 'Champion', '#fff2cf', '#8a6a12')).join('')}
+      ${runnerGroup.map(e => personBlock(e, 'Runner-up', '#eef0f4', 'var(--court-navy)')).join('')}
+    `;
+    toggleBtn.classList.remove('hidden');
+  }
+  document.getElementById('championToggleBtn').addEventListener('click', () => {
+    const card = document.getElementById('championCard');
+    const btn = document.getElementById('championToggleBtn');
+    const nowOpen = card.classList.toggle('hidden') === false;
+    btn.textContent = nowOpen ? '🏆 Hide Champion & Runner-up' : '🏆 Champion & Runner-up';
     if (nowOpen) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
 

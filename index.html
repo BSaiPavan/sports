@@ -735,7 +735,7 @@
     <div class="admin-tab hidden" id="tab-results">
       <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
         <h3>Completion of Events (Sports or Cultural)</h3>
-        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">Tick each once every event in that group has its result published for the season. Sports Champion/Runner-up (shown on House Standings) is declared as soon as the Track &amp; Field box is ticked — that's the individual scoring program that decides house rank. Group/Other Sports is tracked separately and doesn't gate it.</p>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">Tick each once every event in that group has its result published for the season. Sports Champion/Runner-up (shown on House Standings) is declared as soon as the Track &amp; Field box is ticked — that's the individual scoring program that decides house rank. Group/Other Sports doesn't gate that, but once it AND Group Cultural are both ticked, the season is done and the overall House Champion is declared.</p>
         <div style="display:flex;flex-direction:column;gap:10px;">
           <label class="completion-flag-row" data-completion-section="SPORTS" style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
             <input type="checkbox" class="completion-flag-checkbox" data-completion-flag="trackField" style="width:16px;height:16px;">
@@ -911,7 +911,7 @@
 
       <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
         <h3>Group events this season</h3>
-        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">How many group events are planned in total this season, per section. Once every planned group event's result is published, the House Championship is declared.</p>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">How many group events are planned in total this season, per section — shown as a progress indicator only. The House Championship itself is declared from the Results tab once the Sports admin ticks "Group / Other Sports complete" and the Cultural admin ticks "Group Cultural complete".</p>
         <div class="inline-form">
           <div class="field"><label>🏅 Sports group events (total)</label><input id="sportsGroupTotalInput" type="number" min="0" placeholder="e.g. 4"></div>
           <button class="btn btn-dark" id="saveSportsTotalBtn">Save</button>

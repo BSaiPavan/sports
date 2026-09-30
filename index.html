@@ -619,6 +619,7 @@
             <select id="newEventCategory" style="width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;">
               <option value="TRACK">Track</option>
               <option value="FIELD">Field</option>
+              <option value="RELAY">Relay</option>
               <option value="MARATHON">Marathon</option>
               <option value="OTHER">Other</option>
             </select>
@@ -1606,7 +1607,7 @@
   // GROUP is deliberately absent here — group events have no registration at
   // all (see the Group Events section) so they never appear in this list.
   const SECTION_CATEGORIES = {
-    SPORTS: [['ALL','All'],['TRACK','Track'],['FIELD','Field'],['MARATHON','Marathon'],['OTHER','Other'],['DOUBLES','Doubles']],
+    SPORTS: [['ALL','All'],['TRACK','Track'],['FIELD','Field'],['RELAY','Relay'],['MARATHON','Marathon'],['OTHER','Other'],['DOUBLES','Doubles']],
     CULTURAL: [['ALL','All'],['INDIVIDUAL','Individual'],['OTHER','Other']]
   };
   let categoryFilter = 'ALL';
@@ -4250,7 +4251,7 @@
   // Category options depend on which Section is selected — Sports gets
   // Track/Field/Marathon/Other, Cultural gets Solo/Group/Other.
   const EVENT_CATEGORY_OPTIONS = {
-    SPORTS: [['TRACK','Track'],['FIELD','Field'],['MARATHON','Marathon'],['OTHER','Other'],['GROUP','Group'],['DOUBLES','Doubles']],
+    SPORTS: [['TRACK','Track'],['FIELD','Field'],['RELAY','Relay'],['MARATHON','Marathon'],['OTHER','Other'],['GROUP','Group'],['DOUBLES','Doubles']],
     CULTURAL: [['INDIVIDUAL','Individual'],['GROUP','Group'],['OTHER','Other']]
   };
   function applyEventCategoryOptions() {

@@ -3478,6 +3478,7 @@
 
   let currentResultsEventCategory = '';
   let currentResultsScoreVariant = 'sets'; // 'sets' | 'halves' | 'simple'
+  let currentResultsDoublesTeams = []; // grouped partner pairs for the Doubles results dropdown
 
   // Sports that play to a single match score rather than a series of sets
   // (football, handball) get the halves + optional-penalty UI, detected
@@ -3800,9 +3801,28 @@
       } else {
         const isDoubles = currentResultsEventCategory === 'DOUBLES';
         document.getElementById('doublesResultsHint').classList.toggle('hidden', !isDoubles);
-        const options = ['<option value="">— pick a registered student (optional) —</option>'].concat(
-          regsData.registrations.map(r => `<option value="${escapeHtml(r.regNo)}|${escapeHtml(r.name)}">${escapeHtml(r.name)} (${escapeHtml(r.regNo)})</option>`)
-        ).join('');
+        // Doubles: group the two partners (same teamId) into one "Team N"
+        // entry, numbered the same way as the View Regs modal, so one pick
+        // fills BOTH partners. Everything else stays one entry per student.
+        currentResultsDoublesTeams = [];
+        let options;
+        if (isDoubles) {
+          const seenRegs = new Set();
+          regsData.registrations.forEach(r => {
+            if (seenRegs.has(r.regNo)) return;
+            const members = r.teamId ? regsData.registrations.filter(x => x.teamId === r.teamId) : [r];
+            members.forEach(m => seenRegs.add(m.regNo));
+            currentResultsDoublesTeams.push(members);
+          });
+          options = ['<option value="">— pick a registered team (optional) —</option>'].concat(
+            currentResultsDoublesTeams.map((team, i) =>
+              `<option value="${i}">Team ${i + 1} — ${team.map(m => escapeHtml(m.name)).join(' &amp; ')} (${team.map(m => escapeHtml(m.regNo)).join(' / ')})</option>`)
+          ).join('');
+        } else {
+          options = ['<option value="">— pick a registered student (optional) —</option>'].concat(
+            regsData.registrations.map(r => `<option value="${escapeHtml(r.regNo)}|${escapeHtml(r.name)}">${escapeHtml(r.name)} (${escapeHtml(r.regNo)})</option>`)
+          ).join('');
+        }
         [1, 2, 3].forEach(n => {
           document.getElementById(`pos${n}DoublesRow`).classList.toggle('hidden', !isDoubles);
           const select = document.getElementById(`pos${n}Select`);
@@ -3834,6 +3854,17 @@
     document.getElementById(`pos${n}Select`).addEventListener('change', (e) => {
       const val = e.target.value;
       if (!val) return;
+      if (currentResultsEventCategory === 'DOUBLES') {
+        // value is an index into the grouped teams list — fill both partners
+        const team = currentResultsDoublesTeams[Number(val)] || [];
+        const [p1, p2] = team;
+        document.getElementById(`pos${n}RegNo`).value = p1 ? p1.regNo : '';
+        document.getElementById(`pos${n}Name`).value = p1 ? p1.name : '';
+        document.getElementById(`pos${n}RegNo2`).value = p2 ? p2.regNo : '';
+        document.getElementById(`pos${n}Name2`).value = p2 ? p2.name : '';
+        e.target.value = '';
+        return;
+      }
       const [regNo, ...nameParts] = val.split('|');
       document.getElementById(`pos${n}RegNo`).value = regNo;
       document.getElementById(`pos${n}Name`).value = nameParts.join('|');

@@ -596,7 +596,7 @@
     <div class="admin-tab" id="tab-events">
       <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
         <h3>Add from library</h3>
-        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">Reuse an event from a past season — just pick the name and set this season's deadline/date. New events you add below are automatically saved here for next time.</p>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">Reuse an event from a past season — just pick the name and set this season's deadline/date. Events already created this season are marked ✓ created and can't be picked again (delete the event to bring it back). New events you add below are automatically saved here for next time. At the start of a season, "Add all standard events" creates this season's copy of everything in the library in one go (dates left to be decided) — events you've already created are skipped. To drop an event from future seasons, pick it and remove it from the library.</p>
         <div class="inline-form">
           <div class="field"><label>Event</label>
             <select id="templateEventSelect" style="width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;">
@@ -606,6 +606,10 @@
           <div class="field" id="templateDeadlineField"><label>Registration deadline</label><input id="templateEventDeadline" type="datetime-local"></div>
           <div class="field"><label>Event date</label><input id="templateEventDate" type="datetime-local"></div>
           <button class="btn btn-dark" id="addFromTemplateBtn">Add</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
+          <button class="btn btn-outline btn-small" id="addAllStandardBtn" style="border-color:var(--line);color:var(--graphite);">Add all standard events for this season</button>
+          <button class="btn btn-outline btn-small" id="removeFromLibraryBtn" style="border-color:var(--line);color:#b7401b;">Remove selected from library</button>
         </div>
         <div class="msg" id="templateEventMsg"></div>
       </div>
@@ -3019,7 +3023,7 @@
     applyResultsSectionFilterStyles();
     applyEventCategoryOptions();
     showView('adminView');
-    await Promise.all([loadAdminEvents(), loadAdminUsers(), loadEventTemplatesForPicker()]);
+    await Promise.all([loadAdminEvents(), loadAdminUsers()]);
   }
 
   // ---------- ADMIN: NOTICE BOARD ----------
@@ -4100,6 +4104,9 @@
   async function loadAdminEvents() {
     const container = document.getElementById('adminEventsList');
     container.innerHTML = skeletonRows(2);
+    // Every add / delete / change reloads this list, so refresh the library
+    // picker alongside it — that keeps its "created" marks accurate.
+    loadEventTemplatesForPicker();
     try {
       const data = await api('listEvents', {});
       const lock = myAdminSectionLock();
@@ -4350,7 +4357,6 @@
       document.getElementById('newEventMassEvent').checked = false;
       setMsg(msg, 'Event added.', true);
       await loadAdminEvents();
-      await loadEventTemplatesForPicker();
     } catch (err) { setMsg(msg, err.message, false); }
   }));
 
@@ -4363,7 +4369,7 @@
       const data = await api('adminListEventTemplates', lock ? { section: lock } : {});
       eventTemplatesCache = data.templates;
       select.innerHTML = '<option value="">— pick from library —</option>' + eventTemplatesCache.map(t =>
-        `<option value="${t.templateId}">${t.section === 'CULTURAL' ? '🎭' : '🏅'} ${escapeHtml(t.name)}</option>`
+        `<option value="${t.templateId}"${t.createdThisSeason ? ' disabled' : ''}>${t.section === 'CULTURAL' ? '🎭' : '🏅'} ${escapeHtml(t.name)}${t.createdThisSeason ? ' — ✓ created' : ''}</option>`
       ).join('');
     } catch (err) { /* leave default option */ }
   }
@@ -4392,6 +4398,29 @@
       document.getElementById('templateDeadlineField').classList.remove('hidden');
       setMsg(msg, 'Event added from library.', true);
       await loadAdminEvents();
+    } catch (err) { setMsg(msg, err.message, false); }
+  }));
+
+  document.getElementById('addAllStandardBtn').addEventListener('click', withLoading(document.getElementById('addAllStandardBtn'), async () => {
+    const msg = document.getElementById('templateEventMsg');
+    if (!confirm("Create this season's copy of every standard event that doesn't exist yet? Dates will be left to be decided.")) return;
+    try {
+      const res = await api('adminCreateSeasonEventsFromLibrary', {});
+      setMsg(msg, res.count ? `Added ${res.count} event${res.count === 1 ? '' : 's'} for ${res.season}: ${res.added.join(', ')}.` : 'Nothing to add — every standard event already exists this season.', true);
+      await loadAdminEvents();
+    } catch (err) { setMsg(msg, err.message, false); }
+  }));
+  document.getElementById('removeFromLibraryBtn').addEventListener('click', withLoading(document.getElementById('removeFromLibraryBtn'), async () => {
+    const msg = document.getElementById('templateEventMsg');
+    const sel = document.getElementById('templateEventSelect');
+    const t = eventTemplatesCache.find(x => x.templateId === sel.value);
+    if (!t) { setMsg(msg, 'Pick an event from the library first.', false); return; }
+    if (!confirm(`Remove "${t.name}" from the library? It won't be offered in future seasons (events already created are not affected).`)) return;
+    try {
+      await api('adminDeleteEventTemplate', { templateId: t.templateId });
+      sel.value = '';
+      setMsg(msg, `Removed "${t.name}" from the library.`, true);
+      await loadEventTemplatesForPicker();
     } catch (err) { setMsg(msg, err.message, false); }
   }));
 

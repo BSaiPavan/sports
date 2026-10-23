@@ -574,7 +574,8 @@
     </div>
     <div class="card hidden" id="leaderboardCard" style="margin-top:16px;padding:22px;"></div>
     <div class="card hidden" id="championCard" style="margin-top:16px;padding:22px;"></div>
-    <div class="card" id="resultsList" style="margin-top:16px;"></div>
+    <div id="resultsFilterBar" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;"></div>
+    <div class="card" id="resultsList" style="margin-top:12px;"></div>
   </div>
 
   <!-- ADMIN -->
@@ -739,24 +740,36 @@
     <div class="admin-tab hidden" id="tab-results">
       <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
         <h3>Completion of Events (Sports or Cultural)</h3>
-        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">Each box ticks itself automatically once every event in that group is marked Completed for the season — you can also tick or untick it manually and that choice sticks. Sports Champion/Runner-up (shown on House Standings) is declared as soon as the Track &amp; Field box is ticked — that's the individual scoring program that decides house rank. Group/Other Sports doesn't gate that, but once it AND Group Cultural are both ticked, the season is done and the overall House Champion is declared.</p>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <label class="completion-flag-row" data-completion-section="SPORTS" style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
-            <input type="checkbox" class="completion-flag-checkbox" data-completion-flag="trackField" style="width:16px;height:16px;">
-            🏅 Track &amp; Field — all individual Track &amp; Field events completed
-          </label>
-          <label class="completion-flag-row" data-completion-section="SPORTS" style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
-            <input type="checkbox" class="completion-flag-checkbox" data-completion-flag="groupOtherSports" style="width:16px;height:16px;">
-            🏅 Group / Other Sports — Marathon, Other, Doubles, Group events completed
-          </label>
-          <label class="completion-flag-row" data-completion-section="CULTURAL" style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
-            <input type="checkbox" class="completion-flag-checkbox" data-completion-flag="culturalIndividual" style="width:16px;height:16px;">
-            🎭 Individual Cultural — all individual cultural events completed
-          </label>
-          <label class="completion-flag-row" data-completion-section="CULTURAL" style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
-            <input type="checkbox" class="completion-flag-checkbox" data-completion-flag="culturalGroup" style="width:16px;height:16px;">
-            🎭 Group Cultural — all group cultural events completed
-          </label>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">Works like Mark completed on an event: each category switches to completed by itself once all its events are marked completed, and you can also press its button to mark it completed / not completed yourself. Track &amp; Field → Sports Champion &amp; Runner-up. Individual Cultural → Cultural Champion &amp; Runner-up. Group / Other Sports + Group Cultural both completed → season done, House Champion declared.</p>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="completion-flag-row" data-completion-section="SPORTS" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line);">
+            <div>
+              <div style="font-size:13.5px;font-weight:600;">🏅 Track &amp; Field <span class="pill flag-pill" data-flag-pill="trackField" style="margin-left:6px;"></span></div>
+              <div class="mono flag-note" data-flag-note="trackField" style="font-size:11px;color:var(--muted);margin-top:3px;">all individual Track &amp; Field events</div>
+            </div>
+            <button class="btn btn-outline btn-small completion-flag-btn" style="border-color:var(--line);color:var(--graphite);" data-completion-flag="trackField" data-complete="false">Mark completed</button>
+          </div>
+          <div class="completion-flag-row" data-completion-section="SPORTS" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line);">
+            <div>
+              <div style="font-size:13.5px;font-weight:600;">🏅 Group / Other Sports <span class="pill flag-pill" data-flag-pill="groupOtherSports" style="margin-left:6px;"></span></div>
+              <div class="mono flag-note" data-flag-note="groupOtherSports" style="font-size:11px;color:var(--muted);margin-top:3px;">Marathon, Other, Doubles, Relay, Group events</div>
+            </div>
+            <button class="btn btn-outline btn-small completion-flag-btn" style="border-color:var(--line);color:var(--graphite);" data-completion-flag="groupOtherSports" data-complete="false">Mark completed</button>
+          </div>
+          <div class="completion-flag-row" data-completion-section="CULTURAL" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line);">
+            <div>
+              <div style="font-size:13.5px;font-weight:600;">🎭 Individual Cultural <span class="pill flag-pill" data-flag-pill="culturalIndividual" style="margin-left:6px;"></span></div>
+              <div class="mono flag-note" data-flag-note="culturalIndividual" style="font-size:11px;color:var(--muted);margin-top:3px;">all individual cultural events</div>
+            </div>
+            <button class="btn btn-outline btn-small completion-flag-btn" style="border-color:var(--line);color:var(--graphite);" data-completion-flag="culturalIndividual" data-complete="false">Mark completed</button>
+          </div>
+          <div class="completion-flag-row" data-completion-section="CULTURAL" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line);">
+            <div>
+              <div style="font-size:13.5px;font-weight:600;">🎭 Group Cultural <span class="pill flag-pill" data-flag-pill="culturalGroup" style="margin-left:6px;"></span></div>
+              <div class="mono flag-note" data-flag-note="culturalGroup" style="font-size:11px;color:var(--muted);margin-top:3px;">all group cultural events</div>
+            </div>
+            <button class="btn btn-outline btn-small completion-flag-btn" style="border-color:var(--line);color:var(--graphite);" data-completion-flag="culturalGroup" data-complete="false">Mark completed</button>
+          </div>
         </div>
         <div class="msg" id="completionFlagsMsg"></div>
       </div>
@@ -2186,6 +2199,7 @@
       if (!data.results.length) {
         try { document.getElementById('leaderboardCard').classList.add('hidden'); } catch (e) {}
         try { document.getElementById('championCard').classList.add('hidden'); document.getElementById('championToggleBtn').classList.add('hidden'); } catch (e) {}
+        document.getElementById('resultsFilterBar').innerHTML = '';
         container.innerHTML = '<div class="event-row mono" style="color:var(--muted);">No results published yet.</div>';
         return;
       }
@@ -2214,19 +2228,45 @@
         </div>`;
       };
 
-      // Group results now live on the Group Events page (with a "View
-      // results" button per event) instead of here — the Results tab is
-      // individual events only.
-      const individualResults = data.results.filter(r => String(r.category || '').toUpperCase() !== 'GROUP');
-      container.innerHTML = individualResults.length
-        ? individualResults.map(renderResultRow).join('')
-        : '<div class="event-row"><span class="mono" style="color:var(--muted);">No individual results published yet.</span></div>';
-      container.querySelectorAll('.gallery-btn').forEach(btn => {
+      // Filter chips (same idea as the event list): All, plus one per type.
+      // Sports: Track & Field / Group / Others (Doubles, Marathon, Other,
+      // Relay). Cultural: Individual (incl. Other) / Group.
+      const RESULT_FILTERS = state.activeSection === 'CULTURAL'
+        ? [['ALL', 'All'], ['INDIVIDUAL', 'Individual'], ['GROUP', 'Group']]
+        : [['ALL', 'All'], ['TRACKFIELD', 'Track & Field'], ['GROUP', 'Group'], ['OTHERS', 'Others']];
+      const bucketOf = (r) => {
+        const cat = String(r.category || '').toUpperCase();
+        if (cat === 'GROUP') return 'GROUP';
+        if (state.activeSection === 'CULTURAL') return 'INDIVIDUAL';
+        return (cat === 'TRACK' || cat === 'FIELD') ? 'TRACKFIELD' : 'OTHERS';
+      };
+      const bar = document.getElementById('resultsFilterBar');
+      let activeFilter = 'ALL';
+      const paintList = () => {
+        const shown = data.results.filter(r => activeFilter === 'ALL' || bucketOf(r) === activeFilter);
+        container.innerHTML = shown.length
+          ? shown.map(renderResultRow).join('')
+          : '<div class="event-row"><span class="mono" style="color:var(--muted);">No results published in this category yet.</span></div>';
+        container.querySelectorAll('.gallery-btn').forEach(btn => {
+          btn.addEventListener('click', () => openGalleryModal(btn.dataset.eventName, JSON.parse(btn.dataset.photos)));
+        });
+      };
+      bar.innerHTML = RESULT_FILTERS.map(([key, label]) =>
+        `<button class="btn ${key === 'ALL' ? 'btn-orange' : 'btn-outline'} btn-small result-filter-btn" style="${key === 'ALL' ? '' : 'border-color:var(--line);color:var(--graphite);'}" data-result-filter="${key}">${label}</button>`).join('');
+      bar.querySelectorAll('.result-filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          const photos = JSON.parse(btn.dataset.photos);
-          openGalleryModal(btn.dataset.eventName, photos);
+          activeFilter = btn.dataset.resultFilter;
+          bar.querySelectorAll('.result-filter-btn').forEach(b => {
+            const on = b === btn;
+            b.classList.toggle('btn-orange', on);
+            b.classList.toggle('btn-outline', !on);
+            b.style.borderColor = on ? '' : 'var(--line)';
+            b.style.color = on ? '' : 'var(--graphite)';
+          });
+          paintList();
         });
       });
+      paintList();
     } catch (err) {
       container.innerHTML = `<div class="event-row" style="color:#b7401b;">${err.message}</div>`;
     }
@@ -3271,40 +3311,42 @@
   // Which section each completion checkbox belongs to is fixed by its
   // data-completion-section attribute; a section-locked admin only sees
   // their own section's rows, BOSS sees all four.
+  function paintCompletionFlag(name, fi) {
+    const btn = document.querySelector(`[data-completion-flag="${name}"]`);
+    const pill = document.querySelector(`[data-flag-pill="${name}"]`);
+    const note = document.querySelector(`[data-flag-note="${name}"]`);
+    if (!btn) return;
+    const done = fi.complete === true;
+    btn.dataset.complete = done ? 'true' : 'false';
+    btn.textContent = done ? 'Mark not completed' : 'Mark completed';
+    pill.textContent = done ? 'Completed' : 'In progress';
+    pill.style.background = done ? '#e3f5ec' : '#eef0f4';
+    pill.style.color = done ? '#1f7a4d' : 'var(--muted)';
+    note.textContent = !fi.total ? 'No events in this category yet'
+      : `${fi.done}/${fi.total} events completed · ${fi.override ? 'set manually' : 'auto'}`;
+  }
   async function loadCompletionFlags() {
     const lock = myAdminSectionLock();
     document.querySelectorAll('.completion-flag-row').forEach(row => {
       row.style.display = (!lock || row.dataset.completionSection === lock) ? '' : 'none';
     });
+    const msg = document.getElementById('completionFlagsMsg');
     try {
       const settings = await api('adminGetSettings', {});
       const info = settings.flagInfo || {};
-      ['trackField', 'groupOtherSports', 'culturalIndividual', 'culturalGroup'].forEach(name => {
-        const cb = document.querySelector(`[data-completion-flag="${name}"]`);
-        const fi = info[name] || {};
-        cb.checked = fi.complete === true;
-        // small status note next to the label: auto-derived progress or manual override
-        let note = cb.parentElement.querySelector('.flag-note');
-        if (!note) {
-          note = document.createElement('span');
-          note.className = 'flag-note mono';
-          note.style.cssText = 'font-size:11px;color:var(--muted);margin-left:8px;';
-          cb.parentElement.appendChild(note);
-        }
-        note.textContent = !fi.total ? '(no events yet)'
-          : fi.override ? `(set manually · ${fi.done}/${fi.total} events completed)`
-          : `(auto · ${fi.done}/${fi.total} events completed)`;
-      });
-    } catch (err) { /* leave defaults */ }
+      ['trackField', 'groupOtherSports', 'culturalIndividual', 'culturalGroup'].forEach(name => paintCompletionFlag(name, info[name] || {}));
+    } catch (err) { setMsg(msg, 'Could not load completion status: ' + err.message, false); }
   }
-  document.querySelectorAll('.completion-flag-checkbox').forEach(cb => {
-    cb.addEventListener('change', withLoading(cb, async () => {
+  document.querySelectorAll('.completion-flag-btn').forEach(btn => {
+    btn.addEventListener('click', withLoading(btn, async () => {
       const msg = document.getElementById('completionFlagsMsg');
       try {
-        await api('adminSetCompletionFlag', { flag: cb.dataset.completionFlag, complete: cb.checked });
+        const name = btn.dataset.completionFlag;
+        const res = await api('adminSetCompletionFlag', { flag: name, complete: btn.dataset.complete !== 'true' });
+        paintCompletionFlag(name, res.flagInfo || {});
         setMsg(msg, 'Saved.', true);
         await renderAdminHouseStandings();
-      } catch (err) { cb.checked = !cb.checked; setMsg(msg, err.message, false); }
+      } catch (err) { setMsg(msg, err.message, false); }
     }));
   });
 

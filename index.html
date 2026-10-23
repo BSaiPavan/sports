@@ -20,7 +20,28 @@
   nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px;}
   .brand{color:var(--chalk);font-family:'Anton',sans-serif;font-size:20px;}
   .brand span{color:var(--ball-orange);}
-  .nav-right{display:flex;align-items:center;gap:14px;color:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+
+  /* ---------- hamburger menu + left sidebar (replaces the old inline nav-right buttons) ---------- */
+  .hamburger-btn{background:transparent;border:1px solid rgba(245,243,236,.35);border-radius:3px;width:38px;height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;padding:0;}
+  .hamburger-btn span{display:block;width:18px;height:2px;background:var(--chalk);border-radius:1px;}
+  .sidebar-backdrop{position:fixed;inset:0;background:rgba(11,37,69,.45);z-index:900;opacity:0;pointer-events:none;transition:opacity .18s ease;}
+  .sidebar-backdrop.open{opacity:1;pointer-events:auto;}
+  .app-sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;max-width:82vw;background:var(--court-navy);z-index:901;transform:translateX(-100%);transition:transform .2s ease;display:flex;flex-direction:column;box-shadow:2px 0 18px rgba(0,0,0,.25);}
+  .app-sidebar.open{transform:translateX(0);}
+  .app-sidebar-head{padding:20px 18px;border-bottom:1px solid rgba(245,243,236,.15);display:flex;align-items:center;justify-content:space-between;}
+  .app-sidebar-brand{color:var(--chalk);font-family:'Anton',sans-serif;font-size:16px;}
+  .app-sidebar-brand span{color:var(--ball-orange);}
+  .sidebar-close-btn{background:transparent;border:none;color:var(--chalk);font-size:20px;line-height:1;cursor:pointer;padding:4px 6px;}
+  .sidebar-user{padding:16px 18px;border-bottom:1px solid rgba(245,243,236,.15);color:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+  .sidebar-user .label{display:block;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(245,243,236,.55);margin-bottom:4px;}
+  .sidebar-nav{flex:1;padding:10px 0;overflow-y:auto;}
+  .sidebar-link{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:none;color:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.3px;text-decoration:none;padding:13px 18px;cursor:pointer;}
+  .sidebar-link:hover{background:rgba(245,243,236,.08);}
+  .sidebar-link .icon{width:18px;text-align:center;flex-shrink:0;}
+  .sidebar-link .soon-tag{margin-left:auto;font-size:9px;letter-spacing:.5px;color:rgba(245,243,236,.5);border:1px solid rgba(245,243,236,.3);border-radius:10px;padding:2px 7px;text-transform:uppercase;}
+  .sidebar-foot{padding:14px 18px;border-top:1px solid rgba(245,243,236,.15);}
+  .sidebar-foot .sidebar-link{padding:10px 0;color:#ffb199;}
+  @media(min-width:769px){ .app-sidebar{width:280px;} }
   .btn{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;letter-spacing:.5px;text-transform:uppercase;border:none;border-radius:2px;padding:10px 16px;cursor:pointer;text-decoration:none;display:inline-block;}
   .btn-orange{background:var(--ball-orange);color:#fff;}
   .btn-orange:hover{background:#e64f18;}
@@ -30,6 +51,18 @@
   .btn-danger{background:#b7401b;color:#fff;}
   .card{background:#fff;border:1px solid var(--line);}
   main{padding:40px 0 80px;}
+  .home-hero{padding-top:6vh;}
+  .home-stack{display:flex;flex-direction:column;gap:16px;max-width:640px;margin:28px auto 0;}
+  .home-stack .card{padding:30px 32px !important;transition:box-shadow .15s,transform .15s;}
+  .home-stack .card:hover{box-shadow:0 6px 18px rgba(11,37,69,.08);transform:translateY(-1px);}
+  .home-stack .card .event-name{font-size:23px !important;margin-bottom:6px !important;}
+  .home-stack .card .mono{font-size:12.5px !important;}
+  @media (max-width:640px){
+    .home-hero{padding-top:3vh;}
+    .home-stack{max-width:100%;}
+    .home-stack .card{padding:22px 20px !important;}
+    .home-stack .card .event-name{font-size:19px !important;}
+  }
   .center-box{max-width:380px;margin:80px auto;padding:32px;}
   .field{margin-bottom:16px;}
   .field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
@@ -161,19 +194,12 @@
     display: none !important;
   }
 
-  /* mobile fixes — nav bar was overflowing on narrow phone widths, pushing
-     the Logout button off-screen. Shrink brand/nav text and let the nav
-     row wrap onto two lines instead of forcing a horizontal scrollbar. */
+  /* mobile fixes — nav bar was overflowing on narrow phone widths before the
+     hamburger menu replaced the inline buttons; kept minimal now. */
   @media (max-width: 480px) {
-    nav .wrap{height:auto;flex-wrap:wrap;row-gap:8px;padding:10px 14px;}
+    nav .wrap{height:56px;padding:10px 14px;}
     .brand{font-size:14px;}
-    .nav-right{font-size:10px;gap:6px;flex-wrap:wrap;width:100%;justify-content:flex-end;}
-    .nav-right #navName{width:100%;text-align:right;font-size:10.5px;order:-1;}
-    .nav-right .btn-small{padding:5px 9px;font-size:10px;}
 
-    #goRegistrationsBtn, #goResultsBtn, #goSportsBtn, #goCulturalBtn{padding:16px !important;min-width:0 !important;}
-    #goRegistrationsBtn .event-name, #goResultsBtn .event-name, #goSportsBtn .event-name, #goCulturalBtn .event-name{font-size:17px !important;}
-    #goRegistrationsBtn .mono, #goResultsBtn .mono, #goSportsBtn .mono, #goCulturalBtn .mono{font-size:11px !important;}
     .lb-podium-name{font-size:11.5px;}
     .lb-podium-pts{font-size:13px;}
     .lb-podium-medal{font-size:18px;}
@@ -212,6 +238,30 @@
   .landing-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-600);font-weight:700;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;}
   .landing-title{font-family:'Cormorant Garamond',serif;font-weight:700;text-transform:none;letter-spacing:0;font-size:clamp(30px,5vw,42px);line-height:1.1;color:var(--maroon-900);max-width:680px;margin:0 auto;}
   .landing-motto{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold-600);font-size:17px;margin-top:12px;}
+
+  /* ---------- House Details (redesign) ---------- */
+  .house-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+  .house-tab-btn{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;padding:11px 22px;border-radius:999px;border:1.5px solid var(--line);background:#fff;color:var(--graphite);cursor:pointer;transition:all .15s ease;}
+  .house-tab-btn:hover{border-color:var(--ball-orange);}
+  .house-tab-btn.active{background:var(--court-navy);border-color:var(--court-navy);color:#fff;box-shadow:0 4px 14px rgba(11,37,69,.25);}
+  .house-hero-card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 2px 20px rgba(11,37,69,.06);}
+  .house-hero-top{position:relative;padding:30px 30px 26px;background:linear-gradient(135deg,var(--court-navy) 0%,#123a6b 100%);color:var(--chalk);}
+  .house-hero-top::after{content:'';position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:rgba(255,90,31,.15);}
+  .house-hero-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,243,236,.55);margin-bottom:6px;position:relative;}
+  .house-hero-name{font-family:'Anton',sans-serif;font-size:clamp(30px,5vw,40px);letter-spacing:.5px;position:relative;}
+  .house-hero-body{padding:26px 30px 28px;}
+  .house-lead-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px;}
+  @media(max-width:480px){ .house-lead-grid{grid-template-columns:1fr;} }
+  .house-lead-card{display:flex;align-items:center;gap:14px;padding:16px 16px;border:1px solid var(--line);border-radius:8px;background:var(--chalk);}
+  .house-lead-icon{width:42px;height:42px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:#fff;border:1.5px solid var(--line);}
+  .house-lead-role{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+  .house-lead-name{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:20px;line-height:1.15;color:var(--graphite);}
+  .house-members-toggle{display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;padding:10px 18px;border-radius:999px;border:1.5px solid var(--court-navy);background:#fff;color:var(--court-navy);cursor:pointer;transition:all .15s ease;}
+  .house-members-toggle:hover{background:var(--court-navy);color:#fff;}
+  .house-members-wrap{margin-top:18px;padding-top:18px;border-top:1px dashed var(--line);}
+  .house-members-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(190px, 1fr));gap:10px;}
+  .house-member-chip{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--chalk);font-size:13px;font-weight:500;}
+  .house-member-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--ball-orange);flex-shrink:0;}
   .landing-desc{color:var(--muted);max-width:560px;margin:18px auto 0;font-size:15px;line-height:1.55;}
 </style>
 </head>
@@ -252,16 +302,6 @@
   </div>
 </div>
 
-<div class="modal-overlay hidden" id="rosterModal">
-  <div class="modal-box" style="max-width:460px;">
-    <div class="modal-head">
-      <h3 id="rosterModalTitle">Team</h3>
-      <button class="modal-close" id="rosterModalClose">×</button>
-    </div>
-    <div class="modal-body" id="rosterModalBody" style="padding:6px 0;"></div>
-  </div>
-</div>
-
 <div class="modal-overlay hidden" id="inputPromptModal">
   <div class="modal-box" style="max-width:420px;">
     <div class="modal-head">
@@ -280,6 +320,17 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="groupRosterModal">
+  <div class="modal-box" style="max-width:960px;">
+    <div class="modal-head">
+      <h3 id="groupRosterTitle">Build roster</h3>
+      <button class="modal-close" id="groupRosterCloseX">×</button>
+    </div>
+    <div class="modal-body" id="groupRosterBody" style="padding:20px 22px;"></div>
+    <div class="modal-foot" id="groupRosterFoot"></div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="regsModal">
   <div class="modal-box">
     <div class="modal-head">
@@ -287,6 +338,10 @@
       <span class="count mono" id="regsModalCount"></span>
     </div>
     <div class="modal-body" id="regsModalBody"></div>
+    <div id="regsModalHouseRow" class="hidden" style="padding:12px 22px 0;border-top:1px solid var(--line);">
+      <label class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:6px;">House / team for the player(s) below</label>
+      <select id="regsModalHouseSelect" style="width:100%;max-width:280px;padding:9px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13px;border-radius:2px;"><option value="">Select house…</option></select>
+    </div>
     <div id="regsModalAddRow" class="hidden" style="padding:12px 22px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <input id="addRegNoInput" list="allUsersDatalist" placeholder="Reg no or name…" style="flex:1;min-width:160px;padding:9px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
       <datalist id="allUsersDatalist"></datalist>
@@ -312,15 +367,32 @@
 
 <nav>
   <div class="wrap">
-    <div class="brand" id="navBrand" style="cursor:pointer;">Nandigiri<span>SportsSphere</span>2K26</div>
-    <div class="nav-right hidden" id="navUserBox">
-      <span id="navName"></span>
-      <a class="btn btn-outline btn-small" id="navHomeBtn" href="#">Home</a>
-      <a class="btn btn-outline btn-small" id="navAdminBtn" href="#" style="display:none;">Admin</a>
-      <a class="btn btn-outline btn-small" id="navLogoutBtn" href="#">Log out</a>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="hamburger-btn hidden" id="navMenuBtn" aria-label="Menu"><span></span><span></span><span></span></button>
+      <div class="brand" id="navBrand" style="cursor:pointer;">Nandigiri<span>SportsSphere</span>2K26</div>
     </div>
   </div>
 </nav>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<div class="app-sidebar" id="appSidebar">
+  <div class="app-sidebar-head">
+    <div class="app-sidebar-brand">Nandigiri<span>SportsSphere</span>2K26</div>
+    <button class="sidebar-close-btn" id="sidebarCloseBtn">✕</button>
+  </div>
+  <div class="sidebar-user">
+    <span class="label">Signed in as</span>
+    <span id="navName"></span>
+  </div>
+  <div class="sidebar-nav">
+    <a class="sidebar-link" id="navHomeBtn" href="#"><span class="icon">🏠</span> Home</a>
+    <a class="sidebar-link" id="navAdminBtn" href="#" style="display:none;"><span class="icon">🛠</span> Admin</a>
+    <a class="sidebar-link" id="navArchivesBtn" href="#"><span class="icon">🗂</span> Archives <span class="soon-tag">Soon</span></a>
+  </div>
+  <div class="sidebar-foot">
+    <a class="sidebar-link" id="navLogoutBtn" href="#"><span class="icon">↪</span> Log out</a>
+  </div>
+</div>
 
 <main>
   <!-- LANDING -->
@@ -375,42 +447,93 @@
   </div>
 
   <!-- DASHBOARD HOME -->
-  <div id="sectionHomeView" class="wrap hidden">
+  <div id="sectionHomeView" class="wrap hidden home-hero">
     <p class="hello">Welcome back</p>
     <h1 class="page-title" id="sectionHomeName">—</h1>
-    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;">
-      <button class="card" id="goSportsBtn" style="flex:1;min-width:220px;padding:28px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
-        <div class="event-name" style="font-size:24px;margin-bottom:6px;">🏅 Sports</div>
-        <div class="mono" style="font-size:12px;color:var(--muted);">Track, Field, Marathon &amp; more</div>
+    <div class="home-stack">
+      <button class="card" id="goSportsBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name">🏅 Sports</div>
+        <div class="mono" style="color:var(--muted);">Track, Field, Marathon &amp; more</div>
       </button>
-      <button class="card" id="goCulturalBtn" style="flex:1;min-width:220px;padding:28px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
-        <div class="event-name" style="font-size:24px;margin-bottom:6px;">🎭 Cultural</div>
-        <div class="mono" style="font-size:12px;color:var(--muted);">Solo, group &amp; other performances</div>
+      <button class="card" id="goCulturalBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name">🎭 Cultural</div>
+        <div class="mono" style="color:var(--muted);">Solo, group &amp; other performances</div>
+      </button>
+      <button class="card" id="goHousePointsBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name">🏆 House</div>
+        <div class="mono" style="color:var(--muted);">Standings &amp; the House Championship</div>
       </button>
     </div>
   </div>
 
-  <div id="dashboardHomeView" class="wrap hidden">
+  <!-- HOUSE (season-wide, not per-section) -->
+  <div id="housePointsView" class="wrap hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+      <button class="btn btn-outline btn-small back-btn" data-back-to="sectionHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button>
+    </div>
+    <p class="hello" id="housePointsSeason">Season</p>
+    <h1 class="page-title">House</h1>
+
+    <div id="houseChoiceSubview" class="home-stack">
+      <button class="card" id="houseChoicePointsBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name">🏆 House Points</div>
+        <div class="mono" style="color:var(--muted);">Standings &amp; the House Championship</div>
+      </button>
+      <button class="card" id="houseChoiceDetailsBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name">🏠 House Details</div>
+        <div class="mono" style="color:var(--muted);">Captains, vice-captains &amp; members</div>
+      </button>
+    </div>
+
+    <div id="housePointsSubview" class="hidden">
+      <button class="btn btn-outline btn-small house-toggle-back-btn" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">← Back</button>
+      <div class="card hidden" id="houseChampionBanner" style="padding:18px 22px;margin-bottom:16px;background:#fff7e8;border-color:#e8c468;"></div>
+      <div class="card hidden" id="sportsChampionBanner" style="padding:18px 22px;margin-bottom:16px;"></div>
+      <div class="card mono" id="houseProgressBanner" style="padding:14px 22px;margin-bottom:16px;font-size:12px;color:var(--muted);"></div>
+      <div class="card" id="houseStandingsCard" style="padding:22px;"></div>
+    </div>
+
+    <div id="houseDetailsSubview" class="hidden">
+      <button class="btn btn-outline btn-small house-toggle-back-btn" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">← Back</button>
+      <div id="houseDetailsList" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;"></div>
+      <div id="houseDetailsPanel"></div>
+    </div>
+  </div>
+
+  <div id="dashboardHomeView" class="wrap hidden home-hero">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
       <button class="btn btn-outline btn-small back-btn" data-back-to="sectionHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button>
       <button class="btn btn-outline btn-small switch-section-btn" id="switchSectionBtn" style="border-color:var(--line);color:var(--graphite);"></button>
     </div>
     <p class="hello" id="dashHomeSection">Welcome back</p>
     <h1 class="page-title" id="dashHomeName">—</h1>
-    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;">
-      <button class="card" id="goRegistrationsBtn" style="flex:1;min-width:220px;padding:26px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
-        <div class="event-name" style="font-size:22px;margin-bottom:6px;">Registrations</div>
-        <div class="mono" style="font-size:12px;color:var(--muted);">Browse events, register, or unregister</div>
+    <div class="home-stack">
+      <button class="card" id="goRegistrationsBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name">Registrations</div>
+        <div class="mono" style="color:var(--muted);">Browse events, register, or unregister</div>
       </button>
-      <button class="card" id="goResultsBtn" style="flex:1;min-width:220px;padding:26px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
-        <div class="event-name" style="font-size:22px;margin-bottom:6px;">Results</div>
-        <div class="mono" style="font-size:12px;color:var(--muted);">See published results for completed events</div>
+      <button class="card" id="goResultsBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name">Results</div>
+        <div class="mono" style="color:var(--muted);">See published results for completed events</div>
       </button>
-      <button class="card" id="goGroupEventsBtn" style="flex:1;min-width:220px;padding:26px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
-        <div class="event-name" style="font-size:22px;margin-bottom:6px;">Group Events</div>
-        <div class="mono" style="font-size:12px;color:var(--muted);">Team events — no registration needed</div>
+      <button class="card" id="goGroupEventsBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name">Group Events</div>
+        <div class="mono" style="color:var(--muted);">House-vs-house team events &amp; rosters</div>
       </button>
     </div>
+  </div>
+
+  <!-- DASHBOARD: GROUP EVENTS (read-only roster view — no self-registration;
+       admins add players from the Admin panel's Events tab) -->
+  <div id="groupEventsView" class="wrap hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+      <button class="btn btn-outline btn-small back-btn" id="groupEventsBackBtn" data-back-to="dashboardHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button>
+      <button class="btn btn-outline btn-small switch-section-btn" id="switchSectionBtnGroup" style="border-color:var(--line);color:var(--graphite);"></button>
+    </div>
+    <p class="hello" id="groupEventsHomeSection">Group Events</p>
+    <h1 class="page-title">Group Events</h1>
+    <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">Rosters are set by the sports/cultural coordinator — contact them to be added or moved.</p>
+    <div class="card" id="groupEventsList"></div>
   </div>
 
   <!-- DASHBOARD: REGISTRATIONS -->
@@ -444,34 +567,14 @@
         <p class="hello" id="resultsHomeSection">Season 2026</p>
         <h1 class="page-title">Results</h1>
       </div>
-      <button class="btn btn-outline btn-small hidden" id="leaderboardToggleBtn" style="border-color:var(--line);color:var(--graphite);">🏆 Leaderboard</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-small hidden" id="leaderboardToggleBtn" style="border-color:var(--line);color:var(--graphite);">🏆 Leaderboard</button>
+        <button class="btn btn-outline btn-small hidden" id="championToggleBtn" style="border-color:var(--line);color:var(--graphite);">🏆 Champion &amp; Runner-up</button>
+      </div>
     </div>
     <div class="card hidden" id="leaderboardCard" style="margin-top:16px;padding:22px;"></div>
+    <div class="card hidden" id="championCard" style="margin-top:16px;padding:22px;"></div>
     <div class="card" id="resultsList" style="margin-top:16px;"></div>
-  </div>
-
-  <!-- DASHBOARD: GROUP EVENTS (read-only; admins add players) -->
-  <div id="groupEventsView" class="wrap hidden">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-      <button class="btn btn-outline btn-small back-btn" data-back-to="dashboardHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button>
-      <button class="btn btn-outline btn-small switch-section-btn" id="switchSectionBtnGroup" style="border-color:var(--line);color:var(--graphite);"></button>
-    </div>
-    <p class="hello" id="groupEventsSection">Group events</p>
-    <h1 class="page-title">Group Events</h1>
-    <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 4px;">Team events don't need registration — players are added by the admins.</p>
-    <div class="card" id="groupEventsList" style="margin-top:16px;"></div>
-  </div>
-
-  <!-- HOUSE POINTS -->
-  <div id="housePointsView" class="wrap hidden">
-    <div style="margin-bottom:16px;">
-      <button class="btn btn-outline btn-small back-btn" data-back-to="sectionHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button>
-    </div>
-    <p class="hello" id="housePointsSeason">Season</p>
-    <h1 class="page-title">🏆 House Points</h1>
-    <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 4px;">1 point each time a house wins a Sports or Cultural event (individual events: the 1st-place finisher's house).</p>
-    <div id="seasonDeclarations"></div>
-    <div class="card" id="housePointsList" style="margin-top:16px;padding:6px 0;"></div>
   </div>
 
   <!-- ADMIN -->
@@ -485,10 +588,27 @@
       <div class="tab" data-tab="admins">Admins</div>
       <div class="tab" data-tab="notice">Notice</div>
       <div class="tab" data-tab="results">Results</div>
+      <div class="tab" data-tab="houses">Houses</div>
     </div>
 
     <!-- EVENTS TAB -->
     <div class="admin-tab" id="tab-events">
+      <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
+        <h3>Add from library</h3>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">Reuse an event from a past season — just pick the name and set this season's deadline/date. New events you add below are automatically saved here for next time.</p>
+        <div class="inline-form">
+          <div class="field"><label>Event</label>
+            <select id="templateEventSelect" style="width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;">
+              <option value="">— pick from library —</option>
+            </select>
+          </div>
+          <div class="field" id="templateDeadlineField"><label>Registration deadline</label><input id="templateEventDeadline" type="datetime-local"></div>
+          <div class="field"><label>Event date</label><input id="templateEventDate" type="datetime-local"></div>
+          <button class="btn btn-dark" id="addFromTemplateBtn">Add</button>
+        </div>
+        <div class="msg" id="templateEventMsg"></div>
+      </div>
+
       <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
         <h3>Add event</h3>
         <div class="inline-form">
@@ -503,6 +623,7 @@
             <select id="newEventCategory" style="width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;border-radius:2px;">
               <option value="TRACK">Track</option>
               <option value="FIELD">Field</option>
+              <option value="RELAY">Relay</option>
               <option value="MARATHON">Marathon</option>
               <option value="OTHER">Other</option>
             </select>
@@ -527,6 +648,12 @@
               <input type="checkbox" id="newEventRequiresMaterials" style="width:auto;"> Ask participants what materials they'll need
             </label>
           </div>
+          <div class="field hidden" id="newEventMassEventField">
+            <label>Roster</label>
+            <label style="display:flex;align-items:center;gap:6px;margin-top:12px;font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;color:var(--muted);">
+              <input type="checkbox" id="newEventMassEvent" style="width:auto;"> Mass event — whole house takes part, no individual player list needed (e.g. Orchestra, Drama)
+            </label>
+          </div>
           <button class="btn btn-dark" id="addEventBtn">Add</button>
         </div>
         <div class="msg" id="addEventMsg"></div>
@@ -534,10 +661,11 @@
       <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
         <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" id="exportAllRegsBtn">Export all registrations (CSV, event-wise)</button>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:12px;" id="adminSectionFilterBar">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;" id="adminSectionFilterBar">
         <button class="btn btn-orange btn-small admin-section-filter-btn" data-section-filter="ALL">All</button>
         <button class="btn btn-outline btn-small admin-section-filter-btn" style="border-color:var(--line);color:var(--graphite);" data-section-filter="SPORTS">🏅 Sports</button>
         <button class="btn btn-outline btn-small admin-section-filter-btn" style="border-color:var(--line);color:var(--graphite);" data-section-filter="CULTURAL">🎭 Cultural</button>
+        <button class="btn btn-outline btn-small admin-section-filter-btn" style="border-color:var(--line);color:var(--graphite);" data-section-filter="GROUP">👥 Group events (both sections)</button>
       </div>
       <div class="card" id="adminEventsList"></div>
     </div>
@@ -569,10 +697,12 @@
 
     <!-- ADMINS TAB -->
     <div class="admin-tab hidden" id="tab-admins">
-      <div class="card admin-write" style="padding:22px;">
+      <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
         <h3>Grant / revoke admin access</h3>
         <p class="mono" style="font-size:12px;color:var(--muted);">Find the user in the Users tab and use the Make Admin / Remove Admin button there.</p>
       </div>
+
+      <div class="card" style="padding:22px;" id="adminGuideBox"></div>
     </div>
 
     <!-- NOTICE TAB -->
@@ -607,14 +737,38 @@
 
     <!-- RESULTS TAB -->
     <div class="admin-tab hidden" id="tab-results">
-      <div class="card" style="padding:22px;margin-bottom:24px;">
-        <h3>Completion of events (Sports or Cultural)</h3>
-        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 14px;">Each group completes automatically once all its events are marked completed — or mark it yourself. Track &amp; Field done → Sports Champion &amp; Runner-up. Individual Cultural done → Cultural Champion &amp; Runner-up. Group/Other Sports + Group Cultural done → House Champion.</p>
-        <div id="seasonCompletionList"></div>
+      <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
+        <h3>Completion of Events (Sports or Cultural)</h3>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">Tick each once every event in that group has its result published for the season. Sports Champion/Runner-up (shown on House Standings) is declared as soon as the Track &amp; Field box is ticked — that's the individual scoring program that decides house rank. Group/Other Sports doesn't gate that, but once it AND Group Cultural are both ticked, the season is done and the overall House Champion is declared.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <label class="completion-flag-row" data-completion-section="SPORTS" style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
+            <input type="checkbox" class="completion-flag-checkbox" data-completion-flag="trackField" style="width:16px;height:16px;">
+            🏅 Track &amp; Field — all individual Track &amp; Field events completed
+          </label>
+          <label class="completion-flag-row" data-completion-section="SPORTS" style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
+            <input type="checkbox" class="completion-flag-checkbox" data-completion-flag="groupOtherSports" style="width:16px;height:16px;">
+            🏅 Group / Other Sports — Marathon, Other, Doubles, Group events completed
+          </label>
+          <label class="completion-flag-row" data-completion-section="CULTURAL" style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
+            <input type="checkbox" class="completion-flag-checkbox" data-completion-flag="culturalIndividual" style="width:16px;height:16px;">
+            🎭 Individual Cultural — all individual cultural events completed
+          </label>
+          <label class="completion-flag-row" data-completion-section="CULTURAL" style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
+            <input type="checkbox" class="completion-flag-checkbox" data-completion-flag="culturalGroup" style="width:16px;height:16px;">
+            🎭 Group Cultural — all group cultural events completed
+          </label>
+        </div>
+        <div class="msg" id="completionFlagsMsg"></div>
       </div>
+
       <div class="card" style="padding:22px;margin-bottom:24px;">
         <h3>Set results for an event</h3>
         <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 18px;">Pick an event, choose who placed 1st/2nd/3rd from that event's registered list, then publish. Students only see results once published.</p>
+
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;" id="resultsSectionFilterBar">
+          <button class="btn btn-outline btn-small results-section-filter-btn" style="border-color:var(--line);color:var(--graphite);" data-results-section-filter="SPORTS">🏅 Sports</button>
+          <button class="btn btn-outline btn-small results-section-filter-btn" style="border-color:var(--line);color:var(--graphite);" data-results-section-filter="CULTURAL">🎭 Cultural</button>
+        </div>
 
         <div class="field">
           <label>Event</label>
@@ -626,6 +780,7 @@
         <div id="resultsEditor" class="hidden">
           <div id="positionResultsSection">
           <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Pick from registered students to fill a position automatically, or just type a name directly — handy for walk-in entries taken on the day.</p>
+          <p class="mono hidden" id="doublesResultsHint" style="font-size:11px;color:var(--ball-orange);margin:-8px 0 14px;">This is a Doubles event — enter both partners for each position.</p>
 
           <div class="field">
             <label>1st place</label>
@@ -633,7 +788,10 @@
             <div class="inline-form" style="margin:0;">
               <div class="field" style="flex:2;"><input id="pos1Name" placeholder="Winner's name"></div>
               <div class="field" style="flex:1;"><input id="pos1RegNo" placeholder="Reg no (optional)"></div>
-              <div class="field" style="flex:1;"><input id="pos1House" placeholder="House (for points)"></div>
+            </div>
+            <div class="inline-form pos-doubles-row hidden" id="pos1DoublesRow" style="margin:8px 0 0;">
+              <div class="field" style="flex:2;"><input id="pos1Name2" placeholder="Partner's name"></div>
+              <div class="field" style="flex:1;"><input id="pos1RegNo2" placeholder="Partner reg no (optional)"></div>
             </div>
             <div class="inline-form" style="margin:8px 0 0;">
               <div class="field" style="flex:1;"><input id="pos1Value" placeholder="e.g. 5.42" inputmode="decimal"></div>
@@ -653,7 +811,10 @@
             <div class="inline-form" style="margin:0;">
               <div class="field" style="flex:2;"><input id="pos2Name" placeholder="Runner-up's name"></div>
               <div class="field" style="flex:1;"><input id="pos2RegNo" placeholder="Reg no (optional)"></div>
-              <div class="field" style="flex:1;"><input id="pos2House" placeholder="House (for points)"></div>
+            </div>
+            <div class="inline-form pos-doubles-row hidden" id="pos2DoublesRow" style="margin:8px 0 0;">
+              <div class="field" style="flex:2;"><input id="pos2Name2" placeholder="Partner's name"></div>
+              <div class="field" style="flex:1;"><input id="pos2RegNo2" placeholder="Partner reg no (optional)"></div>
             </div>
             <div class="inline-form" style="margin:8px 0 0;">
               <div class="field" style="flex:1;"><input id="pos2Value" placeholder="e.g. 5.10" inputmode="decimal"></div>
@@ -673,7 +834,10 @@
             <div class="inline-form" style="margin:0;">
               <div class="field" style="flex:2;"><input id="pos3Name" placeholder="Name"></div>
               <div class="field" style="flex:1;"><input id="pos3RegNo" placeholder="Reg no (optional)"></div>
-              <div class="field" style="flex:1;"><input id="pos3House" placeholder="House (for points)"></div>
+            </div>
+            <div class="inline-form pos-doubles-row hidden" id="pos3DoublesRow" style="margin:8px 0 0;">
+              <div class="field" style="flex:2;"><input id="pos3Name2" placeholder="Partner's name"></div>
+              <div class="field" style="flex:1;"><input id="pos3RegNo2" placeholder="Partner reg no (optional)"></div>
             </div>
             <div class="inline-form" style="margin:8px 0 0;">
               <div class="field" style="flex:1;"><input id="pos3Value" placeholder="e.g. 4.95" inputmode="decimal"></div>
@@ -690,14 +854,19 @@
           </div>
 
           <div id="matchResultsSection" class="hidden">
-            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Enter the two houses/teams, add a score row per set/half/quarter/innings (label it however fits the sport), then pick the winner.</p>
+            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Pick the two houses, then pick the winner. A published group result must have a decided winner — that's what earns the house its championship point. For set-based sports (badminton, volleyball, table tennis…) add a score row per set/half/quarter. For football/handball, enter each match's 1st Half and 2nd Half score directly — Match 2 &amp; 3 also let you add a penalty shootout score if that match was drawn. For cultural group events, there's just one Score box for House A/B — fill it in if there's a numeric score, or skip straight to picking the winner. A "+ Add tiebreaker round" option appears if you need to break a tie.</p>
             <div class="inline-form" style="margin:0 0 14px;">
-              <div class="field" style="flex:1;"><label>Team / House A</label><input id="matchTeamAInput" placeholder="e.g. Ganapati House"></div>
-              <div class="field" style="flex:1;"><label>Team / House B</label><input id="matchTeamBInput" placeholder="e.g. Krishna House"></div>
+              <div class="field" style="flex:1;"><label>House A</label>
+                <select id="matchTeamASelect" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;"><option value="">Select house…</option></select>
+              </div>
+              <div class="field" style="flex:1;"><label>House B</label>
+                <select id="matchTeamBSelect" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;"><option value="">Select house…</option></select>
+              </div>
             </div>
+            <p class="field-hint" id="matchNoHousesHint" style="display:none;margin:-6px 0 14px;">No houses set up yet — add them in the Houses tab first.</p>
             <label style="font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Scores</label>
-            <div id="matchPeriodsList" style="margin:8px 0 10px;"></div>
-            <button class="btn btn-outline btn-small" id="addMatchPeriodBtn" style="border-color:var(--line);color:var(--graphite);margin-bottom:16px;">+ Add score row</button>
+            <p class="mono" id="matchColumnsHint" style="font-size:10.5px;color:var(--muted);margin:2px 0 10px;">Match 3 is optional — only fill it in if the series wasn't already decided 2–0 in Match 1 &amp; 2.</p>
+            <div id="matchColumns" style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;"></div>
             <div class="field" style="margin-bottom:4px;">
               <label>🏆 Winner</label>
               <select id="matchWinnerSelect" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;">
@@ -728,6 +897,41 @@
         <div id="publishedResultsInner" class="mono" style="font-size:12.5px;color:var(--muted);">Loading…</div>
       </div>
     </div>
+
+    <!-- HOUSES TAB -->
+    <div class="admin-tab hidden" id="tab-houses">
+      <div class="card mono" style="padding:16px 22px;margin-bottom:20px;font-size:12px;color:var(--muted);" id="houseSettingsSeasonLabel"></div>
+
+      <div class="card admin-write" id="addHouseCard" style="padding:22px;margin-bottom:24px;">
+        <h3>Houses</h3>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">Shared between Sports and Cultural — only the main admin (BOSS) can add or remove a house, since both sections score against the same list.</p>
+        <div class="inline-form" id="addHouseForm">
+          <div class="field"><label>House name</label><input id="newHouseName" placeholder="e.g. Surya House"></div>
+          <button class="btn btn-dark" id="addHouseBtn">Add house</button>
+        </div>
+        <div class="msg" id="addHouseMsg"></div>
+        <div id="housesListInner" style="margin-top:16px;"></div>
+      </div>
+
+      <div class="card admin-write" style="padding:22px;margin-bottom:24px;">
+        <h3>Group events this season</h3>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 16px;">How many group events are planned in total this season, per section — shown as a progress indicator only. The House Championship itself is declared from the Results tab once the Sports admin ticks "Group / Other Sports complete" and the Cultural admin ticks "Group Cultural complete".</p>
+        <div class="inline-form">
+          <div class="field"><label>🏅 Sports group events (total)</label><input id="sportsGroupTotalInput" type="number" min="0" placeholder="e.g. 4"></div>
+          <button class="btn btn-dark" id="saveSportsTotalBtn">Save</button>
+        </div>
+        <div class="inline-form">
+          <div class="field"><label>🎭 Cultural group events (total)</label><input id="culturalGroupTotalInput" type="number" min="0" placeholder="e.g. 3"></div>
+          <button class="btn btn-dark" id="saveCulturalTotalBtn">Save</button>
+        </div>
+        <div class="msg" id="houseSettingsMsg"></div>
+      </div>
+
+      <div class="card" style="padding:22px;">
+        <h3>Current standings</h3>
+        <div id="adminHouseStandings" class="mono" style="font-size:12.5px;color:var(--muted);">Loading…</div>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -741,6 +945,7 @@
   const DEADLINE_TBD = 'TBD'; // sentinel deadline value meaning "registration yet to open"
 
   const state = { token: null, name: null, isAdmin: false, isTeacher: false, adminRole: '', activeSection: 'SPORTS' };
+  let currentSeasonCache = ''; // filled in from the first listEvents/getHouseStandings response
 
   function saveSession() {
     sessionStorage.setItem('campusSports', JSON.stringify(state));
@@ -765,7 +970,7 @@
   // create a new row, where a silent retry could duplicate it.
   const RETRY_SAFE_ACTIONS = new Set([
     'login', 'changePassword', 'listEvents', 'registerEvent', 'unregisterEvent',
-    'getNotices', 'getResults',
+    'getNotices', 'getResults', 'getGroupEventsData', 'getHouseStandings', 'getHouseDetails',
     'adminListUsers', 'adminListRegistrations', 'adminListUserRegistrations', 'adminListNotices',
     'adminGetEventResults', 'adminSetResults', 'adminToggleEvent', 'adminToggleCompleted',
     'adminSetAdmin', 'adminResetPassword', 'adminEditEvent', 'adminEditNotice',
@@ -791,6 +996,19 @@
     return [...events].sort((a, b) => {
       if (!!a.completed !== !!b.completed) return a.completed ? 1 : -1;
       return eventSortTimestamp(a) - eventSortTimestamp(b);
+    });
+  }
+
+  // Admin's "Manage Season" events list: ordered purely by competition
+  // (event) date, latest first — regardless of completed/registration
+  // status, since an admin scanning the full season wants to see the most
+  // recent/upcoming event day at a glance. Events with no event day set yet
+  // ("To be decided") sort to the very end, since there's no date to rank them by.
+  function sortAdminEventsByDate(events) {
+    return [...events].sort((a, b) => {
+      const ta = a.competitionDate ? new Date(a.competitionDate).getTime() : -Infinity;
+      const tb = b.competitionDate ? new Date(b.competitionDate).getTime() : -Infinity;
+      return tb - ta;
     });
   }
 
@@ -889,17 +1107,9 @@
   }
 
   function showView(id) {
-    ['landingView','loginView','forceChangeView','sectionHomeView','dashboardHomeView','dashboardView','resultsView','groupEventsView','housePointsView','adminView'].forEach(v => {
+    ['landingView','loginView','forceChangeView','sectionHomeView','dashboardHomeView','groupEventsView','housePointsView','dashboardView','resultsView','adminView'].forEach(v => {
       document.getElementById(v).classList.toggle('hidden', v !== id);
     });
-  }
-
-  // Academic season label, e.g. "2026-2027". Season runs June → May, so this
-  // rolls over automatically every year (no hardcoding needed for later years).
-  function currentSeasonLabel() {
-    const d = new Date();
-    const y = d.getMonth() >= 5 ? d.getFullYear() : d.getFullYear() - 1;
-    return y + '-' + (y + 1);
   }
 
   function setMsg(el, text, ok) {
@@ -1017,16 +1227,35 @@
     });
   });
 
-  // ---------- NAV ----------
+  // ---------- NAV / SIDEBAR ----------
+  function openSidebar() {
+    document.getElementById('appSidebar').classList.add('open');
+    document.getElementById('sidebarBackdrop').classList.add('open');
+  }
+  function closeSidebar() {
+    document.getElementById('appSidebar').classList.remove('open');
+    document.getElementById('sidebarBackdrop').classList.remove('open');
+  }
+  document.getElementById('navMenuBtn').addEventListener('click', openSidebar);
+  document.getElementById('sidebarCloseBtn').addEventListener('click', closeSidebar);
+  document.getElementById('sidebarBackdrop').addEventListener('click', closeSidebar);
+
+  document.getElementById('navArchivesBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    alert('Archives is coming soon.');
+  });
+
   document.getElementById('navLogoutBtn').addEventListener('click', (e) => {
     e.preventDefault();
+    closeSidebar();
     clearSession();
     stopNoticePolling();
-    document.getElementById('navUserBox').classList.add('hidden');
+    document.getElementById('navMenuBtn').classList.add('hidden');
     showView('landingView');
   });
   document.getElementById('navAdminBtn').addEventListener('click', (e) => {
     e.preventDefault();
+    closeSidebar();
     enterAdmin();
   });
 
@@ -1039,6 +1268,7 @@
   }
   document.getElementById('navHomeBtn').addEventListener('click', (e) => {
     e.preventDefault();
+    closeSidebar();
     goHome();
   });
   document.getElementById('navBrand').addEventListener('click', (e) => {
@@ -1053,7 +1283,7 @@
 
   // ---------- DASHBOARD ----------
   async function enterDashboard() {
-    document.getElementById('navUserBox').classList.remove('hidden');
+    document.getElementById('navMenuBtn').classList.remove('hidden');
     document.getElementById('navName').textContent = state.name;
     document.body.classList.toggle('teacher-mode', state.isTeacher);
     const adminBtn = document.getElementById('navAdminBtn');
@@ -1067,7 +1297,8 @@
 
   function enterSection(section) {
     state.activeSection = section;
-    const label = (section === 'CULTURAL' ? '🎭 Cultural ' : '🏅 Sports ') + currentSeasonLabel();
+    const seasonSuffix = currentSeasonCache ? ' ' + currentSeasonCache : '';
+    const label = section === 'CULTURAL' ? '🎭 Cultural' + seasonSuffix : '🏅 Sports' + seasonSuffix;
     document.getElementById('dashHomeSection').textContent = label;
     syncSwitchSectionButtons();
     renderCategoryFilterBar();
@@ -1091,10 +1322,135 @@
   }
 
   async function openResults() {
-    document.getElementById('resultsHomeSection').textContent = (state.activeSection === 'CULTURAL' ? '🎭 Cultural' : '🏅 Sports') + ' · Season ' + currentSeasonLabel();
+    document.getElementById('resultsHomeSection').textContent = (state.activeSection === 'CULTURAL' ? '🎭 Cultural' : '🏅 Sports') + ' · Season ' + currentSeasonCache;
     syncSwitchSectionButtons();
     showView('resultsView');
     await loadResultsStudent();
+  }
+
+  async function openGroupEvents() {
+    document.getElementById('groupEventsHomeSection').textContent = (state.activeSection === 'CULTURAL' ? '🎭 Cultural' : '🏅 Sports') + ' · Group Events';
+    syncSwitchSectionButtons();
+    showView('groupEventsView');
+    await loadGroupEventsStudent();
+  }
+
+  // Set right before navigating in from a "House won this" link (House
+  // Points page) — loadGroupEventsStudent checks this once it has rendered
+  // and jumps straight to that event's Results panel.
+  let pendingGroupEventFocus = null;
+  async function goToGroupEvent(section, eventId) {
+    state.activeSection = section;
+    pendingGroupEventFocus = eventId;
+    groupEventsBackOverride = 'housePointsView';
+    await openGroupEvents();
+  }
+
+  async function openHousePoints() {
+    showView('housePointsView');
+    showHouseChoice();
+  }
+  function showHouseChoice() {
+    document.getElementById('houseChoiceSubview').classList.remove('hidden');
+    document.getElementById('housePointsSubview').classList.add('hidden');
+    document.getElementById('houseDetailsSubview').classList.add('hidden');
+  }
+  document.getElementById('houseChoicePointsBtn').addEventListener('click', async () => {
+    document.getElementById('houseChoiceSubview').classList.add('hidden');
+    document.getElementById('housePointsSubview').classList.remove('hidden');
+    await loadHouseStandings();
+  });
+  document.getElementById('houseChoiceDetailsBtn').addEventListener('click', async () => {
+    document.getElementById('houseChoiceSubview').classList.add('hidden');
+    document.getElementById('houseDetailsSubview').classList.remove('hidden');
+    await loadHouseDetails();
+  });
+  document.querySelectorAll('.house-toggle-back-btn').forEach(btn => {
+    btn.addEventListener('click', showHouseChoice);
+  });
+
+  let houseDetailsCache = [];
+  let houseDetailsSelectedId = null;
+  function houseColor(name) {
+    const n = (name || '').toLowerCase();
+    if (n.includes('surya')) return { base: '#D62828', dark: '#8f1c1c', soft: 'rgba(214,40,40,.10)' };
+    if (n.includes('varuna')) return { base: '#1D63D8', dark: '#123a8f', soft: 'rgba(29,99,216,.10)' };
+    return { base: 'var(--court-navy)', dark: '#123a6b', soft: 'rgba(11,37,69,.08)' };
+  }
+  async function loadHouseDetails() {
+    const list = document.getElementById('houseDetailsList');
+    const panel = document.getElementById('houseDetailsPanel');
+    list.innerHTML = '<div class="mono" style="font-size:12px;color:var(--muted);">Loading…</div>';
+    panel.innerHTML = '';
+    try {
+      const data = await api('getHouseDetails', {});
+      houseDetailsCache = data.houses || [];
+      renderHouseDetailsList();
+      if (houseDetailsCache.length) {
+        houseDetailsSelectedId = houseDetailsCache[0].houseId;
+        renderHouseDetailsPanel();
+      }
+    } catch (err) {
+      list.innerHTML = `<div class="mono" style="font-size:12px;color:#b7401b;">${err.message}</div>`;
+    }
+  }
+  function renderHouseDetailsList() {
+    const list = document.getElementById('houseDetailsList');
+    list.className = 'house-tabs';
+    list.innerHTML = houseDetailsCache.map(h => {
+      const c = houseColor(h.name);
+      const active = h.houseId === houseDetailsSelectedId;
+      return `<button class="house-tab-btn house-select-btn ${active ? 'active' : ''}" data-house-id="${h.houseId}" style="${active ? `background:${c.base};border-color:${c.base};box-shadow:0 4px 14px ${c.soft};` : `color:${c.base};border-color:${c.base};`}">${escapeHtml(h.name)}</button>`;
+    }).join('');
+    list.querySelectorAll('.house-select-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        houseDetailsSelectedId = btn.dataset.houseId;
+        renderHouseDetailsList();
+        renderHouseDetailsPanel();
+      });
+    });
+  }
+  function renderHouseDetailsPanel() {
+    const panel = document.getElementById('houseDetailsPanel');
+    const h = houseDetailsCache.find(x => x.houseId === houseDetailsSelectedId);
+    if (!h) { panel.innerHTML = ''; return; }
+    const nameOrTbd = (p) => p ? escapeHtml(p.name) : '<span style="color:var(--muted);font-weight:500;font-family:\'Inter\',sans-serif;font-size:15px;">Not set yet</span>';
+    const c = houseColor(h.name);
+    panel.innerHTML = `
+      <div class="house-hero-card" style="border-color:${c.base};">
+        <div class="house-hero-top" style="background:linear-gradient(135deg,${c.base} 0%,${c.dark} 100%);">
+          <div class="house-hero-eyebrow">Season House</div>
+          <div class="house-hero-name">${escapeHtml(h.name)}</div>
+        </div>
+        <div class="house-hero-body">
+          <div class="house-lead-grid">
+            <div class="house-lead-card" style="border-left:3px solid ${c.base};">
+              <div class="house-lead-icon" style="border-color:${c.base};color:${c.base};">🏵</div>
+              <div>
+                <div class="house-lead-role">Captain</div>
+                <div class="house-lead-name">${nameOrTbd(h.captain)}</div>
+              </div>
+            </div>
+            <div class="house-lead-card" style="border-left:3px solid ${c.base};">
+              <div class="house-lead-icon" style="border-color:${c.base};color:${c.base};">🎗</div>
+              <div>
+                <div class="house-lead-role">Vice-Captain</div>
+                <div class="house-lead-name">${nameOrTbd(h.viceCaptain)}</div>
+              </div>
+            </div>
+          </div>
+          <button class="house-members-toggle" id="houseMembersToggleBtn" style="border-color:${c.base};color:${c.base};">👥 Members <span class="mono">(${h.members.length})</span></button>
+          <div id="houseMembersList" class="hidden house-members-wrap">
+            <div class="house-members-grid">
+              ${h.members.length ? h.members.map(m => `<div class="house-member-chip"><span class="dot" style="background:${c.base};"></span>${escapeHtml(m.name)}</div>`).join('') : '<div class="mono" style="font-size:12px;color:var(--muted);">No members added yet.</div>'}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('houseMembersToggleBtn').addEventListener('click', () => {
+      document.getElementById('houseMembersList').classList.toggle('hidden');
+    });
   }
 
   document.getElementById('switchSectionBtn').addEventListener('click', () => {
@@ -1108,26 +1464,37 @@
     state.activeSection = state.activeSection === 'CULTURAL' ? 'SPORTS' : 'CULTURAL';
     openResults();
   });
-  document.getElementById('goSportsBtn').addEventListener('click', () => enterSection('SPORTS'));
-  document.getElementById('goCulturalBtn').addEventListener('click', () => enterSection('CULTURAL'));
-
-  async function openGroupEvents() {
-    document.getElementById('groupEventsSection').textContent = (state.activeSection === 'CULTURAL' ? '🎭 Cultural' : '🏅 Sports') + ' · Season ' + currentSeasonLabel();
-    syncSwitchSectionButtons();
-    showView('groupEventsView');
-    await loadGroupEvents();
-  }
   document.getElementById('switchSectionBtnGroup').addEventListener('click', () => {
     state.activeSection = state.activeSection === 'CULTURAL' ? 'SPORTS' : 'CULTURAL';
     openGroupEvents();
   });
-  document.getElementById('goGroupEventsBtn').addEventListener('click', openGroupEvents);
-  const hpBtn = document.getElementById('goHousePointsBtn'); // card removed from home screen; kept safe if re-added
-  if (hpBtn) hpBtn.addEventListener('click', openHousePoints);
+  document.getElementById('goSportsBtn').addEventListener('click', () => enterSection('SPORTS'));
+  document.getElementById('goCulturalBtn').addEventListener('click', () => enterSection('CULTURAL'));
+  document.getElementById('goHousePointsBtn').addEventListener('click', openHousePoints);
+
   document.getElementById('goRegistrationsBtn').addEventListener('click', openRegistrations);
   document.getElementById('goResultsBtn').addEventListener('click', openResults);
+  document.getElementById('goGroupEventsBtn').addEventListener('click', openGroupEvents);
   document.querySelectorAll('.back-btn').forEach(btn => {
+    if (btn.id === 'groupEventsBackBtn') return; // handled separately below — its back target can change
     btn.addEventListener('click', () => showView(btn.dataset.backTo));
+  });
+  // Group Events' Back button normally returns to the dashboard home, but
+  // when we got here via a "House won this event" link from House Points,
+  // it should return there instead — one-shot override, cleared after use.
+  let groupEventsBackOverride = null;
+  document.getElementById('groupEventsBackBtn').addEventListener('click', () => {
+    const target = groupEventsBackOverride || 'dashboardHomeView';
+    groupEventsBackOverride = null;
+    if (target === 'housePointsView') {
+      showView('housePointsView');
+      document.getElementById('houseChoiceSubview').classList.add('hidden');
+      document.getElementById('houseDetailsSubview').classList.add('hidden');
+      document.getElementById('housePointsSubview').classList.remove('hidden');
+      loadHouseStandings();
+    } else {
+      showView(target);
+    }
   });
 
   // ---------- NOTICE TOAST ----------
@@ -1241,8 +1608,10 @@
     loadEvents();
   });
 
+  // GROUP is deliberately absent here — group events have no registration at
+  // all (see the Group Events section) so they never appear in this list.
   const SECTION_CATEGORIES = {
-    SPORTS: [['ALL','All'],['TRACK','Track'],['FIELD','Field'],['MARATHON','Marathon'],['OTHER','Other'],['DOUBLES','Doubles']],
+    SPORTS: [['ALL','All'],['TRACK','Track'],['FIELD','Field'],['RELAY','Relay'],['MARATHON','Marathon'],['OTHER','Other'],['DOUBLES','Doubles']],
     CULTURAL: [['ALL','All'],['INDIVIDUAL','Individual'],['OTHER','Other']]
   };
   let categoryFilter = 'ALL';
@@ -1275,6 +1644,7 @@
     list.innerHTML = skeletonRows(3);
     try {
       const data = await api('listEvents', {});
+      if (data.season) currentSeasonCache = data.season;
       const { track, field, total } = data.usage;
       const { maxPerCategory, maxTotal } = data.limits;
       if (state.activeSection === 'CULTURAL') {
@@ -1284,7 +1654,8 @@
         banner.innerHTML = `TRACK/FIELD USAGE — Track: <strong>${track}/${maxPerCategory}</strong> · Field: <strong>${field}/${maxPerCategory}</strong> · Combined: <strong>${total}/${maxTotal}</strong> &nbsp;·&nbsp; "Other" events don't count toward this.`;
       }
 
-      // Group events never use registration — they live in the Group Events section.
+      // Group events never appear here — they have no registration; see the
+      // Group Events section for rosters instead.
       let eventsToShow = data.events.filter(ev => (ev.section || 'SPORTS') === state.activeSection && String(ev.category || '').toUpperCase() !== 'GROUP');
       eventsToShow = showOnlyMyRegs
         ? eventsToShow.filter(ev => data.myRegistrations.includes(ev.eventId))
@@ -1305,11 +1676,13 @@
         const registered = data.myRegistrations.includes(ev.eventId);
         const cat = String(ev.category || 'OTHER').toUpperCase();
         const isGroup = cat === 'GROUP';
+        const isCultural = String(ev.section || '').toUpperCase() === 'CULTURAL';
         // Group events (Sports or Cultural) don't need a registration deadline —
-        // a team can be entered any time before the event, so we ignore deadline
-        // gating entirely for this category.
-        const deadlineTbd = !isGroup && ev.deadline === DEADLINE_TBD;
-        const deadlinePassed = !isGroup && ev.deadline && !deadlineTbd && new Date() > new Date(ev.deadline);
+        // a team can be entered any time before the event. Cultural events in
+        // general don't use deadlines either — only the event date matters there.
+        const skipDeadline = isGroup || isCultural;
+        const deadlineTbd = !skipDeadline && ev.deadline === DEADLINE_TBD;
+        const deadlinePassed = !skipDeadline && ev.deadline && !deadlineTbd && new Date() > new Date(ev.deadline);
 
         // Would registering push this student over a cap? (server has final say,
         // this just avoids letting them click into an obvious rejection)
@@ -1353,7 +1726,7 @@
         return `<div class="event-row" id="event-row-${ev.eventId}">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
-            ${isGroup ? '' : `<div class="event-meta">DEADLINE: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>`}
+            ${skipDeadline ? '' : `<div class="event-meta">DEADLINE: ${deadlineText}${capBlocked ? ' · ' + capReason : ''}</div>`}
             <div class="event-meta">Event day: ${compDateText}</div>
             ${groupLabel ? `<div class="event-meta">Team: ${escapeHtml(groupLabel)}</div>` : ''}
             ${partnerLabel ? `<div class="event-meta">Partner: ${escapeHtml(partnerLabel)}</div>` : ''}
@@ -1416,144 +1789,266 @@
     }
   }
 
-  // ---------- GROUP EVENTS (student view, read-only) ----------
-  async function loadGroupEvents() {
+  // ---------- GROUP EVENTS (student view — read-only roster) ----------
+  async function loadGroupEventsStudent() {
     const list = document.getElementById('groupEventsList');
     list.innerHTML = skeletonRows(2);
     try {
-      const data = await api('listEvents', {});
-      const events = data.events.filter(ev =>
-        (ev.section || 'SPORTS') === state.activeSection && String(ev.category || '').toUpperCase() === 'GROUP');
-      if (!events.length) {
-        list.innerHTML = '<div class="event-row mono" style="color:var(--muted);">No group events yet.</div>';
+      // One combined call instead of listEvents + one getGroupRoster per
+      // event + getResults — see getGroupEventsData in Code.gs for why.
+      const data = await api('getGroupEventsData', {});
+      if (data.season) currentSeasonCache = data.season;
+      const groupEvents = sortEventsForDisplay(
+        data.events.filter(ev => (ev.section || 'SPORTS') === state.activeSection && String(ev.category || '').toUpperCase() === 'GROUP')
+      );
+      if (!groupEvents.length) {
+        list.innerHTML = '<div class="event-row"><span class="mono" style="color:var(--muted);">No group events yet — check back soon.</span></div>';
         return;
       }
-      list.innerHTML = events.map(ev => {
+      const rostersByEvent = data.rostersByEvent || {};
+      const resultsByEvent = data.resultsByEvent || {};
+      const photosByEvent = data.photosByEvent || {};
+
+      list.innerHTML = groupEvents.map((ev) => {
         const compDateText = ev.competitionDate ? fmtDate(parseDateOnly(ev.competitionDate)) : 'To be decided';
-        return `<div class="event-row">
-          <div>
+        const completedPill = ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : '';
+        const result = resultsByEvent[ev.eventId];
+        const hasResult = !!result;
+        const photos = photosByEvent[ev.eventId] || [];
+        const playersBtnTop = !ev.massEvent
+          ? `<button class="btn btn-outline btn-small group-panel-btn" data-panel="players" data-event-id="${ev.eventId}" style="border-color:var(--line);color:var(--graphite);">Players</button>`
+          : '';
+        const galleryBtnTop = photos.length
+          ? `<button class="btn btn-outline btn-small group-gallery-btn" data-event-id="${ev.eventId}" data-event-name="${escapeHtml(ev.name)}" style="border-color:var(--line);color:var(--graphite);">🖼 Gallery (${photos.length})</button>`
+          : '';
+        return `<div class="event-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+          <div style="display:flex;justify-content:space-between;width:100%;align-items:center;flex-wrap:wrap;gap:8px;">
             <div class="event-name">${escapeHtml(ev.name)}</div>
-            <div class="event-meta">Event day: ${compDateText}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <span class="pill cat-group">Group</span>
-            ${ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : ''}
-            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-roster="${ev.eventId}" data-roster-name="${escapeHtml(ev.name)}">View players</button>
-          </div>
-        </div>`;
-      }).join('');
-      list.querySelectorAll('[data-roster]').forEach(btn => {
-        btn.addEventListener('click', withLoading(btn, async () => {
-          try {
-            const r = await api('getGroupEventRoster', { eventId: btn.dataset.roster });
-            document.getElementById('rosterModalTitle').textContent = btn.dataset.rosterName;
-            document.getElementById('rosterModalBody').innerHTML = r.players.length
-              ? r.players.map((p, i) => `<div class="modal-row"><div class="idx mono">${String(i + 1).padStart(2, '0')}</div><div><div class="rname">${escapeHtml(p.name)}</div><div class="rreg">${escapeHtml(p.regNo)}</div></div></div>`).join('')
-              : '<div class="modal-empty">Players not added yet.</div>';
-            document.getElementById('rosterModal').classList.remove('hidden');
-          } catch (err) { alert(err.message); }
-        }));
-      });
-    } catch (err) {
-      list.innerHTML = `<div class="event-row" style="color:#b7401b;">${err.message}</div>`;
-    }
-  }
-  document.getElementById('rosterModalClose').addEventListener('click', () => document.getElementById('rosterModal').classList.add('hidden'));
-
-  // Top-2 individual scorers (same scoring as the Leaderboard).
-  function topIndividuals(results, section) {
-    const scores = {};
-    results.forEach(r => {
-      if ((r.section || 'SPORTS').toUpperCase() !== section) return;
-      const cat = String(r.category || '').toUpperCase();
-      if (section === 'SPORTS' && cat !== 'TRACK' && cat !== 'FIELD') return;
-      (r.positions || []).forEach(p => {
-        const pts = LB_POINTS[p.place]; const label = (p.name || '').trim();
-        if (!pts || !label) return;
-        const key = p.regNo ? 'R:' + p.regNo : 'N:' + label.toLowerCase();
-        if (!scores[key]) scores[key] = { name: label, house: p.house || '', pts: 0, gold: 0, silver: 0, bronze: 0 };
-        scores[key].pts += pts;
-        if (p.place === 1) scores[key].gold++; else if (p.place === 2) scores[key].silver++; else scores[key].bronze++;
-      });
-    });
-    return Object.values(scores).sort((a, b) => b.pts - a.pts || b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze).slice(0, 2);
-  }
-  async function renderSeasonDeclarations(results) {
-    const box = document.getElementById('seasonDeclarations');
-    box.innerHTML = '';
-    const st = (await api('getSeasonStatus', {})).groups;
-    const card = (title, rows) => `<div class="card" style="margin-top:16px;padding:16px 20px;background:#fff7e8;border:1px solid #e8c468;">
-      <div class="mono" style="font-size:11px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">${title}</div>${rows}</div>`;
-    const two = list => list.length ? list.map((p, i) => `<div style="padding:3px 0;font-weight:600;">${i ? '🥈 Runner-up' : '🥇 Champion'}: ${escapeHtml(p.name)} <span class="mono" style="font-weight:400;color:var(--muted);font-size:11px;">${p.pts} pts${p.house ? ' · ' + escapeHtml(p.house) : ''}</span></div>`).join('') : '<div class="mono" style="font-size:12px;color:var(--muted);">No scores recorded.</div>';
-    let html = '';
-    if (st.TRACK_FIELD.completed) html += card('🏅 Sports individual champions', two(topIndividuals(results, 'SPORTS')));
-    if (st.INDIVIDUAL_CULTURAL.completed) html += card('🎭 Cultural individual champions', two(topIndividuals(results, 'CULTURAL')));
-    if (st.GROUP_SPORTS.completed && st.GROUP_CULTURAL.completed) {
-      const wins = {};
-      results.forEach(r => {
-        const g = String(r.category || '').toUpperCase() === 'GROUP';
-        const name = g ? (r.match && r.match.winner !== 'Draw' ? r.match.winner : '') : (((r.positions || []).find(p => p.place === 1) || {}).house);
-        const n = String(name || '').trim(); if (n) wins[n] = (wins[n] || 0) + 1;
-      });
-      const ranked = Object.entries(wins).sort((a, b) => b[1] - a[1]);
-      html += card('🏆 Season complete — House Champion', ranked.length
-        ? `<div style="font-size:18px;font-weight:700;">${escapeHtml(ranked[0][0])} <span class="mono" style="font-size:12px;font-weight:400;color:var(--muted);">${ranked[0][1]} pts${ranked[1] && ranked[1][1] === ranked[0][1] ? ' · tied with ' + escapeHtml(ranked[1][0]) : ''}</span></div>`
-        : '<div class="mono" style="font-size:12px;color:var(--muted);">No house wins recorded.</div>');
-    }
-    box.innerHTML = html;
-  }
-
-  // ---------- HOUSE POINTS ----------
-  // 1 point per event won by a house, across Sports AND Cultural.
-  // Group events: the match winner. Individual events: house tagged on 1st place.
-  // Counts all published results for the current season.
-  async function openHousePoints() {
-    document.getElementById('housePointsSeason').textContent = 'Season ' + currentSeasonLabel();
-    showView('housePointsView');
-    const list = document.getElementById('housePointsList');
-    list.innerHTML = skeletonRows(3);
-    try {
-      const data = await api('getResults', {});
-      renderSeasonDeclarations(data.results).catch(() => {});
-      const houses = {};
-      const addWin = (name, section) => {
-        const label = String(name || '').trim();
-        if (!label) return;
-        const key = label.toLowerCase();
-        if (!houses[key]) houses[key] = { name: label, pts: 0, sports: 0, cultural: 0 };
-        houses[key].pts++;
-        if (section === 'CULTURAL') houses[key].cultural++; else houses[key].sports++;
-      };
-      data.results.forEach(r => {
-        const section = (r.section || 'SPORTS').toUpperCase();
-        if (String(r.category || '').toUpperCase() === 'GROUP') {
-          if (r.match && r.match.winner && r.match.winner !== 'Draw') addWin(r.match.winner, section);
-        } else {
-          const first = (r.positions || []).find(p => p.place === 1);
-          if (first) addWin(first.house, section);
-        }
-      });
-      const ranked = Object.values(houses).sort((a, b) => b.pts - a.pts || a.name.localeCompare(b.name));
-      if (!ranked.length) {
-        list.innerHTML = '<div class="event-row mono" style="color:var(--muted);">No house wins recorded yet.</div>';
-        return;
-      }
-      let rank = 0, prev = null;
-      list.innerHTML = ranked.map((h, i) => {
-        if (h.pts !== prev) { rank = i + 1; prev = h.pts; }
-        return `<div class="event-row">
-          <div style="display:flex;align-items:center;gap:14px;">
-            <div class="mono" style="font-size:18px;font-weight:700;width:28px;">${rank}</div>
-            <div>
-              <div class="event-name">${escapeHtml(h.name)}</div>
-              <div class="event-meta">🏅 Sports: ${h.sports} · 🎭 Cultural: ${h.cultural}</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span class="pill cat-group">Group</span>${completedPill}${playersBtnTop}${galleryBtnTop}
             </div>
           </div>
-          <div class="event-name" style="font-size:24px;">${h.pts} <span class="mono" style="font-size:11px;color:var(--muted);">PTS</span></div>
+          <div class="event-meta">Event day: ${compDateText}</div>
+          <div class="group-panel-area" data-panel-area-for="${ev.eventId}" style="width:100%;margin-top:8px;"></div>
         </div>`;
       }).join('');
+
+      list.querySelectorAll('.group-gallery-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          openGalleryModal(btn.dataset.eventName, photosByEvent[btn.dataset.eventId] || []);
+        });
+      });
+
+      // ---------- panel state machine: null (choice) / 'players' / 'results' ----------
+      const groupPanelState = {};
+      function renderGroupPanel(eventId) {
+        const area = list.querySelector(`.group-panel-area[data-panel-area-for="${eventId}"]`);
+        if (!area) return;
+        const ev = groupEvents.find(e => e.eventId === eventId);
+        const result = resultsByEvent[eventId];
+        const hasResult = !!result;
+        const state = groupPanelState[eventId] || null;
+
+        if (state === 'players') {
+          let rosterBlock;
+          if (ev.massEvent) {
+            rosterBlock = '<div class="mono" style="font-size:12px;color:var(--muted);">🎭 Mass event — the whole house takes part; there\'s no individual player list for this one.</div>';
+          } else {
+            const roster = rostersByEvent[eventId] || [];
+            const byHouse = {};
+            roster.forEach(r => { (byHouse[r.house || 'Unassigned'] = byHouse[r.house || 'Unassigned'] || []).push(r); });
+            const roleOrder = { 'Captain': 0, 'Vice-Captain': 1 };
+            Object.values(byHouse).forEach(l => l.sort((a, b) => (roleOrder[a.role] ?? 2) - (roleOrder[b.role] ?? 2)));
+            const roleTag = (role) => role === 'Captain'
+              ? ` <span class="pill" style="background:rgba(255,90,31,.14);color:var(--ball-orange);font-size:9.5px;padding:2px 6px;">C</span>`
+              : role === 'Vice-Captain'
+                ? ` <span class="pill" style="background:rgba(11,37,69,.08);color:var(--court-navy);font-size:9.5px;padding:2px 6px;">VC</span>`
+                : '';
+            rosterBlock = Object.keys(byHouse).length
+              ? `<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:18px;">
+                  ${Object.keys(byHouse).map(house => `
+                    <div>
+                      <div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">${escapeHtml(house)}</div>
+                      <div style="font-size:13px;line-height:1.9;">
+                        ${byHouse[house].map(p => `<div>${escapeHtml(p.name)}${roleTag(p.role)}</div>`).join('')}
+                      </div>
+                    </div>`).join('')}
+                </div>`
+              : '<div class="mono" style="font-size:12px;color:var(--muted);">No players added yet.</div>';
+          }
+          area.innerHTML = `
+            <div style="border-top:1px solid var(--line);padding-top:10px;">
+              ${rosterBlock}
+              <div style="margin-top:12px;display:flex;gap:8px;">
+                <button class="btn btn-outline btn-small group-panel-btn" data-panel="back" data-event-id="${eventId}" style="border-color:var(--line);color:var(--graphite);">← Back</button>
+                ${!ev.massEvent ? (hasResult
+                  ? `<button class="btn btn-outline btn-small group-panel-btn" data-panel="results" data-event-id="${eventId}" style="border-color:var(--line);color:var(--graphite);">Results</button>`
+                  : `<span class="pill" style="background:rgba(0,0,0,.06);color:var(--muted);">Results not published yet</span>`) : ''}
+              </div>
+            </div>`;
+        } else if (state === 'results') {
+          area.innerHTML = `
+            <div style="border-top:1px solid var(--line);padding-top:10px;">
+              ${renderMatchScoreboard(result ? result.match : null)}
+              <div style="margin-top:12px;display:flex;gap:8px;">
+                <button class="btn btn-outline btn-small group-panel-btn" data-panel="back" data-event-id="${eventId}" style="border-color:var(--line);color:var(--graphite);">← Back</button>
+                ${!ev.massEvent ? `<button class="btn btn-outline btn-small group-panel-btn" data-panel="players" data-event-id="${eventId}" style="border-color:var(--line);color:var(--graphite);">Players</button>` : ''}
+              </div>
+            </div>`;
+        } else {
+          // Default: only the Results entry point here — Players already has
+          // its own quick-access button up next to Gallery on the event card.
+          area.innerHTML = `
+            <div style="border-top:1px solid var(--line);padding-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+              ${hasResult
+                ? `<button class="btn btn-outline btn-small group-panel-btn" data-panel="results" data-event-id="${eventId}" style="border-color:var(--line);color:var(--graphite);">🏆 Results</button>`
+                : `<span class="pill" style="background:rgba(0,0,0,.06);color:var(--muted);">Results not published yet</span>`}
+            </div>`;
+        }
+      }
+
+      groupEvents.forEach(ev => renderGroupPanel(ev.eventId));
+
+      // If we got here via a "House won this event" link from House Points,
+      // jump straight to that event's Results panel and scroll it into view.
+      if (pendingGroupEventFocus && groupEvents.some(ev => ev.eventId === pendingGroupEventFocus)) {
+        const focusId = pendingGroupEventFocus;
+        pendingGroupEventFocus = null;
+        groupPanelState[focusId] = 'results';
+        renderGroupPanel(focusId);
+        const area = list.querySelector(`.group-panel-area[data-panel-area-for="${focusId}"]`);
+        if (area) area.closest('.event-row').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      // Delegate once per DOM element (list.innerHTML above wipes the buttons
+      // but not the element itself) — guard so repeat visits don't stack
+      // duplicate listeners that'd fire renderGroupPanel multiple times.
+      if (!list.dataset.panelDelegated) {
+        list.dataset.panelDelegated = '1';
+        list.addEventListener('click', (e) => {
+          const btn = e.target.closest('.group-panel-btn');
+          if (!btn) return;
+          const eventId = btn.dataset.eventId;
+          groupPanelStateRef.state[eventId] = btn.dataset.panel === 'back' ? null : btn.dataset.panel;
+          groupPanelStateRef.render(eventId);
+        });
+      }
+      groupPanelStateRef.state = groupPanelState;
+      groupPanelStateRef.render = renderGroupPanel;
     } catch (err) {
       list.innerHTML = `<div class="event-row" style="color:#b7401b;">${err.message}</div>`;
+    }
+  }
+  // Holds the *current* load's state/render fn so the one delegated listener
+  // above always calls into the latest data even after a reload replaces it.
+  const groupPanelStateRef = { state: {}, render: () => {} };
+
+  // ---------- HOUSE POINTS ----------
+  async function loadHouseStandings() {
+    const card = document.getElementById('houseStandingsCard');
+    const banner = document.getElementById('houseChampionBanner');
+    const progress = document.getElementById('houseProgressBanner');
+    card.innerHTML = skeletonRows(2);
+    banner.classList.add('hidden');
+    try {
+      const data = await api('getHouseStandings', {});
+      currentSeasonCache = data.season;
+      document.getElementById('housePointsSeason').textContent = 'Season ' + data.season;
+
+      progress.innerHTML = `🏅 Sports group events: <strong>${data.sportsCompleted}${data.sportsTotal ? ' / ' + data.sportsTotal : ''}</strong> completed &nbsp;·&nbsp; 🎭 Cultural group events: <strong>${data.culturalCompleted}${data.culturalTotal ? ' / ' + data.culturalTotal : ''}</strong> completed`;
+
+      const sportsBanner = document.getElementById('sportsChampionBanner');
+      if (data.trackFieldComplete && (data.sportsChampions.length || data.sportsRunnersUp.length)) {
+        sportsBanner.classList.remove('hidden');
+        sportsBanner.style.background = '#eef4ff';
+        sportsBanner.style.borderColor = '#8fb4ea';
+        sportsBanner.innerHTML = `
+          <div class="mono" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;">Track &amp; Field complete — Sports section decided</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            ${data.sportsChampions.length ? `<div class="pill" style="background:#fff2cf;color:#8a6a12;font-size:13px;padding:8px 14px;">🏆 Sports Champion${data.sportsChampions.length > 1 ? 's' : ''} — ${data.sportsChampions.map(escapeHtml).join(' & ')}</div>` : ''}
+            ${data.sportsRunnersUp.length ? `<div class="pill" style="background:#eef0f4;color:var(--court-navy);font-size:13px;padding:8px 14px;">🥈 Runner${data.sportsRunnersUp.length > 1 ? 's' : ''}-up — ${data.sportsRunnersUp.map(escapeHtml).join(' & ')}</div>` : ''}
+          </div>`;
+      } else {
+        sportsBanner.classList.add('hidden');
+      }
+
+      if (data.allDone && data.champions.length) {
+        banner.classList.remove('hidden');
+        banner.innerHTML = `<div style="font-family:'Anton',sans-serif;font-size:20px;">🏆 House Champion${data.champions.length > 1 ? 's' : ''} — ${data.champions.map(escapeHtml).join(' & ')}</div>
+          <div class="mono" style="font-size:11.5px;color:var(--muted);margin-top:4px;">All group events for the season are complete.</div>`;
+      } else if (data.standings.length && data.standings[0].totalPoints > 0) {
+        banner.classList.remove('hidden');
+        banner.style.background = '#fff';
+        banner.style.borderColor = 'var(--line)';
+        const leaders = data.standings.filter(s => s.totalPoints === data.standings[0].totalPoints).map(s => s.name);
+        banner.innerHTML = `<div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Currently leading</div>
+          <div style="font-family:'Anton',sans-serif;font-size:18px;margin-top:2px;">${leaders.map(escapeHtml).join(' & ')}</div>`;
+      }
+
+      if (!data.standings.length) {
+        card.innerHTML = '<div class="mono" style="color:var(--muted);font-size:13px;">No houses have scored yet — points are awarded once a group event\'s result is published.</div>';
+        return;
+      }
+      // One card per house, side by side, each with its own Sports/Cultural
+      // sub-columns and a Total — rather than a plain table row per house —
+      // so it reads like a scoreboard and the leading house(s) can be
+      // highlighted directly on their own card.
+      const topScore = data.standings[0].totalPoints;
+      card.innerHTML = `<div style="display:flex;gap:16px;flex-wrap:wrap;">
+        ${data.standings.map(s => {
+          const isLeading = topScore > 0 && s.totalPoints === topScore;
+          const isSportsChamp = data.trackFieldComplete && data.sportsChampions.includes(s.name);
+          const isSportsRunnerUp = data.trackFieldComplete && !isSportsChamp && data.sportsRunnersUp.includes(s.name);
+          const sportsWon = (s.wonEvents && s.wonEvents.sports) || [];
+          const culturalWon = (s.wonEvents && s.wonEvents.cultural) || [];
+          const wonEventBtns = (list, section) => list.map(ev => `
+            <button class="btn btn-outline btn-small house-won-event-btn" data-section="${section}" data-event-id="${escapeHtml(ev.eventId)}" style="border-color:var(--line);color:var(--graphite);width:100%;text-align:left;margin-bottom:6px;">${escapeHtml(ev.name)}</button>`).join('');
+          return `<div style="flex:1;min-width:190px;border:1px solid ${isLeading ? '#e8c468' : 'var(--line)'};border-radius:4px;padding:18px 16px;${isLeading ? 'background:#fff9ec;' : 'background:#fff;'}">
+            ${isLeading ? '<div class="mono" style="font-size:10px;letter-spacing:.06em;color:#a9660a;margin-bottom:4px;">🏆 LEADING</div>' : ''}
+            <div style="font-family:'Anton',sans-serif;font-size:20px;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${escapeHtml(s.name)}${isSportsChamp ? '<span class="pill" style="font-family:\'IBM Plex Mono\',monospace;font-size:9.5px;background:#fff2cf;color:#8a6a12;">🏆 Sports Champion</span>' : ''}${isSportsRunnerUp ? '<span class="pill" style="font-family:\'IBM Plex Mono\',monospace;font-size:9.5px;background:#eef0f4;color:var(--court-navy);">🥈 Sports Runner-up</span>' : ''}</div>
+            <div style="display:flex;gap:18px;">
+              <div style="flex:1;">
+                <button class="btn btn-outline btn-small house-won-toggle-btn" data-house="${escapeHtml(s.name)}" data-section="sports" style="border-color:var(--line);color:var(--graphite);width:100%;padding:8px 6px;${sportsWon.length ? '' : 'opacity:.55;cursor:default;'}">
+                  <div class="mono" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">🏅 Sports</div>
+                  <div style="font-size:20px;font-weight:700;margin-top:2px;">${s.sportsPoints}</div>
+                </button>
+              </div>
+              <div style="flex:1;">
+                <button class="btn btn-outline btn-small house-won-toggle-btn" data-house="${escapeHtml(s.name)}" data-section="cultural" style="border-color:var(--line);color:var(--graphite);width:100%;padding:8px 6px;${culturalWon.length ? '' : 'opacity:.55;cursor:default;'}">
+                  <div class="mono" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">🎭 Cultural</div>
+                  <div style="font-size:20px;font-weight:700;margin-top:2px;">${s.culturalPoints}</div>
+                </button>
+              </div>
+            </div>
+            <div class="house-won-panel hidden" data-house-panel="${escapeHtml(s.name)}-sports" style="margin-top:10px;">
+              ${wonEventBtns(sportsWon, 'SPORTS')}
+            </div>
+            <div class="house-won-panel hidden" data-house-panel="${escapeHtml(s.name)}-cultural" style="margin-top:10px;">
+              ${wonEventBtns(culturalWon, 'CULTURAL')}
+            </div>
+            <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;align-items:baseline;">
+              <span class="mono" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Total</span>
+              <span style="font-size:26px;font-weight:800;">${s.totalPoints}</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+
+      card.querySelectorAll('.house-won-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = `${btn.dataset.house}-${btn.dataset.section}`;
+          const panel = card.querySelector(`.house-won-panel[data-house-panel="${key}"]`);
+          if (!panel || !panel.children.length) return; // nothing won in this section yet
+          panel.classList.toggle('hidden');
+        });
+      });
+      card.querySelectorAll('.house-won-event-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          goToGroupEvent(btn.dataset.section, btn.dataset.eventId);
+        });
+      });
+    } catch (err) {
+      card.innerHTML = `<div style="color:#b7401b;">${err.message}</div>`;
     }
   }
 
@@ -1571,13 +2066,86 @@
     }
     const isWinnerA = match.winner && match.winner === match.teamA;
     const isWinnerB = match.winner && match.winner === match.teamB;
-    const rows = (match.periods || []).map(p => `
-      <div style="display:flex;align-items:center;gap:10px;padding:5px 0;font-size:13px;">
-        <span class="mono" style="width:110px;flex-shrink:0;color:var(--muted);font-size:11px;">${escapeHtml(p.label)}</span>
-        <span style="font-weight:600;">${escapeHtml(p.scoreA || '—')}</span>
-        <span style="color:var(--muted);">–</span>
-        <span style="font-weight:600;">${escapeHtml(p.scoreB || '—')}</span>
-      </div>`).join('');
+    // Group the flat periods list back for display. Three label shapes are
+    // parsed: "M-<n> (Set-<i>)" for set-based sports, "M-<n> (1st Half)" /
+    // "M-<n> (2nd Half)" / "M-<n> (Penalty)" for direct-score sports
+    // (football, handball) — aggregated into each match's own full-time
+    // scorecard — and a plain "Score" / "Tiebreaker" pair for cultural
+    // group events (one score, no match numbers).
+    const buckets = { 1: [], 2: [], 3: [] };
+    const scoreBuckets = { 1: {}, 2: {}, 3: {} };
+    const simpleScores = {};
+    let isScoreMode = false, isSimpleMode = false;
+    (match.periods || []).forEach(p => {
+      const setM = /^M-(\d+)\s*\(Set-(\d+)\)$/i.exec(String(p.label || '').trim());
+      const scoreM = /^M-(\d+)\s*\((1st Half|2nd Half|Penalty)\)$/i.exec(String(p.label || '').trim());
+      const label = String(p.label || '').trim().toLowerCase();
+      if (scoreM) {
+        isScoreMode = true;
+        const matchNo = Math.min(3, Math.max(1, parseInt(scoreM[1], 10)));
+        const kind = scoreM[2].toLowerCase();
+        scoreBuckets[matchNo][kind === '1st half' ? 'h1' : kind === '2nd half' ? 'h2' : 'penalty'] = p;
+      } else if (label === 'score' || label === 'tiebreaker') {
+        isSimpleMode = true;
+        simpleScores[label] = p;
+      } else {
+        const matchNo = setM ? Math.min(3, Math.max(1, parseInt(setM[1], 10))) : 1;
+        buckets[matchNo].push(p);
+      }
+    });
+    let rows = '';
+    if (isScoreMode) {
+      const numOr0 = (v) => { const n = parseInt(v, 10); return isNaN(n) ? 0 : n; };
+      const cards = [1, 2, 3].filter(n => scoreBuckets[n].h1 || scoreBuckets[n].h2).map(n => {
+        const h1 = scoreBuckets[n].h1, h2 = scoreBuckets[n].h2, pen = scoreBuckets[n].penalty;
+        const aggA = numOr0(h1 && h1.scoreA) + numOr0(h2 && h2.scoreA);
+        const aggB = numOr0(h1 && h1.scoreB) + numOr0(h2 && h2.scoreB);
+        const htLine = (h1 || h2) ? `<div class="mono" style="text-align:center;font-size:10px;color:var(--muted);margin-top:6px;">HT ${escapeHtml((h1 && h1.scoreA) || '0')}–${escapeHtml((h1 && h1.scoreB) || '0')}</div>` : '';
+        return `
+        <div style="border:1px solid var(--line);border-radius:6px;padding:12px 16px;min-width:190px;background:#fff;">
+          <div class="mono" style="font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;text-align:center;">Match ${n}</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
+            <div style="flex:1;text-align:right;font-size:12.5px;font-weight:600;${isWinnerA ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamA || 'Team A')}</div>
+            <div style="display:flex;align-items:center;gap:8px;font-family:'Anton',sans-serif;font-size:24px;flex-shrink:0;">
+              <span>${aggA}</span><span style="color:var(--muted);font-size:15px;">–</span><span>${aggB}</span>
+            </div>
+            <div style="flex:1;text-align:left;font-size:12.5px;font-weight:600;${isWinnerB ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamB || 'Team B')}</div>
+          </div>
+          ${htLine}
+          ${pen ? `<div class="mono" style="text-align:center;font-size:10.5px;color:var(--muted);margin-top:2px;">Penalties ${escapeHtml(pen.scoreA || '0')} – ${escapeHtml(pen.scoreB || '0')}</div>` : ''}
+        </div>`;
+      }).join('');
+      rows = cards ? `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">${cards}</div>` : '';
+    } else if (isSimpleMode) {
+      const s = simpleScores['score'];
+      const tb = simpleScores['tiebreaker'];
+      if (s) {
+        rows = `
+        <div style="border:1px solid var(--line);border-radius:6px;padding:14px 18px;max-width:340px;background:#fff;margin-top:8px;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
+            <div style="flex:1;text-align:right;font-size:13px;font-weight:600;${isWinnerA ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamA || 'Team A')}</div>
+            <div style="display:flex;align-items:center;gap:9px;font-family:'Anton',sans-serif;font-size:26px;flex-shrink:0;">
+              <span>${escapeHtml(s.scoreA || '—')}</span><span style="color:var(--muted);font-size:16px;">–</span><span>${escapeHtml(s.scoreB || '—')}</span>
+            </div>
+            <div style="flex:1;text-align:left;font-size:13px;font-weight:600;${isWinnerB ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamB || 'Team B')}</div>
+          </div>
+          ${tb ? `<div class="mono" style="text-align:center;font-size:10.5px;color:var(--muted);margin-top:8px;">Tiebreaker ${escapeHtml(tb.scoreA || '—')} – ${escapeHtml(tb.scoreB || '—')}</div>` : ''}
+        </div>`;
+      }
+    } else {
+      const matchCols = [1, 2, 3].filter(n => buckets[n].length).map(n => `
+        <div style="min-width:110px;">
+          <div class="mono" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px;">Match ${n}</div>
+          ${buckets[n].map((p, i) => `
+            <div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:13px;">
+              <span class="mono" style="width:32px;flex-shrink:0;color:var(--muted);font-size:10.5px;">S${i + 1}</span>
+              <span style="font-weight:600;">${escapeHtml(p.scoreA || '—')}</span>
+              <span style="color:var(--muted);">–</span>
+              <span style="font-weight:600;">${escapeHtml(p.scoreB || '—')}</span>
+            </div>`).join('')}
+        </div>`).join('');
+      rows = matchCols ? `<div style="display:flex;gap:26px;flex-wrap:wrap;margin-top:2px;">${matchCols}</div>` : '';
+    }
     const winnerBox = match.winner ? `
       <div style="margin-top:10px;padding:8px 12px;background:#fff7e8;border:1px solid #e8c468;border-radius:3px;display:inline-flex;align-items:center;gap:8px;">
         <span style="font-size:15px;">🏆</span>
@@ -1598,7 +2166,11 @@
     const container = document.getElementById('resultsList');
     container.innerHTML = skeletonRows(2);
     try {
-      const data = await api('getResults', {});
+      const [data, standingsData] = await Promise.all([
+        api('getResults', {}),
+        api('getHouseStandings', {}).catch(() => null)
+      ]);
+      const champsUnlocked = !!standingsData && (state.activeSection === 'CULTURAL' ? standingsData.culturalIndividualComplete : standingsData.trackFieldComplete);
       data.results = data.results.filter(r => (r.section || 'SPORTS') === state.activeSection);
       // Most recently PUBLISHED first — this reflects when the result
       // actually went live, not the (sometimes stale) scheduled event day.
@@ -1613,17 +2185,19 @@
       data.results.sort((a, b) => sortKey(b) - sortKey(a));
       if (!data.results.length) {
         try { document.getElementById('leaderboardCard').classList.add('hidden'); } catch (e) {}
+        try { document.getElementById('championCard').classList.add('hidden'); document.getElementById('championToggleBtn').classList.add('hidden'); } catch (e) {}
         container.innerHTML = '<div class="event-row mono" style="color:var(--muted);">No results published yet.</div>';
         return;
       }
-      try { renderLeaderboard(data.results, state.activeSection); } catch (lbErr) { console.error('Leaderboard render failed (non-fatal):', lbErr); }
-      const renderResultRow = r => {
+      try { renderLeaderboard(data.results, state.activeSection, champsUnlocked); } catch (lbErr) { console.error('Leaderboard render failed (non-fatal):', lbErr); }
+
+      const renderResultRow = (r) => {
         const cat = String(r.category || 'OTHER').toUpperCase();
         const rows = cat === 'GROUP' ? renderMatchScoreboard(r.match) : (r.positions.map(p => `
           <div style="display:flex;align-items:center;gap:10px;padding:6px 0;flex-wrap:wrap;">
             <span style="font-size:16px;">${MEDAL[p.place] || p.place}</span>
-            <span style="font-weight:600;font-size:13.5px;">${escapeHtml(p.name || '—')}</span>
-            ${p.regNo ? `<span class="mono" style="font-size:11.5px;color:var(--muted);">${escapeHtml(p.regNo)}</span>` : ''}
+            <span style="font-weight:600;font-size:13.5px;">${escapeHtml(p.name || '—')}${p.name2 ? ' &amp; ' + escapeHtml(p.name2) : ''}</span>
+            ${p.regNo ? `<span class="mono" style="font-size:11.5px;color:var(--muted);">${escapeHtml(p.regNo)}${p.regNo2 ? ' / ' + escapeHtml(p.regNo2) : ''}</span>` : ''}
             ${p.classCourse ? `<span class="mono" style="font-size:10px;color:var(--muted);background:var(--chalk);border:1px solid var(--line);border-radius:2px;padding:2px 6px;">${escapeHtml(p.classCourse)}</span>` : ''}
             ${p.value ? `<span class="mono" style="font-size:11px;font-weight:700;color:var(--graphite);background:#eef7f1;border:1px solid var(--net-mint);border-radius:2px;padding:2px 7px;">${formatMeasurement(p)}</span>` : ''}
           </div>`).join('') || '<div class="mono" style="font-size:12.5px;color:var(--muted);">Positions to be announced.</div>');
@@ -1639,12 +2213,14 @@
           <div style="width:100%;">${rows}</div>
         </div>`;
       };
-      const groupResults = data.results.filter(r => String(r.category || '').toUpperCase() === 'GROUP');
+
+      // Group results now live on the Group Events page (with a "View
+      // results" button per event) instead of here — the Results tab is
+      // individual events only.
       const individualResults = data.results.filter(r => String(r.category || '').toUpperCase() !== 'GROUP');
-      const sectionHeader = t => `<div class="mono" style="padding:12px 20px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--chalk);border-bottom:1px solid var(--line);">${t}</div>`;
-      container.innerHTML =
-        (groupResults.length ? sectionHeader('Group events') + groupResults.map(renderResultRow).join('') : '') +
-        (individualResults.length ? sectionHeader('Individual events') + individualResults.map(renderResultRow).join('') : '');
+      container.innerHTML = individualResults.length
+        ? individualResults.map(renderResultRow).join('')
+        : '<div class="event-row"><span class="mono" style="color:var(--muted);">No individual results published yet.</span></div>';
       container.querySelectorAll('.gallery-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const photos = JSON.parse(btn.dataset.photos);
@@ -1662,7 +2238,7 @@
   // track/field-style distinction there. Scoring either way: 1st = 5 pts,
   // 2nd = 3 pts, 3rd = 1 pt.
   const LB_POINTS = { 1: 5, 2: 3, 3: 1 };
-  function renderLeaderboard(results, section) {
+  function renderLeaderboard(results, section, champsUnlocked) {
     const card = document.getElementById('leaderboardCard');
     const toggleBtn = document.getElementById('leaderboardToggleBtn');
     const scores = {};
@@ -1675,10 +2251,11 @@
         const label = (p.name || '').trim();
         if (!label) return;
         const key = p.regNo ? ('R:' + p.regNo) : ('N:' + label.toLowerCase());
-        if (!scores[key]) scores[key] = { name: label, regNo: p.regNo || '', classCourse: p.classCourse || '', pts: 0, gold: 0, silver: 0, bronze: 0 };
+        if (!scores[key]) scores[key] = { name: label, regNo: p.regNo || '', classCourse: p.classCourse || '', pts: 0, gold: 0, silver: 0, bronze: 0, events: [] };
         scores[key].pts += pts;
         scores[key].name = label;
         scores[key].classCourse = p.classCourse || scores[key].classCourse;
+        scores[key].events.push({ name: r.name, place: p.place, pts });
         if (p.place === 1) scores[key].gold++;
         else if (p.place === 2) scores[key].silver++;
         else scores[key].bronze++;
@@ -1745,12 +2322,63 @@
       ${podiumHtml}
       ${restHtml}
     `;
+
+    renderChampionCard(groups, section, champsUnlocked);
   }
   document.getElementById('leaderboardToggleBtn').addEventListener('click', () => {
     const card = document.getElementById('leaderboardCard');
     const btn = document.getElementById('leaderboardToggleBtn');
     const nowOpen = card.classList.toggle('hidden') === false;
     btn.textContent = nowOpen ? '🏆 Hide Leaderboard' : '🏆 Leaderboard';
+    if (nowOpen) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  // Individual Champion/Runner-up card — same leaderboard tie-groups as
+  // above, just split into the #1 tie-group (Champion) and #2 tie-group
+  // (Runner-up), each with their full event-by-event breakdown. Gated on
+  // the relevant completion flag (Track & Field complete for Sports,
+  // Cultural Individual complete for Cultural) so it's only revealed once
+  // that section's individual program is actually finished for the
+  // season — the same signal that unlocks the House-level Sports
+  // Champion banner.
+  function renderChampionCard(groups, section, unlocked) {
+    const card = document.getElementById('championCard');
+    const toggleBtn = document.getElementById('championToggleBtn');
+    card.classList.add('hidden');
+    toggleBtn.classList.add('hidden');
+    toggleBtn.textContent = '🏆 Champion & Runner-up';
+    if (!unlocked || !groups.length || groups[0][0].pts <= 0) { card.innerHTML = ''; return; }
+
+    const champGroup = groups[0];
+    const runnerGroup = groups.length > 1 ? groups[1] : [];
+    const personBlock = (e, label, bg, fg) => `
+      <div style="margin-bottom:18px;">
+        <div class="pill" style="background:${bg};color:${fg};font-size:13px;padding:8px 14px;display:inline-block;margin-bottom:8px;">
+          ${label === 'Champion' ? '🏆' : '🥈'} ${label} — ${escapeHtml(e.name)}${e.regNo ? ` <span class="mono" style="font-size:11px;opacity:.75;">${escapeHtml(e.regNo)}</span>` : ''}
+        </div>
+        <div class="mono" style="font-size:12px;color:var(--muted);margin-bottom:6px;">${e.pts} total pts</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          ${e.events.map(ev => `
+            <div style="display:flex;justify-content:space-between;gap:10px;font-size:12.5px;">
+              <span>${MEDAL[ev.place] || ev.place} ${escapeHtml(ev.name)}</span>
+              <span class="mono">${ev.pts} pts</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+
+    card.innerHTML = `
+      <div class="lb-title">🏆 Champion &amp; Runner-up</div>
+      <div class="lb-subtitle">${section === 'CULTURAL' ? 'INDIVIDUAL CULTURAL COMPLETE' : 'TRACK &amp; FIELD COMPLETE'} · SEASON DECIDED</div>
+      ${champGroup.map(e => personBlock(e, 'Champion', '#fff2cf', '#8a6a12')).join('')}
+      ${runnerGroup.map(e => personBlock(e, 'Runner-up', '#eef0f4', 'var(--court-navy)')).join('')}
+    `;
+    toggleBtn.classList.remove('hidden');
+  }
+  document.getElementById('championToggleBtn').addEventListener('click', () => {
+    const card = document.getElementById('championCard');
+    const btn = document.getElementById('championToggleBtn');
+    const nowOpen = card.classList.toggle('hidden') === false;
+    btn.textContent = nowOpen ? '🏆 Hide Champion & Runner-up' : '🏆 Champion & Runner-up';
     if (nowOpen) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
 
@@ -1836,7 +2464,131 @@
   // ---------- REGISTRATIONS MODAL ----------
   let currentRegsForCopy = [];
   let currentModalEventId = null;
+  // ---------- GROUP ROSTER BUILDER (admin: captain/vice-captain + N player slots per house) ----------
+  let groupRosterEventId = null;
+  let groupRosterEventName = '';
+  let groupRosterSlotCount = 0;
+
+  function openGroupRosterBuilder(eventId, eventName) {
+    groupRosterEventId = eventId;
+    groupRosterEventName = eventName;
+    groupRosterSlotCount = 0;
+    document.getElementById('groupRosterTitle').textContent = 'Build roster — ' + eventName;
+    populateAllUsersDatalist();
+    renderGroupRosterSizeStep();
+    document.getElementById('groupRosterModal').classList.remove('hidden');
+  }
+  function hideGroupRosterModal() {
+    document.getElementById('groupRosterModal').classList.add('hidden');
+  }
+  function renderGroupRosterSizeStep() {
+    const body = document.getElementById('groupRosterBody');
+    const foot = document.getElementById('groupRosterFoot');
+    body.innerHTML = `
+      <p class="mono" style="font-size:12.5px;color:var(--muted);margin:0 0 14px;">How many player slots do you want per house? Captain and vice-captain get their own slots on top of this.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-orange btn-small" data-size-choice="15">15 players</button>
+        <button class="btn btn-orange btn-small" data-size-choice="20">20 players</button>
+        <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-size-choice="custom">Custom number…</button>
+      </div>
+      <div id="groupRosterCustomRow" class="hidden" style="margin-top:14px;display:flex;gap:8px;align-items:center;">
+        <input id="groupRosterCustomInput" type="number" min="1" max="60" placeholder="e.g. 12" style="width:120px;padding:9px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:13px;border-radius:2px;">
+        <button class="btn btn-dark btn-small" id="groupRosterCustomGo">Continue</button>
+      </div>
+      <p class="msg" id="groupRosterSizeMsg" style="margin-top:10px;"></p>
+    `;
+    foot.innerHTML = `<button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="groupRosterCancelBtn">Cancel</button>`;
+    document.getElementById('groupRosterCancelBtn').addEventListener('click', hideGroupRosterModal);
+    body.querySelectorAll('[data-size-choice]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.sizeChoice === 'custom') {
+          document.getElementById('groupRosterCustomRow').classList.remove('hidden');
+          document.getElementById('groupRosterCustomInput').focus();
+          return;
+        }
+        groupRosterSlotCount = parseInt(btn.dataset.sizeChoice, 10);
+        renderGroupRosterFormStep();
+      });
+    });
+    document.getElementById('groupRosterCustomGo').addEventListener('click', () => {
+      const val = parseInt(document.getElementById('groupRosterCustomInput').value, 10);
+      const msg = document.getElementById('groupRosterSizeMsg');
+      if (!val || val < 1) { setMsg(msg, 'Enter a number of players (1 or more).', false); return; }
+      groupRosterSlotCount = val;
+      renderGroupRosterFormStep();
+    });
+  }
+  async function renderGroupRosterFormStep() {
+    const body = document.getElementById('groupRosterBody');
+    const foot = document.getElementById('groupRosterFoot');
+    body.innerHTML = '<div class="msg">Loading houses…</div>';
+    await loadHousesCache();
+    if (!housesCache.length) {
+      body.innerHTML = '<div class="msg err">No houses set up yet — add houses in the Houses tab first.</div>';
+      foot.innerHTML = `<button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="groupRosterCancelBtn">Close</button>`;
+      document.getElementById('groupRosterCancelBtn').addEventListener('click', hideGroupRosterModal);
+      return;
+    }
+    const houseColumn = (house) => `
+      <div style="flex:1;min-width:280px;">
+        <div class="mono" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;border-bottom:1px solid var(--line);padding-bottom:6px;">${escapeHtml(house.name)}</div>
+        <div style="margin-bottom:8px;">
+          <label class="mono" style="font-size:10.5px;color:var(--ball-orange);text-transform:uppercase;letter-spacing:.4px;">Captain</label>
+          <input list="allUsersDatalist" data-house="${escapeHtml(house.name)}" data-role="Captain" placeholder="Reg no or name" style="width:100%;padding:9px 10px;margin-top:3px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        </div>
+        <div style="margin-bottom:14px;">
+          <label class="mono" style="font-size:10.5px;color:var(--ball-orange);text-transform:uppercase;letter-spacing:.4px;">Vice-captain</label>
+          <input list="allUsersDatalist" data-house="${escapeHtml(house.name)}" data-role="Vice-Captain" placeholder="Reg no or name" style="width:100%;padding:9px 10px;margin-top:3px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        </div>
+        ${Array.from({ length: groupRosterSlotCount }).map((_, i) => `
+          <input list="allUsersDatalist" data-house="${escapeHtml(house.name)}" data-role="" placeholder="Player ${i + 1} — reg no or name" style="width:100%;padding:8px 10px;margin-bottom:6px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12px;border-radius:2px;">
+        `).join('')}
+      </div>`;
+    body.innerHTML = `
+      <p class="mono" style="font-size:11.5px;color:var(--muted);margin:0 0 14px;">${groupRosterSlotCount} player slot${groupRosterSlotCount === 1 ? '' : 's'} per house, plus captain &amp; vice-captain. Leave any box blank to skip it.</p>
+      <div style="display:flex;gap:24px;flex-wrap:wrap;max-height:52vh;overflow-y:auto;padding-right:4px;">
+        ${housesCache.map(houseColumn).join('')}
+      </div>
+      <p class="msg" id="groupRosterSaveMsg" style="margin-top:14px;white-space:pre-line;"></p>
+    `;
+    foot.innerHTML = `
+      <button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="groupRosterBackBtn">Back</button>
+      <button class="btn btn-outline" style="border-color:var(--line);color:var(--graphite);" id="groupRosterCancelBtn2">Cancel</button>
+      <button class="btn btn-dark" id="groupRosterSaveBtn">Save roster</button>
+    `;
+    document.getElementById('groupRosterBackBtn').addEventListener('click', renderGroupRosterSizeStep);
+    document.getElementById('groupRosterCancelBtn2').addEventListener('click', hideGroupRosterModal);
+    document.getElementById('groupRosterSaveBtn').addEventListener('click', withLoading(document.getElementById('groupRosterSaveBtn'), saveGroupRoster));
+  }
+  async function saveGroupRoster() {
+    const msg = document.getElementById('groupRosterSaveMsg');
+    const inputs = Array.from(document.querySelectorAll('#groupRosterBody input[data-house]'))
+      .map(inp => ({ house: inp.dataset.house, role: inp.dataset.role, raw: inp.value.trim() }))
+      .filter(x => x.raw);
+    if (!inputs.length) { setMsg(msg, 'Fill in at least one player before saving.', false); return; }
+    let added = 0;
+    const failures = [];
+    for (const entry of inputs) {
+      const regNo = entry.raw.split('—')[0].split(' ')[0].trim();
+      if (!regNo) continue;
+      try {
+        await api('adminAddRegistration', { eventId: groupRosterEventId, regNo, groupLabel: entry.house, materials: entry.role });
+        added++;
+      } catch (err) {
+        failures.push(`${regNo} (${entry.house}${entry.role ? ', ' + entry.role : ''}): ${err.message}`);
+      }
+    }
+    const summary = `Added ${added} of ${inputs.length}.` + (failures.length ? `\n\nSkipped:\n${failures.join('\n')}` : '');
+    setMsg(msg, summary, failures.length === 0);
+    await loadAdminEvents();
+  }
+  document.getElementById('groupRosterCloseX').addEventListener('click', hideGroupRosterModal);
+  document.getElementById('groupRosterModal').addEventListener('click', (e) => {
+    if (e.target.id === 'groupRosterModal') hideGroupRosterModal();
+  });
+
   let currentModalCategory = '';
+  let currentModalReadOnly = false;
 
   function showRegsModal(eventName, registrations, eventId) {
     currentModalMode = 'event';
@@ -1900,10 +2652,10 @@
           <div style="display:flex;align-items:center;gap:14px;">
             <div class="idx mono">${String(i + 1).padStart(2, '0')}</div>
             <div>
-              <div class="rname">${escapeHtml(r.name)}</div>
+              <div class="rname">${escapeHtml(r.name)} ${currentModalCategory === 'GROUP' && (r.materials === 'Captain' || r.materials === 'Vice-Captain') ? `<span class="pill" style="background:rgba(255,90,31,.14);color:var(--ball-orange);margin-left:6px;">${r.materials}</span>` : ''}</div>
               <div class="rreg">${escapeHtml(r.regNo)}</div>
               ${r.groupLabel ? `<div class="rreg" style="color:var(--muted);">Team: ${escapeHtml(r.groupLabel)}</div>` : ''}
-              ${r.materials ? `<div class="rreg" style="color:var(--muted);">Materials: ${escapeHtml(r.materials)}</div>` : ''}
+              ${r.materials && currentModalCategory !== 'GROUP' ? `<div class="rreg" style="color:var(--muted);">Materials: ${escapeHtml(r.materials)}</div>` : ''}
             </div>
           </div>
           <button class="btn btn-outline btn-small" style="border-color:var(--line);color:#b7401b;" data-remove-reg="${escapeHtml(r.regNo)}" data-remove-team-id="${escapeHtml(r.teamId || '')}">Remove</button>
@@ -1923,14 +2675,29 @@
         }));
       });
     }
-    document.getElementById('regsModalAddRow').classList.remove('hidden');
+    document.getElementById('regsModalAddRow').classList.toggle('hidden', currentModalReadOnly);
     document.getElementById('addRegNoInput').value = '';
     setMsg(document.getElementById('addRegNoMsg'), '', true);
     document.getElementById('addRegNoMsg').style.display = 'none';
-    document.getElementById('regsModalBulkRow').classList.remove('hidden');
+    document.getElementById('regsModalBulkRow').classList.toggle('hidden', currentModalReadOnly);
     document.getElementById('bulkRegNosInput').value = '';
     document.getElementById('bulkRegsMsg').textContent = '';
     populateAllUsersDatalist();
+    // Read-only mode (viewing the other section's group event via the
+    // cross-section Group filter): no adding, no removing — this modal is
+    // purely informational there.
+    if (currentModalReadOnly) {
+      body.querySelectorAll('[data-remove-reg]').forEach(btn => btn.style.display = 'none');
+    }
+    const houseRow = document.getElementById('regsModalHouseRow');
+    if (currentModalCategory === 'GROUP' && !currentModalReadOnly) {
+      houseRow.classList.remove('hidden');
+      loadHousesCache().then(() => {
+        document.getElementById('regsModalHouseSelect').innerHTML = houseSelectOptions('');
+      });
+    } else {
+      houseRow.classList.add('hidden');
+    }
     document.getElementById('regsModal').classList.remove('hidden');
   }
   function showUserRegsModal(userName, registrations) {
@@ -1954,6 +2721,7 @@
     }
     document.getElementById('regsModalAddRow').classList.add('hidden');
     document.getElementById('regsModalBulkRow').classList.add('hidden');
+    document.getElementById('regsModalHouseRow').classList.add('hidden');
     document.getElementById('regsModal').classList.remove('hidden');
   }
   function hideRegsModal() {
@@ -1986,6 +2754,11 @@
       if (!partnerRegNo) { setMsg(msg, 'Doubles event needs a partner reg no — cancelled.', false); return; }
       payload.partnerRegNo = partnerRegNo;
     }
+    if (currentModalCategory === 'GROUP') {
+      const house = document.getElementById('regsModalHouseSelect').value;
+      if (!house) { setMsg(msg, "Pick which house/team this player belongs to.", false); return; }
+      payload.groupLabel = house;
+    }
     try {
       await api('adminAddRegistration', payload);
       document.getElementById('addRegNoInput').value = '';
@@ -2004,8 +2777,14 @@
     const regNos = document.getElementById('bulkRegNosInput').value.trim();
     if (!regNos) { setMsg(msg, 'Paste at least one registration number.', false); return; }
     if (!currentModalEventId) { setMsg(msg, 'No event selected.', false); return; }
+    const payload = { eventId: currentModalEventId, regNos };
+    if (currentModalCategory === 'GROUP') {
+      const house = document.getElementById('regsModalHouseSelect').value;
+      if (!house) { setMsg(msg, "Pick which house/team these players belong to.", false); return; }
+      payload.groupLabel = house;
+    }
     try {
-      const result = await api('adminBulkAddRegistrations', { eventId: currentModalEventId, regNos });
+      const result = await api('adminBulkAddRegistrations', payload);
       document.getElementById('bulkRegNosInput').value = '';
       const data = await api('adminListRegistrations', { eventId: currentModalEventId });
       showRegsModal(currentEventNameForExport, data.registrations, currentModalEventId);
@@ -2120,14 +2899,21 @@
   });
 
   // ---------- ADMIN ----------
-  document.querySelectorAll('.tab').forEach(tab => {
+  // Scoped to elements with data-tab (the admin panel's own tabs) — guards
+  // against other .tab-styled controls elsewhere (e.g. the House page tabs)
+  // being swept up by this same generic selector and hitting a missing
+  // 'tab-<name>' element.
+  document.querySelectorAll('.tab[data-tab]').forEach(tab => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
-      document.getElementById('tab-' + tab.dataset.tab).classList.remove('hidden');
+      const target = document.getElementById('tab-' + tab.dataset.tab);
+      if (target) target.classList.remove('hidden');
+      if (tab.dataset.tab === 'admins') renderAdminGuide();
       if (tab.dataset.tab === 'notice') loadNoticeAdmin();
       if (tab.dataset.tab === 'results') loadResultsAdminTab();
+      if (tab.dataset.tab === 'houses') loadHousesAdminTab();
     });
   });
 
@@ -2144,20 +2930,56 @@
     const titleEl = document.getElementById('adminPanelTitle');
     const filterBar = document.getElementById('adminSectionFilterBar');
     const sectionSelect = document.getElementById('newEventSection');
+    const allBtn = filterBar.querySelector('[data-section-filter="ALL"]');
+    const sportsBtn = filterBar.querySelector('[data-section-filter="SPORTS"]');
+    const culturalBtn = filterBar.querySelector('[data-section-filter="CULTURAL"]');
     if (lock) {
       titleEl.textContent = lock === 'CULTURAL' ? 'Manage cultural season' : 'Manage sports season';
       adminSectionFilter = lock;
-      filterBar.classList.add('hidden');
+      // A section-locked admin has no use for "All" or the other section's
+      // button — but they can still see (read-only) every group event
+      // across both sections via the Group button, so that one stays.
+      allBtn.classList.add('hidden');
+      (lock === 'SPORTS' ? culturalBtn : sportsBtn).classList.add('hidden');
+      (lock === 'SPORTS' ? sportsBtn : culturalBtn).classList.remove('hidden');
       sectionSelect.value = lock;
       sectionSelect.disabled = true;
     } else {
       titleEl.textContent = 'Manage season';
-      filterBar.classList.remove('hidden');
+      allBtn.classList.remove('hidden');
+      sportsBtn.classList.remove('hidden');
+      culturalBtn.classList.remove('hidden');
+      adminSectionFilter = 'ALL';
       sectionSelect.disabled = false;
     }
+    // Reset the visual active state to match adminSectionFilter above.
+    document.querySelectorAll('.admin-section-filter-btn').forEach(b => {
+      const isActive = b.dataset.sectionFilter === adminSectionFilter;
+      b.classList.toggle('btn-orange', isActive);
+      b.classList.toggle('btn-outline', !isActive);
+      b.style.borderColor = isActive ? '' : 'var(--line)';
+      b.style.color = isActive ? '' : 'var(--graphite)';
+    });
+
+    // Same idea for the Results tab's own Sports/Cultural filter — a
+    // locked admin only ever sees their own section's button and the
+    // filter can't be moved off it; BOSS/teacher get both and keep
+    // whichever one was last selected (defaulting to Sports).
+    const resultsFilterBar = document.getElementById('resultsSectionFilterBar');
+    const resultsSportsBtn = resultsFilterBar.querySelector('[data-results-section-filter="SPORTS"]');
+    const resultsCulturalBtn = resultsFilterBar.querySelector('[data-results-section-filter="CULTURAL"]');
+    if (lock) {
+      resultsSectionFilter = lock;
+      resultsSportsBtn.classList.toggle('hidden', lock !== 'SPORTS');
+      resultsCulturalBtn.classList.toggle('hidden', lock !== 'CULTURAL');
+    } else {
+      resultsSportsBtn.classList.remove('hidden');
+      resultsCulturalBtn.classList.remove('hidden');
+    }
+    applyResultsSectionFilterStyles();
     applyEventCategoryOptions();
     showView('adminView');
-    await Promise.all([loadAdminEvents(), loadAdminUsers()]);
+    await Promise.all([loadAdminEvents(), loadAdminUsers(), loadEventTemplatesForPicker()]);
   }
 
   // ---------- ADMIN: NOTICE BOARD ----------
@@ -2166,6 +2988,71 @@
     selectEl.innerHTML = '<option value="">None</option>' + data.events.map(ev =>
       `<option value="${ev.eventId}" ${String(ev.eventId) === String(selectedId || '') ? 'selected' : ''}>${escapeHtml(ev.name)} ${ev.active ? '' : '(disabled)'}</option>`
     ).join('');
+  }
+
+  // Shows only the signed-in admin's own role guide — a Sports Admin never
+  // sees Cultural or Boss content and vice versa, so each tier's list stays
+  // self-contained with nothing referencing the other roles.
+  function renderAdminGuide() {
+    const box = document.getElementById('adminGuideBox');
+    if (!box) return;
+    const sec = (label, items) => `
+      <h4 style="font-size:13px;margin:18px 0 6px;">${label}</h4>
+      <ul style="margin:0 0 4px;padding-left:20px;font-size:13px;line-height:1.7;color:var(--graphite);">
+        ${items.map(i => `<li>${i}</li>`).join('')}
+      </ul>`;
+
+    const sportsSections = [
+      sec('Events', ['Create, edit, and delete Sports events', 'Publish or unpublish a Sports event', 'Mark a Sports event as completed']),
+      sec('Registrations', ["View registrations for any Sports event", "Add or remove a student's registration (single or bulk)", 'For group events: add or remove players on a house roster']),
+      sec('Results', ['Set 1st / 2nd / 3rd place results for a Sports event', 'Publish results so students can see them']),
+      sec('Photos', ['Upload photos to a Sports event', 'Delete photos from a Sports event']),
+      sec('Season planning', ['Set how many group events are planned this season, for Sports']),
+      sec('Notices &amp; general', ['View the notice board, and post/edit/delete notices if given that access', 'View the House Championship standings and the list of Houses', 'View the full user list for reference'])
+    ].join('');
+
+    const culturalSections = [
+      sec('Events', ['Create, edit, and delete Cultural events', 'Publish or unpublish a Cultural event', 'Mark a Cultural event as completed']),
+      sec('Registrations', ["View registrations for any Cultural event", "Add or remove a student's registration (single or bulk)", 'For group events: add or remove participants on a house roster']),
+      sec('Results', ['Set 1st / 2nd / 3rd place results for a Cultural event', 'Publish results so students can see them']),
+      sec('Photos', ['Upload photos to a Cultural event', 'Delete photos from a Cultural event']),
+      sec('Season planning', ['Set how many group events are planned this season, for Cultural']),
+      sec('Notices &amp; general', ['View the notice board, and post/edit/delete notices if given that access', 'View the House Championship standings and the list of Houses', 'View the full user list for reference'])
+    ].join('');
+
+    const bossSections = [
+      sec('Events (Sports &amp; Cultural)', ['Create, edit, and delete events in either section', 'Publish or unpublish an event in either section', 'Mark an event as completed in either section']),
+      sec('Registrations (Sports &amp; Cultural)', ['View registrations for any event in either section', "Add or remove a student's registration (single or bulk)", 'For group events: add or remove players/participants on a house roster']),
+      sec('Results (Sports &amp; Cultural)', ['Set 1st / 2nd / 3rd place results for any event', 'Publish results so students can see them']),
+      sec('Photos (Sports &amp; Cultural)', ['Upload photos to any event', 'Delete photos from any event']),
+      sec('Season planning (Sports &amp; Cultural)', ['Set how many group events are planned this season, for either section']),
+      sec('Notices', ['Post, edit, and delete notices for the whole campus']),
+      `<h4 style="font-size:13px;margin:18px 0 6px;">Extra powers — only you have these</h4>
+       <div style="background:var(--chalk);border-left:3px solid var(--graphite);padding:2px 16px;">
+         <ul style="margin:8px 0;padding-left:20px;font-size:13px;line-height:1.7;">
+           <li><b>Grant / revoke admin access</b> — promote or demote any user to Sports Admin, Cultural Admin, or Boss, or remove admin rights entirely</li>
+           <li><b>Manage Houses</b> — add or delete Houses (the shared list used for house-point tallies in both sections)</li>
+           <li><b>Manage user accounts</b> — create single or bulk users, reset passwords, edit or delete user records</li>
+           <li>Not locked to one section — can view and act on Sports and Cultural data side by side</li>
+         </ul>
+       </div>`
+    ].join('');
+
+    let tagColor = '#d7e8ff', tagText = '#1450a3', roleName = 'Sports Admin', body = sportsSections, note = 'Your access covers Sports-section events, registrations and results only.';
+    if (state.adminRole === 'CULTURAL_ADMIN') {
+      tagColor = '#ffe0d1'; tagText = '#b3450d'; roleName = 'Cultural Admin'; body = culturalSections;
+      note = 'Your access covers Cultural-section events, registrations and results only.';
+    } else if (state.adminRole === 'BOSS') {
+      tagColor = 'var(--graphite)'; tagText = '#fff'; roleName = 'Main Admin (Boss)'; body = bossSections;
+      note = 'Your access covers both Sports and Cultural sections, plus extra admin-panel powers.';
+    }
+
+    box.innerHTML = `
+      <h3 style="margin-bottom:4px;">What you can do</h3>
+      <span class="pill" style="background:${tagColor};color:${tagText};display:inline-block;margin:4px 0 8px;">${roleName}</span>
+      <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 4px;">${note}</p>
+      ${body}
+    `;
   }
 
   async function loadNoticeAdmin() {
@@ -2341,45 +3228,30 @@
   // ---------- ADMIN: RESULTS ----------
   let currentResultsEventId = null;
 
-  const SEASON_LABELS = {
-    TRACK_FIELD: ['SPORTS', '🏅 Track & Field — all individual Track & Field events completed'],
-    GROUP_SPORTS: ['SPORTS', '🏅 Group / Other Sports — Marathon, Other, Doubles, Group events completed'],
-    INDIVIDUAL_CULTURAL: ['CULTURAL', '🎭 Individual Cultural — all individual cultural events completed'],
-    GROUP_CULTURAL: ['CULTURAL', '🎭 Group Cultural — all group cultural events completed']
-  };
-  async function loadSeasonCompletion() {
-    const box = document.getElementById('seasonCompletionList');
-    try {
-      const data = await api('getSeasonStatus', {});
-      const lock = myAdminSectionLock();
-      box.innerHTML = Object.keys(SEASON_LABELS).filter(k => !lock || SEASON_LABELS[k][0] === lock).map(k => {
-        const g = data.groups[k];
-        const pill = g.completed
-          ? `<span class="pill registered">${g.auto && !g.manual ? 'Auto-completed' : 'Completed'}</span>`
-          : '<span class="pill pending">In progress</span>';
-        // Auto-completed groups can't be un-ticked here: un-complete an event instead.
-        const btn = g.auto
-          ? ''
-          : `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-season-key="${k}" data-season-set="${!g.manual}">${g.manual ? 'Mark not completed' : 'Mark completed'}</button>`;
-        return `<div class="event-row" style="padding:12px 0;">
-          <div><div class="event-name" style="font-size:15px;">${escapeHtml(SEASON_LABELS[k][1])}</div>
-          <div class="event-meta">${g.done}/${g.total} events completed</div></div>
-          <div style="display:flex;gap:8px;align-items:center;">${pill}${btn}</div></div>`;
-      }).join('');
-      box.querySelectorAll('[data-season-key]').forEach(b => b.addEventListener('click', withLoading(b, async () => {
-        try { await api('adminSetSeasonCompletion', { key: b.dataset.seasonKey, completed: b.dataset.seasonSet === 'true' }); await loadSeasonCompletion(); }
-        catch (err) { alert(err.message); }
-      })));
-    } catch (err) { box.innerHTML = `<div class="mono" style="color:#b7401b;">${err.message}</div>`; }
+  function applyResultsSectionFilterStyles() {
+    document.querySelectorAll('.results-section-filter-btn').forEach(b => {
+      const isActive = b.dataset.resultsSectionFilter === resultsSectionFilter;
+      b.classList.toggle('btn-orange', isActive);
+      b.classList.toggle('btn-outline', !isActive);
+      b.style.borderColor = isActive ? '' : 'var(--line)';
+      b.style.color = isActive ? '' : 'var(--graphite)';
+    });
   }
+  document.querySelectorAll('.results-section-filter-btn').forEach(btn => {
+    btn.addEventListener('click', withLoading(btn, async () => {
+      resultsSectionFilter = btn.dataset.resultsSectionFilter;
+      applyResultsSectionFilterStyles();
+      document.getElementById('resultsEditor').classList.add('hidden');
+      await loadResultsAdminTab();
+    }));
+  });
 
   async function loadResultsAdminTab() {
-    loadSeasonCompletion();
     const select = document.getElementById('resultsEventSelect');
     try {
       const data = await api('adminListEventsWithStatus', {});
       const lock = myAdminSectionLock();
-      const inSection = lock ? data.events.filter(ev => (ev.section || 'SPORTS') === lock) : data.events;
+      const inSection = data.events.filter(ev => (ev.section || 'SPORTS') === (lock || resultsSectionFilter));
       // Only events that have actually happened and don't already have
       // published results — once published, editing happens via the
       // "Edit" button on the Published results list below instead, so this
@@ -2393,6 +3265,199 @@
       }
     } catch (err) { /* leave default option */ }
     await renderPublishedResultsAdmin();
+    await loadCompletionFlags();
+  }
+
+  // Which section each completion checkbox belongs to is fixed by its
+  // data-completion-section attribute; a section-locked admin only sees
+  // their own section's rows, BOSS sees all four.
+  async function loadCompletionFlags() {
+    const lock = myAdminSectionLock();
+    document.querySelectorAll('.completion-flag-row').forEach(row => {
+      row.style.display = (!lock || row.dataset.completionSection === lock) ? '' : 'none';
+    });
+    try {
+      const settings = await api('adminGetSettings', {});
+      document.querySelector('[data-completion-flag="trackField"]').checked = settings.trackFieldComplete === true;
+      document.querySelector('[data-completion-flag="groupOtherSports"]').checked = settings.groupOtherSportsComplete === true;
+      document.querySelector('[data-completion-flag="culturalIndividual"]').checked = settings.culturalIndividualComplete === true;
+      document.querySelector('[data-completion-flag="culturalGroup"]').checked = settings.culturalGroupComplete === true;
+    } catch (err) { /* leave defaults */ }
+  }
+  document.querySelectorAll('.completion-flag-checkbox').forEach(cb => {
+    cb.addEventListener('change', withLoading(cb, async () => {
+      const msg = document.getElementById('completionFlagsMsg');
+      try {
+        await api('adminSetCompletionFlag', { flag: cb.dataset.completionFlag, complete: cb.checked });
+        setMsg(msg, 'Saved.', true);
+        await renderAdminHouseStandings();
+      } catch (err) { cb.checked = !cb.checked; setMsg(msg, err.message, false); }
+    }));
+  });
+
+  // ---------- HOUSES TAB (admin) ----------
+  function myGroupTotalSectionsEditable() {
+    // BOSS can edit both totals; a section-locked admin (or teacher, who
+    // gets no lock and thus no edit rights here) can only edit their own.
+    const lock = myAdminSectionLock();
+    if (!lock) return state.adminRole === 'BOSS' ? ['SPORTS', 'CULTURAL'] : [];
+    return [lock];
+  }
+
+  async function loadHousesAdminTab() {
+    const isBoss = state.adminRole === 'BOSS';
+    document.getElementById('addHouseCard').style.display = isBoss ? '' : 'none';
+    const editable = myGroupTotalSectionsEditable();
+    document.getElementById('saveSportsTotalBtn').closest('.inline-form').style.display = editable.includes('SPORTS') ? '' : 'none';
+    document.getElementById('saveCulturalTotalBtn').closest('.inline-form').style.display = editable.includes('CULTURAL') ? '' : 'none';
+
+    await loadHousesCache();
+    renderHousesList();
+
+    try {
+      const settings = await api('adminGetSettings', {});
+      document.getElementById('houseSettingsSeasonLabel').textContent = 'Season ' + settings.season;
+      document.getElementById('sportsGroupTotalInput').value = settings.sportsTotal || '';
+      document.getElementById('culturalGroupTotalInput').value = settings.culturalTotal || '';
+      document.getElementById('sportsGroupTotalInput').placeholder = settings.sportsCompleted + ' completed so far';
+      document.getElementById('culturalGroupTotalInput').placeholder = settings.culturalCompleted + ' completed so far';
+    } catch (err) { /* leave defaults */ }
+
+    await renderAdminHouseStandings();
+  }
+
+  function renderHousesList() {
+    const box = document.getElementById('housesListInner');
+    const isBoss = state.adminRole === 'BOSS';
+    if (!housesCache.length) {
+      box.innerHTML = '<div class="mono" style="font-size:12px;color:var(--muted);">No houses added yet.</div>';
+      return;
+    }
+    box.innerHTML = housesCache.map(h => `
+      <div style="padding:8px 0;border-bottom:1px solid var(--line);">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:600;font-size:13.5px;">${escapeHtml(h.name)}</span>
+          <div style="display:flex;gap:8px;">
+            ${isBoss ? `<button class="btn btn-outline btn-small house-roster-toggle-btn" data-house-id="${h.houseId}" data-house-name="${escapeHtml(h.name)}" style="border-color:var(--line);color:var(--graphite);">Captain / VC / Members</button>` : ''}
+            ${isBoss ? `<button class="btn btn-outline btn-small delete-house-btn" data-house-id="${h.houseId}" style="border-color:#b7401b;color:#b7401b;">Remove</button>` : ''}
+          </div>
+        </div>
+        <div class="hidden house-roster-editor" data-house-editor="${h.houseId}" style="margin-top:10px;padding:12px;background:var(--chalk);border-radius:3px;"></div>
+      </div>`).join('');
+    box.querySelectorAll('.delete-house-btn').forEach(btn => {
+      btn.addEventListener('click', withLoading(btn, async () => {
+        if (!confirm('Remove this house? Past results already published keep their recorded winner text, but it will drop out of dropdowns for new results.')) return;
+        await api('adminDeleteHouse', { houseId: btn.dataset.houseId });
+        await loadHousesCache();
+        renderHousesList();
+        await renderAdminHouseStandings();
+      }));
+    });
+    box.querySelectorAll('.house-roster-toggle-btn').forEach(btn => {
+      btn.addEventListener('click', withLoading(btn, () => openHouseRosterEditor(btn.dataset.houseId, btn.dataset.houseName)));
+    });
+  }
+
+  // BOSS-only: set a house's captain, vice-captain, and full member list for
+  // the year (separate from any one event's per-event roster).
+  async function openHouseRosterEditor(houseId, houseName) {
+    const editor = document.querySelector(`.house-roster-editor[data-house-editor="${houseId}"]`);
+    if (!editor) return;
+    if (!editor.classList.contains('hidden')) { editor.classList.add('hidden'); return; }
+    document.querySelectorAll('.house-roster-editor').forEach(e => e.classList.add('hidden'));
+    editor.innerHTML = '<div class="mono" style="font-size:12px;color:var(--muted);">Loading…</div>';
+    editor.classList.remove('hidden');
+    populateAllUsersDatalist();
+    let current = { captain: null, viceCaptain: null, members: [] };
+    try {
+      const data = await api('getHouseDetails', {});
+      current = (data.houses || []).find(h => h.houseId === houseId) || current;
+    } catch (err) { /* fall back to empty editor */ }
+    editor.innerHTML = `
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+        <div style="flex:1;min-width:160px;">
+          <label class="mono" style="font-size:10.5px;color:var(--muted);text-transform:uppercase;">Captain — reg no</label>
+          <input list="allUsersDatalist" id="hrCaptainInput" value="${escapeHtml(current.captain ? current.captain.regNo : '')}" placeholder="Reg no or name" style="width:100%;padding:8px 9px;margin-top:3px;border:1px solid var(--line);background:#fff;font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        </div>
+        <div style="flex:1;min-width:160px;">
+          <label class="mono" style="font-size:10.5px;color:var(--muted);text-transform:uppercase;">Vice-captain — reg no</label>
+          <input list="allUsersDatalist" id="hrViceCaptainInput" value="${escapeHtml(current.viceCaptain ? current.viceCaptain.regNo : '')}" placeholder="Reg no or name" style="width:100%;padding:8px 9px;margin-top:3px;border:1px solid var(--line);background:#fff;font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        </div>
+      </div>
+      <label class="mono" style="font-size:10.5px;color:var(--muted);text-transform:uppercase;">Members — one reg no per line (or comma-separated)</label>
+      <textarea id="hrMembersInput" rows="4" placeholder="234207&#10;234208&#10;..." style="width:100%;margin-top:3px;padding:8px 9px;border:1px solid var(--line);background:#fff;font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;resize:vertical;">${escapeHtml(current.members.map(m => m.regNo).join('\n'))}</textarea>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
+        <button class="btn btn-dark btn-small" id="hrSaveBtn">Save roster</button>
+        <span class="msg" id="hrMsg"></span>
+      </div>
+    `;
+    document.getElementById('hrSaveBtn').addEventListener('click', withLoading(document.getElementById('hrSaveBtn'), async () => {
+      const msg = document.getElementById('hrMsg');
+      const captainRaw = document.getElementById('hrCaptainInput').value.trim();
+      const vcRaw = document.getElementById('hrViceCaptainInput').value.trim();
+      const captainRegNo = captainRaw.split('—')[0].split(' ')[0].trim();
+      const viceCaptainRegNo = vcRaw.split('—')[0].split(' ')[0].trim();
+      const memberRegNos = document.getElementById('hrMembersInput').value
+        .split(/[\n,]/).map(s => s.split('—')[0].split(' ')[0].trim()).filter(Boolean);
+      try {
+        await api('adminSetHouseRoster', { houseId, captainRegNo, viceCaptainRegNo, memberRegNos });
+        setMsg(msg, 'Saved.', true);
+      } catch (err) {
+        setMsg(msg, err.message, false);
+      }
+    }));
+  }
+
+  document.getElementById('addHouseBtn').addEventListener('click', withLoading(document.getElementById('addHouseBtn'), async () => {
+    const msg = document.getElementById('addHouseMsg');
+    const nameInput = document.getElementById('newHouseName');
+    const name = nameInput.value.trim();
+    if (!name) { setMsg(msg, 'Enter a house name.', false); return; }
+    try {
+      await api('adminAddHouse', { name });
+      nameInput.value = '';
+      setMsg(msg, 'House added.', true);
+      await loadHousesCache();
+      renderHousesList();
+    } catch (err) { setMsg(msg, err.message, false); }
+  }));
+
+  function wireGroupTotalSave(btnId, inputId, section) {
+    document.getElementById(btnId).addEventListener('click', withLoading(document.getElementById(btnId), async () => {
+      const msg = document.getElementById('houseSettingsMsg');
+      const total = document.getElementById(inputId).value;
+      try {
+        await api('adminSetGroupEventsTotal', { section, total });
+        setMsg(msg, 'Saved.', true);
+        await renderAdminHouseStandings();
+      } catch (err) { setMsg(msg, err.message, false); }
+    }));
+  }
+  wireGroupTotalSave('saveSportsTotalBtn', 'sportsGroupTotalInput', 'SPORTS');
+  wireGroupTotalSave('saveCulturalTotalBtn', 'culturalGroupTotalInput', 'CULTURAL');
+
+  async function renderAdminHouseStandings() {
+    const box = document.getElementById('adminHouseStandings');
+    try {
+      const data = await api('getHouseStandings', {});
+      if (!data.standings.length) {
+        box.innerHTML = 'No houses have scored yet.';
+        return;
+      }
+      const championLine = data.allDone && data.champions.length
+        ? `<div style="font-family:'Anton',sans-serif;font-size:16px;color:var(--court-navy);margin-bottom:8px;">🏆 Champion${data.champions.length > 1 ? 's' : ''}: ${data.champions.map(escapeHtml).join(' & ')}</div>`
+        : '';
+      const sportsChampLine = data.trackFieldComplete && (data.sportsChampions.length || data.sportsRunnersUp.length)
+        ? `<div style="font-size:13px;margin-bottom:12px;">${data.sportsChampions.length ? `🏆 Sports Champion${data.sportsChampions.length > 1 ? 's' : ''}: <strong>${data.sportsChampions.map(escapeHtml).join(' & ')}</strong>` : ''}${data.sportsRunnersUp.length ? `&nbsp;&nbsp;·&nbsp;&nbsp;🥈 Runner-up${data.sportsRunnersUp.length > 1 ? 's' : ''}: <strong>${data.sportsRunnersUp.map(escapeHtml).join(' & ')}</strong>` : ''}</div>`
+        : '';
+      box.innerHTML = championLine + sportsChampLine + `
+        <table>
+          <thead><tr><th>House</th><th>Sports</th><th>Cultural</th><th>Total</th></tr></thead>
+          <tbody>
+            ${data.standings.map(s => `<tr><td>${escapeHtml(s.name)}</td><td>${s.sportsPoints}</td><td>${s.culturalPoints}</td><td style="font-weight:700;">${s.totalPoints}</td></tr>`).join('')}
+          </tbody>
+        </table>`;
+    } catch (err) { box.innerHTML = err.message; }
   }
 
   // Opens the results editor for a specific event — used both by the
@@ -2412,41 +3477,296 @@
   }));
 
   let currentResultsEventCategory = '';
-  let matchPeriodRowCounter = 0;
+  let currentResultsScoreVariant = 'sets'; // 'sets' | 'halves' | 'simple'
+  let currentResultsDoublesTeams = []; // grouped partner pairs for the Doubles results dropdown
 
-  function renderMatchPeriodRow(period) {
-    matchPeriodRowCounter++;
-    const id = 'mp' + matchPeriodRowCounter;
-    const row = document.createElement('div');
-    row.className = 'inline-form';
-    row.style.margin = '0 0 8px';
-    row.dataset.periodRow = id;
-    row.innerHTML = `
-      <div class="field" style="flex:2;"><input class="mp-label" placeholder="e.g. Set 1 / 1st Half / Q1 / 1st Innings" value="${escapeHtml(period.label || '')}"></div>
-      <div class="field" style="flex:1;"><input class="mp-scoreA" placeholder="Team A score" value="${escapeHtml(period.scoreA || '')}"></div>
-      <div class="field" style="flex:1;"><input class="mp-scoreB" placeholder="Team B score" value="${escapeHtml(period.scoreB || '')}"></div>
-      <button type="button" class="btn btn-outline btn-small mp-remove" style="border-color:var(--line);color:var(--graphite);">✕</button>
-    `;
-    row.querySelector('.mp-remove').addEventListener('click', () => row.remove());
-    return row;
+  // Sports that play to a single match score rather than a series of sets
+  // (football, handball) get the halves + optional-penalty UI, detected
+  // from the event name. Cultural group events (any section === 'CULTURAL')
+  // get the simple optional-score UI regardless of name, since judged
+  // events like dance/skit/debate don't have sets, halves, or penalties —
+  // the score box there is just an optional reference number and the
+  // winner is always picked by hand. Everything else keeps the existing
+  // set-based columns.
+  function isScoreModeSport(name) {
+    const n = String(name || '').toLowerCase();
+    return n.includes('football') || n.includes('handball');
   }
-  document.getElementById('addMatchPeriodBtn').addEventListener('click', () => {
-    document.getElementById('matchPeriodsList').appendChild(renderMatchPeriodRow({}));
-  });
+  function scoreVariantFor(section, eventName) {
+    if (String(section || '').toUpperCase() === 'CULTURAL') return 'simple';
+    if (isScoreModeSport(eventName)) return 'halves';
+    return 'sets';
+  }
 
-  function updateMatchWinnerOptions(selectedToken) {
-    const teamA = document.getElementById('matchTeamAInput').value.trim();
-    const teamB = document.getElementById('matchTeamBInput').value.trim();
+  // ---------- Score-mode match columns (football/handball: each match is 1st Half + 2nd Half, with an optional penalty toggle on Match 2 & 3 if that match is drawn) ----------
+  function buildScoreMatchColumn(matchNo) {
+    const isOptional = matchNo === 3;
+    const allowPenalty = matchNo === 2 || matchNo === 3;
+    const col = document.createElement('div');
+    col.className = 'match-col';
+    col.dataset.matchNo = matchNo;
+    col.dataset.mode = 'score';
+    col.style.cssText = 'flex:1;min-width:190px;border:1px solid var(--line);border-radius:3px;padding:12px;';
+    col.innerHTML = `
+      <div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">
+        Match ${matchNo}${isOptional ? ' <span style="opacity:.7;">(optional)</span>' : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <span class="mono" style="font-size:10.5px;color:var(--muted);width:46px;flex-shrink:0;">1st Half</span>
+        <input class="mc-h1-a" placeholder="A" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        <span style="color:var(--muted);">–</span>
+        <input class="mc-h1-b" placeholder="B" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:${allowPenalty ? '8px' : '0'};">
+        <span class="mono" style="font-size:10.5px;color:var(--muted);width:46px;flex-shrink:0;">2nd Half</span>
+        <input class="mc-h2-a" placeholder="A" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        <span style="color:var(--muted);">–</span>
+        <input class="mc-h2-b" placeholder="B" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+      </div>
+      ${allowPenalty ? `
+        <div class="mc-pen-wrap hidden" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <span class="mono" style="font-size:10.5px;color:var(--muted);width:46px;flex-shrink:0;">Pens</span>
+          <input class="mc-pen-a" placeholder="A" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+          <span style="color:var(--muted);">–</span>
+          <input class="mc-pen-b" placeholder="B" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+          <button type="button" class="btn btn-outline btn-small mc-remove-pen" style="border-color:var(--line);color:var(--graphite);padding:4px 8px;">✕</button>
+        </div>
+        <button type="button" class="btn btn-outline btn-small mc-add-pen" style="border-color:var(--line);color:var(--graphite);width:100%;">+ Add penalties (if drawn)</button>
+      ` : ''}
+    `;
+    if (allowPenalty) {
+      col.querySelector('.mc-add-pen').addEventListener('click', () => {
+        col.querySelector('.mc-pen-wrap').classList.remove('hidden');
+        col.querySelector('.mc-add-pen').classList.add('hidden');
+      });
+      col.querySelector('.mc-remove-pen').addEventListener('click', () => {
+        col.querySelector('.mc-pen-a').value = '';
+        col.querySelector('.mc-pen-b').value = '';
+        col.querySelector('.mc-pen-wrap').classList.add('hidden');
+        col.querySelector('.mc-add-pen').classList.remove('hidden');
+      });
+    }
+    return col;
+  }
+  function loadScorePeriodsIntoColumns(periods) {
+    const wrap = document.getElementById('matchColumns');
+    wrap.innerHTML = '';
+    [1, 2, 3].forEach(n => wrap.appendChild(buildScoreMatchColumn(n)));
+    const cols = { 1: wrap.querySelector('[data-match-no="1"]'), 2: wrap.querySelector('[data-match-no="2"]'), 3: wrap.querySelector('[data-match-no="3"]') };
+    (periods || []).forEach(p => {
+      const m = /^M-(\d+)\s*\((1st Half|2nd Half|Penalty)\)$/i.exec(String(p.label || '').trim());
+      if (!m) return;
+      const col = cols[Math.min(3, Math.max(1, parseInt(m[1], 10)))];
+      if (!col) return;
+      const kind = m[2].toLowerCase();
+      if (kind === '1st half') {
+        col.querySelector('.mc-h1-a').value = p.scoreA || '';
+        col.querySelector('.mc-h1-b').value = p.scoreB || '';
+      } else if (kind === '2nd half') {
+        col.querySelector('.mc-h2-a').value = p.scoreA || '';
+        col.querySelector('.mc-h2-b').value = p.scoreB || '';
+      } else if (col.querySelector('.mc-pen-wrap')) {
+        col.querySelector('.mc-pen-a').value = p.scoreA || '';
+        col.querySelector('.mc-pen-b').value = p.scoreB || '';
+        col.querySelector('.mc-pen-wrap').classList.remove('hidden');
+        col.querySelector('.mc-add-pen').classList.add('hidden');
+      }
+    });
+  }
+  function collectScorePeriods() {
+    const periods = [];
+    document.querySelectorAll('#matchColumns .match-col').forEach(col => {
+      const matchNo = col.dataset.matchNo;
+      const h1a = col.querySelector('.mc-h1-a').value.trim();
+      const h1b = col.querySelector('.mc-h1-b').value.trim();
+      if (h1a || h1b) periods.push({ label: `M-${matchNo} (1st Half)`, scoreA: h1a, scoreB: h1b });
+      const h2a = col.querySelector('.mc-h2-a').value.trim();
+      const h2b = col.querySelector('.mc-h2-b').value.trim();
+      if (h2a || h2b) periods.push({ label: `M-${matchNo} (2nd Half)`, scoreA: h2a, scoreB: h2b });
+      const penWrap = col.querySelector('.mc-pen-wrap');
+      if (penWrap && !penWrap.classList.contains('hidden')) {
+        const penA = col.querySelector('.mc-pen-a').value.trim();
+        const penB = col.querySelector('.mc-pen-b').value.trim();
+        if (penA || penB) periods.push({ label: `M-${matchNo} (Penalty)`, scoreA: penA, scoreB: penB });
+      }
+    });
+    return periods;
+  }
+
+  // ---------- Simple score-mode block (cultural group events: one Score box, with an optional Tiebreaker box that only appears if the scores end up tied) ----------
+  function buildSimpleScoreInputRow(label, aClass, bClass) {
+    return `
+      <div class="mono" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;">${label}</div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <input class="${aClass}" placeholder="A (optional)" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+        <span style="color:var(--muted);">–</span>
+        <input class="${bClass}" placeholder="B (optional)" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+      </div>`;
+  }
+  function resetSimpleScoreBlock() {
+    const wrap = document.getElementById('matchColumns');
+    wrap.innerHTML = `
+      <div style="flex:1;min-width:220px;border:1px solid var(--line);border-radius:3px;padding:12px;" data-mode="simple">
+        ${buildSimpleScoreInputRow('Score', 'simple-score-a', 'simple-score-b')}
+        <div class="simple-tiebreak-wrap hidden" style="margin-top:12px;">
+          ${buildSimpleScoreInputRow('Tiebreaker', 'simple-tb-a', 'simple-tb-b')}
+          <button type="button" class="btn btn-outline btn-small simple-remove-tb" style="border-color:var(--line);color:var(--graphite);margin-top:6px;">✕ Remove tiebreaker</button>
+        </div>
+        <button type="button" class="btn btn-outline btn-small simple-add-tb" style="border-color:var(--line);color:var(--graphite);width:100%;margin-top:12px;">+ Add tiebreaker round (if tied)</button>
+      </div>
+    `;
+    wrap.querySelector('.simple-add-tb').addEventListener('click', () => {
+      wrap.querySelector('.simple-tiebreak-wrap').classList.remove('hidden');
+      wrap.querySelector('.simple-add-tb').classList.add('hidden');
+    });
+    wrap.querySelector('.simple-remove-tb').addEventListener('click', () => {
+      wrap.querySelector('.simple-tb-a').value = '';
+      wrap.querySelector('.simple-tb-b').value = '';
+      wrap.querySelector('.simple-tiebreak-wrap').classList.add('hidden');
+      wrap.querySelector('.simple-add-tb').classList.remove('hidden');
+    });
+  }
+  function loadSimpleScorePeriodsIntoColumns(periods) {
+    resetSimpleScoreBlock();
+    const wrap = document.getElementById('matchColumns');
+    (periods || []).forEach(p => {
+      const label = String(p.label || '').trim().toLowerCase();
+      if (label === 'score') {
+        wrap.querySelector('.simple-score-a').value = p.scoreA || '';
+        wrap.querySelector('.simple-score-b').value = p.scoreB || '';
+      } else if (label === 'tiebreaker') {
+        wrap.querySelector('.simple-tb-a').value = p.scoreA || '';
+        wrap.querySelector('.simple-tb-b').value = p.scoreB || '';
+        wrap.querySelector('.simple-tiebreak-wrap').classList.remove('hidden');
+        wrap.querySelector('.simple-add-tb').classList.add('hidden');
+      }
+    });
+  }
+  function collectSimpleScorePeriods() {
+    const wrap = document.getElementById('matchColumns');
+    const periods = [];
+    const scoreA = wrap.querySelector('.simple-score-a').value.trim();
+    const scoreB = wrap.querySelector('.simple-score-b').value.trim();
+    if (scoreA || scoreB) periods.push({ label: 'Score', scoreA, scoreB });
+    const tbWrap = wrap.querySelector('.simple-tiebreak-wrap');
+    if (tbWrap && !tbWrap.classList.contains('hidden')) {
+      const tbA = wrap.querySelector('.simple-tb-a').value.trim();
+      const tbB = wrap.querySelector('.simple-tb-b').value.trim();
+      if (tbA || tbB) periods.push({ label: 'Tiebreaker', scoreA: tbA, scoreB: tbB });
+    }
+    return periods;
+  }
+
+  // ---------- Match 1/2/3 score columns (each holds its own set rows) ----------
+  // Storage stays the flat periods array it always was — label "M-<n> (Set-<i>)",
+  // scoreA, scoreB — so no backend/schema change. This just structures entry
+  // and display around fixed Match 1/2/3 columns instead of one long list.
+  function buildMatchColumn(matchNo) {
+    const isOptional = matchNo === 3;
+    const col = document.createElement('div');
+    col.className = 'match-col';
+    col.dataset.matchNo = matchNo;
+    col.style.cssText = 'flex:1;min-width:180px;border:1px solid var(--line);border-radius:3px;padding:12px;';
+    col.innerHTML = `
+      <div class="mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">
+        Match ${matchNo}${isOptional ? ' <span style="opacity:.7;">(optional)</span>' : ''}
+      </div>
+      <div class="match-col-sets"></div>
+      <button type="button" class="btn btn-outline btn-small mc-add-set" style="border-color:var(--line);color:var(--graphite);width:100%;margin-top:4px;">+ Add set</button>
+    `;
+    col.querySelector('.mc-add-set').addEventListener('click', () => {
+      addSetRow(col, {});
+    });
+    return col;
+  }
+  function addSetRow(col, set) {
+    const sets = col.querySelector('.match-col-sets');
+    const row = document.createElement('div');
+    row.className = 'mc-set-row';
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:6px;';
+    row.innerHTML = `
+      <span class="mono" style="font-size:10.5px;color:var(--muted);width:38px;flex-shrink:0;">Set ${sets.children.length + 1}</span>
+      <input class="mc-scoreA" placeholder="A" value="${escapeHtml(set.scoreA || '')}" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+      <span style="color:var(--muted);">–</span>
+      <input class="mc-scoreB" placeholder="B" value="${escapeHtml(set.scoreB || '')}" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;">
+      <button type="button" class="btn btn-outline btn-small mc-remove-set" style="border-color:var(--line);color:var(--graphite);padding:4px 8px;">✕</button>
+    `;
+    row.querySelector('.mc-remove-set').addEventListener('click', () => {
+      row.remove();
+      // Renumber remaining "Set N" labels in this column after a removal.
+      Array.from(sets.children).forEach((r, i) => { r.querySelector('.mono').textContent = 'Set ' + (i + 1); });
+    });
+    sets.appendChild(row);
+  }
+  function resetMatchColumns() {
+    const wrap = document.getElementById('matchColumns');
+    wrap.innerHTML = '';
+    [1, 2, 3].forEach(n => wrap.appendChild(buildMatchColumn(n)));
+  }
+  // Flat periods -> up to 3 match columns, parsing the "M-<n> (Set-<i>)"
+  // label this has always used. Anything from before this structure existed
+  // (or a label that doesn't match) safely falls back into Match 1 so old
+  // saved results still load instead of silently disappearing.
+  function loadPeriodsIntoMatchColumns(periods) {
+    resetMatchColumns();
+    const wrap = document.getElementById('matchColumns');
+    const cols = { 1: wrap.querySelector('[data-match-no="1"]'), 2: wrap.querySelector('[data-match-no="2"]'), 3: wrap.querySelector('[data-match-no="3"]') };
+    (periods || []).forEach(p => {
+      const m = /^M-(\d+)\s*\(Set-(\d+)\)$/i.exec(String(p.label || '').trim());
+      const matchNo = m ? Math.min(3, Math.max(1, parseInt(m[1], 10))) : 1;
+      addSetRow(cols[matchNo], p);
+    });
+  }
+  function collectPeriodsFromMatchColumns() {
+    const periods = [];
+    document.querySelectorAll('#matchColumns .match-col').forEach(col => {
+      const matchNo = col.dataset.matchNo;
+      Array.from(col.querySelectorAll('.mc-set-row')).forEach((row, i) => {
+        const scoreA = row.querySelector('.mc-scoreA').value.trim();
+        const scoreB = row.querySelector('.mc-scoreB').value.trim();
+        if (!scoreA && !scoreB) return;
+        periods.push({ label: `M-${matchNo} (Set-${i + 1})`, scoreA, scoreB });
+      });
+    });
+    return periods;
+  }
+
+  // ---------- HOUSES (shared cache used by results editor + add-players + Houses tab) ----------
+  let housesCache = []; // [{houseId, name}]
+  async function loadHousesCache() {
+    try {
+      const data = await api('adminListHouses', {});
+      housesCache = data.houses || [];
+    } catch (e) { housesCache = []; }
+    return housesCache;
+  }
+  function houseSelectOptions(selected) {
+    if (!housesCache.length) return '<option value="">Select house…</option>';
+    return '<option value="">Select house…</option>' + housesCache.map(h =>
+      `<option value="${escapeHtml(h.name)}" ${h.name === selected ? 'selected' : ''}>${escapeHtml(h.name)}</option>`
+    ).join('');
+  }
+  function populateMatchTeamSelects(selectedA, selectedB) {
+    document.getElementById('matchTeamASelect').innerHTML = houseSelectOptions(selectedA);
+    document.getElementById('matchTeamBSelect').innerHTML = houseSelectOptions(selectedB);
+    document.getElementById('matchNoHousesHint').style.display = housesCache.length ? 'none' : 'block';
+  }
+
+  function updateMatchWinnerOptions(selectedWinner) {
+    const teamA = document.getElementById('matchTeamASelect').value.trim();
+    const teamB = document.getElementById('matchTeamBSelect').value.trim();
     const sel = document.getElementById('matchWinnerSelect');
-    const prev = selectedToken !== undefined ? selectedToken : sel.value;
+    const prev = selectedWinner !== undefined ? selectedWinner : sel.value;
+    // No "Draw" option — a published group event must resolve to exactly
+    // one house so the house-points tally stays unambiguous (see the guide
+    // text above the House selects).
     sel.innerHTML = '<option value="">Select winner…</option>'
-      + (teamA ? `<option value="TEAM_A">${escapeHtml(teamA)}</option>` : '')
-      + (teamB ? `<option value="TEAM_B">${escapeHtml(teamB)}</option>` : '')
-      + '<option value="DRAW">Draw</option>';
+      + (teamA ? `<option value="${escapeHtml(teamA)}">${escapeHtml(teamA)}</option>` : '')
+      + (teamB ? `<option value="${escapeHtml(teamB)}">${escapeHtml(teamB)}</option>` : '');
     sel.value = prev || '';
   }
-  document.getElementById('matchTeamAInput').addEventListener('input', () => updateMatchWinnerOptions());
-  document.getElementById('matchTeamBInput').addEventListener('input', () => updateMatchWinnerOptions());
+  document.getElementById('matchTeamASelect').addEventListener('change', () => updateMatchWinnerOptions());
+  document.getElementById('matchTeamBSelect').addEventListener('change', () => updateMatchWinnerOptions());
 
   async function loadResultsEditorContent(eventId) {
     const editor = document.getElementById('resultsEditor');
@@ -2456,41 +3776,65 @@
     try {
       const [regsData, savedResults] = await Promise.all([
         api('adminListRegistrations', { eventId }),
-        api('adminGetEventResults', { eventId })
+        api('adminGetEventResults', { eventId }),
+        loadHousesCache()
       ]);
 
       currentResultsEventCategory = String(savedResults.category || '').toUpperCase();
       const isGroup = currentResultsEventCategory === 'GROUP';
+      currentResultsScoreVariant = isGroup ? scoreVariantFor(savedResults.section, savedResults.eventName) : 'sets';
       document.getElementById('positionResultsSection').classList.toggle('hidden', isGroup);
       document.getElementById('matchResultsSection').classList.toggle('hidden', !isGroup);
 
       if (isGroup) {
         const m = savedResults.match || {};
-        document.getElementById('matchTeamAInput').value = m.teamA || '';
-        document.getElementById('matchTeamBInput').value = m.teamB || '';
-        const list = document.getElementById('matchPeriodsList');
-        list.innerHTML = '';
-        const periods = (m.periods && m.periods.length) ? m.periods : [{}];
-        periods.forEach(p => list.appendChild(renderMatchPeriodRow(p)));
-        let winnerToken = '';
-        if (m.winner && m.teamA && m.winner === m.teamA) winnerToken = 'TEAM_A';
-        else if (m.winner && m.teamB && m.winner === m.teamB) winnerToken = 'TEAM_B';
-        else if (m.winner) winnerToken = 'DRAW';
-        updateMatchWinnerOptions(winnerToken);
+        populateMatchTeamSelects(m.teamA || '', m.teamB || '');
+        document.getElementById('matchColumnsHint').classList.toggle('hidden', currentResultsScoreVariant === 'simple');
+        if (currentResultsScoreVariant === 'halves') {
+          loadScorePeriodsIntoColumns(m.periods || []);
+        } else if (currentResultsScoreVariant === 'simple') {
+          loadSimpleScorePeriodsIntoColumns(m.periods || []);
+        } else {
+          loadPeriodsIntoMatchColumns(m.periods || []);
+        }
+        updateMatchWinnerOptions(m.winner || '');
       } else {
-        const options = ['<option value="">— pick a registered student (optional) —</option>'].concat(
-          regsData.registrations.map(r => `<option value="${escapeHtml(r.regNo)}|${escapeHtml(r.name)}">${escapeHtml(r.name)} (${escapeHtml(r.regNo)})</option>`)
-        ).join('');
+        const isDoubles = currentResultsEventCategory === 'DOUBLES';
+        document.getElementById('doublesResultsHint').classList.toggle('hidden', !isDoubles);
+        // Doubles: group the two partners (same teamId) into one "Team N"
+        // entry, numbered the same way as the View Regs modal, so one pick
+        // fills BOTH partners. Everything else stays one entry per student.
+        currentResultsDoublesTeams = [];
+        let options;
+        if (isDoubles) {
+          const seenRegs = new Set();
+          regsData.registrations.forEach(r => {
+            if (seenRegs.has(r.regNo)) return;
+            const members = r.teamId ? regsData.registrations.filter(x => x.teamId === r.teamId) : [r];
+            members.forEach(m => seenRegs.add(m.regNo));
+            currentResultsDoublesTeams.push(members);
+          });
+          options = ['<option value="">— pick a registered team (optional) —</option>'].concat(
+            currentResultsDoublesTeams.map((team, i) =>
+              `<option value="${i}">Team ${i + 1} — ${team.map(m => escapeHtml(m.name)).join(' &amp; ')} (${team.map(m => escapeHtml(m.regNo)).join(' / ')})</option>`)
+          ).join('');
+        } else {
+          options = ['<option value="">— pick a registered student (optional) —</option>'].concat(
+            regsData.registrations.map(r => `<option value="${escapeHtml(r.regNo)}|${escapeHtml(r.name)}">${escapeHtml(r.name)} (${escapeHtml(r.regNo)})</option>`)
+          ).join('');
+        }
         [1, 2, 3].forEach(n => {
+          document.getElementById(`pos${n}DoublesRow`).classList.toggle('hidden', !isDoubles);
           const select = document.getElementById(`pos${n}Select`);
           select.innerHTML = options;
           select.value = ''; // dropdown is just a quick-fill shortcut, never the source of truth
           const saved = savedResults.positions[n - 1] || {};
           document.getElementById(`pos${n}Name`).value = saved.name || '';
           document.getElementById(`pos${n}RegNo`).value = saved.regNo || '';
+          document.getElementById(`pos${n}Name2`).value = isDoubles ? (saved.name2 || '') : '';
+          document.getElementById(`pos${n}RegNo2`).value = isDoubles ? (saved.regNo2 || '') : '';
           document.getElementById(`pos${n}Value`).value = saved.value || '';
           document.getElementById(`pos${n}Unit`).value = saved.unit || '';
-          document.getElementById(`pos${n}House`).value = saved.house || '';
         });
       }
       document.getElementById('resultsPublishedCheck').checked = savedResults.resultsPublished === true;
@@ -2510,6 +3854,17 @@
     document.getElementById(`pos${n}Select`).addEventListener('change', (e) => {
       const val = e.target.value;
       if (!val) return;
+      if (currentResultsEventCategory === 'DOUBLES') {
+        // value is an index into the grouped teams list — fill both partners
+        const team = currentResultsDoublesTeams[Number(val)] || [];
+        const [p1, p2] = team;
+        document.getElementById(`pos${n}RegNo`).value = p1 ? p1.regNo : '';
+        document.getElementById(`pos${n}Name`).value = p1 ? p1.name : '';
+        document.getElementById(`pos${n}RegNo2`).value = p2 ? p2.regNo : '';
+        document.getElementById(`pos${n}Name2`).value = p2 ? p2.name : '';
+        e.target.value = '';
+        return;
+      }
       const [regNo, ...nameParts] = val.split('|');
       document.getElementById(`pos${n}RegNo`).value = regNo;
       document.getElementById(`pos${n}Name`).value = nameParts.join('|');
@@ -2524,25 +3879,25 @@
     const payload = { eventId: currentResultsEventId, resultsPublished };
 
     if (currentResultsEventCategory === 'GROUP') {
-      const teamA = document.getElementById('matchTeamAInput').value.trim();
-      const teamB = document.getElementById('matchTeamBInput').value.trim();
-      const winnerToken = document.getElementById('matchWinnerSelect').value;
-      const winner = winnerToken === 'TEAM_A' ? teamA : winnerToken === 'TEAM_B' ? teamB : winnerToken === 'DRAW' ? 'Draw' : '';
-      if (resultsPublished && (!teamA || !teamB)) { setMsg(msg, 'Enter both team/house names before publishing.', false); return; }
-      const periods = Array.from(document.querySelectorAll('#matchPeriodsList [data-period-row]')).map(row => ({
-        label: row.querySelector('.mp-label').value.trim(),
-        scoreA: row.querySelector('.mp-scoreA').value.trim(),
-        scoreB: row.querySelector('.mp-scoreB').value.trim()
-      })).filter(p => p.label);
+      const teamA = document.getElementById('matchTeamASelect').value.trim();
+      const teamB = document.getElementById('matchTeamBSelect').value.trim();
+      const winner = document.getElementById('matchWinnerSelect').value.trim();
+      if (resultsPublished && (!teamA || !teamB)) { setMsg(msg, 'Pick both houses before publishing.', false); return; }
+      if (resultsPublished && (!winner || (winner !== teamA && winner !== teamB))) { setMsg(msg, 'Pick a winner before publishing — group events need a decided result.', false); return; }
+      const periods = currentResultsScoreVariant === 'halves' ? collectScorePeriods()
+        : currentResultsScoreVariant === 'simple' ? collectSimpleScorePeriods()
+        : collectPeriodsFromMatchColumns();
       payload.match = { teamA, teamB, winner, periods };
     } else {
+      const isDoubles = currentResultsEventCategory === 'DOUBLES';
       payload.positions = [1, 2, 3].map(n => {
         const name = document.getElementById(`pos${n}Name`).value.trim();
         const regNo = document.getElementById(`pos${n}RegNo`).value.trim();
+        const name2 = isDoubles ? document.getElementById(`pos${n}Name2`).value.trim() : '';
+        const regNo2 = isDoubles ? document.getElementById(`pos${n}RegNo2`).value.trim() : '';
         const value = document.getElementById(`pos${n}Value`).value.trim();
         const unit = document.getElementById(`pos${n}Unit`).value;
-        const house = document.getElementById(`pos${n}House`).value.trim();
-        return name ? { name, regNo, value, unit, house } : null;
+        return name ? { name, regNo, name2, regNo2, value, unit } : null;
       });
     }
 
@@ -2562,7 +3917,8 @@
     grid.innerHTML = '<span class="mono" style="font-size:11.5px;color:var(--muted);">Loading…</span>';
     try {
       const data = await api('adminListEventPhotos', { eventId });
-      countLabel.textContent = `(${data.photos.length}/10)`;
+      const photoCap = currentResultsEventCategory === 'GROUP' ? 20 : 10;
+      countLabel.textContent = `(${data.photos.length}/${photoCap})`;
       if (!data.photos.length) {
         grid.innerHTML = '<span class="mono" style="font-size:11.5px;color:var(--muted);">No photos yet.</span>';
         return;
@@ -2632,7 +3988,7 @@
     try {
       const data = await api('getResults', {});
       const lock = myAdminSectionLock();
-      const results = lock ? data.results.filter(r => (r.section || 'SPORTS') === lock) : data.results;
+      const results = data.results.filter(r => (r.section || 'SPORTS') === (lock || resultsSectionFilter));
       if (!results.length) {
         inner.textContent = 'Nothing published yet.';
         return;
@@ -2671,6 +4027,7 @@
   let editingCompDateId = null;
 
   let adminSectionFilter = 'ALL';
+  let resultsSectionFilter = 'SPORTS';
   document.querySelectorAll('.admin-section-filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       adminSectionFilter = btn.dataset.sectionFilter;
@@ -2690,27 +4047,42 @@
     container.innerHTML = skeletonRows(2);
     try {
       const data = await api('listEvents', {});
-      let filteredEvents = data.events;
-      if (adminSectionFilter !== 'ALL') {
-        filteredEvents = filteredEvents.filter(ev => (ev.section || 'SPORTS') === adminSectionFilter);
+      const lock = myAdminSectionLock();
+      let filteredEvents;
+      if (adminSectionFilter === 'GROUP') {
+        // The one exception to the section lock: every admin can SEE every
+        // group event in both sections here, to coordinate across sections —
+        // but editing is still gated per-row below (canEdit).
+        filteredEvents = data.events.filter(ev => String(ev.category || '').toUpperCase() === 'GROUP');
+      } else if (adminSectionFilter !== 'ALL') {
+        filteredEvents = data.events.filter(ev => (ev.section || 'SPORTS') === adminSectionFilter);
+      } else {
+        filteredEvents = data.events;
       }
-      const sortedEvents = sortEventsForDisplay(filteredEvents);
+      const sortedEvents = sortAdminEventsByDate(filteredEvents);
       container.innerHTML = sortedEvents.map(ev => {
         const cat = String(ev.category || 'OTHER').toUpperCase();
         const isGroup = cat === 'GROUP';
+        const isCultural = ev.section === 'CULTURAL';
+        // Allowed to edit this row? Always true, except when browsing the
+        // cross-section Group list and looking at an event outside your
+        // own locked section (view-only there).
+        const canEdit = !lock || (ev.section || 'SPORTS') === lock;
         // Group events (Sports or Cultural) don't need a registration deadline —
-        // players/teams can be added any time, so deadline is ignored entirely.
-        const deadlineTbd = !isGroup && ev.deadline === DEADLINE_TBD;
+        // players/teams can be added any time. Cultural events skip deadlines
+        // entirely too — only the event date matters there.
+        const skipDeadline = isGroup || isCultural;
+        const deadlineTbd = !skipDeadline && ev.deadline === DEADLINE_TBD;
         const deadlineVal = deadlineTbd ? 'Yet to open' : (ev.deadline ? fmtDate(new Date(ev.deadline), true) : '—');
         const compDateVal = ev.competitionDate ? fmtDate(parseDateOnly(ev.competitionDate)) : 'To be decided';
-        const isEditingDeadline = editingDeadlineId === ev.eventId;
-        const isEditingCompDate = editingCompDateId === ev.eventId;
+        const isEditingDeadline = canEdit && editingDeadlineId === ev.eventId;
+        const isEditingCompDate = canEdit && editingCompDateId === ev.eventId;
         const regStatusLabel = !ev.active ? 'Closed' : (deadlineTbd ? 'Yet to open' : 'Active');
         const regStatusClass = !ev.active ? 'closed' : (deadlineTbd ? 'pending' : 'open');
         return `<div class="event-row">
           <div>
             <div class="event-name">${escapeHtml(ev.name)}</div>
-            ${isGroup ? '' : (isEditingDeadline
+            ${skipDeadline ? '' : (isEditingDeadline
               ? `<div class="event-meta" style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
                    <input type="datetime-local" data-deadline-input="${ev.eventId}" value="${toDatetimeLocalValue(ev.deadline)}" ${deadlineTbd ? 'disabled' : ''} style="padding:8px 10px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13px;border-radius:2px;">
                    <label style="display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-transform:none;">
@@ -2738,18 +4110,28 @@
             <span class="pill ${regStatusClass}">${regStatusLabel}</span>
             ${ev.completed ? '<span class="pill" style="background:rgba(11,37,69,.1);color:var(--court-navy);">Completed</span>' : ''}
             ${ev.section === 'CULTURAL' && ev.requiresMaterials ? '<span class="pill" style="background:rgba(255,90,31,.12);color:var(--ball-orange);">🎨 Materials</span>' : ''}
-            ${!isGroup && !isEditingDeadline ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
-            ${!isEditingCompDate ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-compdate="${ev.eventId}">Edit event day</button>` : ''}
-            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>
-            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-completed="${ev.eventId}" data-completed="${ev.completed}">${ev.completed ? 'Mark not completed' : 'Mark completed'}</button>
-            ${ev.section === 'CULTURAL' ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-materials="${ev.eventId}" data-requires-materials="${ev.requiresMaterials}">${ev.requiresMaterials ? 'Materials: on' : 'Materials: off'}</button>` : ''}
-            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}" data-view-regs-category="${ev.category}">${isGroup ? 'Add players' : 'View regs'}</button>
-            <button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-export-event="${ev.eventId}">Export CSV</button>
-            <button class="btn btn-danger btn-small" data-delete="${ev.eventId}">Delete</button>
+            ${ev.massEvent ? '<span class="pill" style="background:rgba(140,82,255,.14);color:#6a3ec9;">👥 Mass event — no roster</span>' : ''}
+            ${!canEdit ? '<span class="pill" style="background:rgba(0,0,0,.06);color:var(--muted);">👁 View only — the other section\'s admin manages this one</span>' : ''}
+            ${canEdit && !skipDeadline && !isEditingDeadline ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-deadline="${ev.eventId}">Edit deadline</button>` : ''}
+            ${canEdit && !isEditingCompDate ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-edit-compdate="${ev.eventId}">Edit event day</button>` : ''}
+            ${canEdit ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle="${ev.eventId}" data-active="${ev.active}">${ev.active ? 'Disable' : 'Enable'}</button>` : ''}
+            ${canEdit ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-completed="${ev.eventId}" data-completed="${ev.completed}">${ev.completed ? 'Mark not completed' : 'Mark completed'}</button>` : ''}
+            ${canEdit && ev.section === 'CULTURAL' ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-materials="${ev.eventId}" data-requires-materials="${ev.requiresMaterials}">${ev.requiresMaterials ? 'Materials: on' : 'Materials: off'}</button>` : ''}
+            ${canEdit && ev.section === 'CULTURAL' && isGroup ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-toggle-mass-event="${ev.eventId}" data-mass-event="${ev.massEvent}">${ev.massEvent ? 'Mass event: on' : 'Mass event: off'}</button>` : ''}
+            ${!ev.massEvent && canEdit && isGroup ? `<button class="btn btn-orange btn-small" data-build-roster="${ev.eventId}" data-build-roster-name="${escapeHtml(ev.name)}">Build roster</button>` : ''}
+            ${!ev.massEvent ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-view-regs="${ev.eventId}" data-view-regs-category="${ev.category}" data-view-regs-readonly="${!canEdit}">${!canEdit ? 'View roster' : (isGroup ? 'View / edit roster' : 'View regs')}</button>` : ''}
+            ${canEdit ? `<button class="btn btn-outline btn-small" style="border-color:var(--line);color:var(--graphite);" data-export-event="${ev.eventId}">Export CSV</button>` : ''}
+            ${canEdit ? `<button class="btn btn-danger btn-small" data-delete="${ev.eventId}">Delete</button>` : ''}
           </div>
         </div>`;
       }).join('') || '<div class="event-row mono" style="color:var(--muted);">No events yet.</div>';
 
+      container.querySelectorAll('[data-toggle-mass-event]').forEach(btn => {
+        btn.addEventListener('click', withLoading(btn, async () => {
+          await api('adminEditEvent', { eventId: btn.dataset.toggleMassEvent, massEvent: btn.dataset.massEvent !== 'true' });
+          await loadAdminEvents();
+        }));
+      });
       container.querySelectorAll('[data-toggle]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
           await api('adminToggleEvent', { eventId: btn.dataset.toggle, active: btn.dataset.active !== 'true' });
@@ -2775,10 +4157,16 @@
           await loadAdminEvents();
         }));
       });
+      container.querySelectorAll('[data-build-roster]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          openGroupRosterBuilder(btn.dataset.buildRoster, btn.dataset.buildRosterName);
+        });
+      });
       container.querySelectorAll('[data-view-regs]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
           const eventName = btn.closest('.event-row').querySelector('.event-name').textContent;
           currentModalCategory = btn.dataset.viewRegsCategory || '';
+          currentModalReadOnly = btn.dataset.viewRegsReadonly === 'true';
           const data = await api('adminListRegistrations', { eventId: btn.dataset.viewRegs });
           showRegsModal(eventName, data.registrations, btn.dataset.viewRegs);
         }));
@@ -2885,14 +4273,15 @@
     const compDateTbd = document.getElementById('newEventCompDateTbd').checked;
     const compDate = document.getElementById('newEventCompDate').value;
     const requiresMaterials = document.getElementById('newEventRequiresMaterials').checked;
+    const massEvent = document.getElementById('newEventMassEvent').checked;
     const msg = document.getElementById('addEventMsg');
     if (!name) { setMsg(msg, 'Event name is required.', false); return; }
     try {
       await api('adminAddEvent', {
         name, section, category,
-        deadline: category === 'GROUP' ? '' : (deadlineTbd ? DEADLINE_TBD : (deadline ? new Date(deadline).toISOString() : '')),
+        deadline: (category === 'GROUP' || section === 'CULTURAL') ? '' : (deadlineTbd ? DEADLINE_TBD : (deadline ? new Date(deadline).toISOString() : '')),
         competitionDate: (!compDateTbd && compDate) ? compDate : '',
-        requiresMaterials
+        requiresMaterials, massEvent
       });
       document.getElementById('newEventName').value = '';
       applyEventCategoryOptions();
@@ -2903,7 +4292,50 @@
       document.getElementById('newEventCompDate').disabled = false;
       document.getElementById('newEventCompDateTbd').checked = false;
       document.getElementById('newEventRequiresMaterials').checked = false;
+      document.getElementById('newEventMassEvent').checked = false;
       setMsg(msg, 'Event added.', true);
+      await loadAdminEvents();
+      await loadEventTemplatesForPicker();
+    } catch (err) { setMsg(msg, err.message, false); }
+  }));
+
+  // ---------- Add from library ----------
+  let eventTemplatesCache = [];
+  async function loadEventTemplatesForPicker() {
+    const select = document.getElementById('templateEventSelect');
+    try {
+      const lock = myAdminSectionLock();
+      const data = await api('adminListEventTemplates', lock ? { section: lock } : {});
+      eventTemplatesCache = data.templates;
+      select.innerHTML = '<option value="">— pick from library —</option>' + eventTemplatesCache.map(t =>
+        `<option value="${t.templateId}">${t.section === 'CULTURAL' ? '🎭' : '🏅'} ${escapeHtml(t.name)}</option>`
+      ).join('');
+    } catch (err) { /* leave default option */ }
+  }
+  document.getElementById('templateEventSelect').addEventListener('change', () => {
+    const t = eventTemplatesCache.find(x => x.templateId === document.getElementById('templateEventSelect').value);
+    // Same rule as the main Add form: Cultural events and any Group event
+    // skip the registration deadline entirely.
+    const skipDeadline = t && (t.section === 'CULTURAL' || t.category === 'GROUP');
+    document.getElementById('templateDeadlineField').classList.toggle('hidden', !!skipDeadline);
+  });
+  document.getElementById('addFromTemplateBtn').addEventListener('click', withLoading(document.getElementById('addFromTemplateBtn'), async () => {
+    const msg = document.getElementById('templateEventMsg');
+    const templateId = document.getElementById('templateEventSelect').value;
+    const deadline = document.getElementById('templateEventDeadline').value;
+    const competitionDate = document.getElementById('templateEventDate').value;
+    if (!templateId) { setMsg(msg, 'Pick an event from the library first.', false); return; }
+    try {
+      await api('adminCreateEventFromTemplate', {
+        templateId,
+        deadline: deadline ? new Date(deadline).toISOString() : '',
+        competitionDate: competitionDate || ''
+      });
+      document.getElementById('templateEventSelect').value = '';
+      document.getElementById('templateEventDeadline').value = '';
+      document.getElementById('templateEventDate').value = '';
+      document.getElementById('templateDeadlineField').classList.remove('hidden');
+      setMsg(msg, 'Event added from library.', true);
       await loadAdminEvents();
     } catch (err) { setMsg(msg, err.message, false); }
   }));
@@ -2911,7 +4343,7 @@
   // Category options depend on which Section is selected — Sports gets
   // Track/Field/Marathon/Other, Cultural gets Solo/Group/Other.
   const EVENT_CATEGORY_OPTIONS = {
-    SPORTS: [['TRACK','Track'],['FIELD','Field'],['MARATHON','Marathon'],['OTHER','Other'],['GROUP','Group'],['DOUBLES','Doubles']],
+    SPORTS: [['TRACK','Track'],['FIELD','Field'],['RELAY','Relay'],['MARATHON','Marathon'],['OTHER','Other'],['GROUP','Group'],['DOUBLES','Doubles']],
     CULTURAL: [['INDIVIDUAL','Individual'],['GROUP','Group'],['OTHER','Other']]
   };
   function applyEventCategoryOptions() {
@@ -2927,12 +4359,23 @@
     toggleDeadlineFieldForCategory();
   }
   function toggleDeadlineFieldForCategory() {
+    const section = document.getElementById('newEventSection').value;
     const isGroup = document.getElementById('newEventCategory').value === 'GROUP';
-    document.getElementById('newEventDeadlineField').classList.toggle('hidden', isGroup);
-    if (isGroup) {
+    // Cultural events never need a registration deadline — only the event
+    // date matters there. Group events (either section) skip it too since a
+    // team can be entered any time.
+    const skipDeadline = isGroup || section === 'CULTURAL';
+    document.getElementById('newEventDeadlineField').classList.toggle('hidden', skipDeadline);
+    if (skipDeadline) {
       document.getElementById('newEventDeadline').value = '';
       document.getElementById('newEventDeadlineTbd').checked = false;
     }
+    // Mass event (no roster) only makes sense for a Cultural GROUP event —
+    // hidden for Sports or any non-Group category, for every admin.
+    const massEventField = document.getElementById('newEventMassEventField');
+    const showMassEvent = section === 'CULTURAL' && isGroup;
+    massEventField.classList.toggle('hidden', !showMassEvent);
+    if (!showMassEvent) document.getElementById('newEventMassEvent').checked = false;
   }
   document.getElementById('newEventSection').addEventListener('change', applyEventCategoryOptions);
   document.getElementById('newEventCategory').addEventListener('change', toggleDeadlineFieldForCategory);

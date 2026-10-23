@@ -387,10 +387,6 @@
         <div class="event-name" style="font-size:24px;margin-bottom:6px;">🎭 Cultural</div>
         <div class="mono" style="font-size:12px;color:var(--muted);">Solo, group &amp; other performances</div>
       </button>
-      <button class="card" id="goHousePointsBtn" style="flex:1;min-width:220px;padding:28px;text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
-        <div class="event-name" style="font-size:24px;margin-bottom:6px;">🏆 House Points</div>
-        <div class="mono" style="font-size:12px;color:var(--muted);">1 point for every event a house wins</div>
-      </button>
     </div>
   </div>
 
@@ -1126,7 +1122,8 @@
     openGroupEvents();
   });
   document.getElementById('goGroupEventsBtn').addEventListener('click', openGroupEvents);
-  document.getElementById('goHousePointsBtn').addEventListener('click', openHousePoints);
+  const hpBtn = document.getElementById('goHousePointsBtn'); // card removed from home screen; kept safe if re-added
+  if (hpBtn) hpBtn.addEventListener('click', openHousePoints);
   document.getElementById('goRegistrationsBtn').addEventListener('click', openRegistrations);
   document.getElementById('goResultsBtn').addEventListener('click', openResults);
   document.querySelectorAll('.back-btn').forEach(btn => {

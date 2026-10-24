@@ -233,11 +233,37 @@
     --maroon-900:#430E1B; --maroon-700:#7E2434; --maroon-600:#96354A; --maroon-100:#F3DFE1;
     --gold-600:#AD8523; --gold-500:#C9A227; --gold-300:#E7CD7D;
   }
-  .landing-hero{text-align:center;padding:64px 20px 90px;}
-  .landing-crest{width:160px;height:160px;border-radius:50%;box-shadow:0 10px 30px rgba(67,14,27,.13);margin-bottom:22px;object-fit:cover;}
-  .landing-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-600);font-weight:700;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;}
-  .landing-title{font-family:'Cormorant Garamond',serif;font-weight:700;text-transform:none;letter-spacing:0;font-size:clamp(30px,5vw,42px);line-height:1.1;color:var(--maroon-900);max-width:680px;margin:0 auto;}
-  .landing-motto{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold-600);font-size:17px;margin-top:12px;}
+  .landing-hero{position:relative;isolation:isolate;text-align:center;padding:48px 20px 80px;}
+  /* soft gold + maroon glow behind the crest */
+  .landing-hero::before{content:'';position:absolute;z-index:-1;left:50%;top:-30px;width:min(1000px,140vw);height:560px;transform:translateX(-50%);
+    background:radial-gradient(ellipse 46% 52% at 50% 30%,rgba(201,162,39,.24),transparent 70%),
+               radial-gradient(ellipse 70% 62% at 50% 8%,rgba(126,36,52,.13),transparent 75%);}
+  .landing-hero::after{content:'';position:absolute;z-index:-1;inset:0;opacity:.5;pointer-events:none;
+    background-image:radial-gradient(rgba(173,133,35,.22) 1px,transparent 1.4px);background-size:26px 26px;
+    -webkit-mask-image:radial-gradient(ellipse 60% 55% at 50% 22%,#000,transparent 75%);mask-image:radial-gradient(ellipse 60% 55% at 50% 22%,#000,transparent 75%);}
+  /* crest: bigger, on a white medallion with a gold ring so the line-art reads clearly */
+  .crest-wrap{position:relative;width:min(230px,62vw);aspect-ratio:1;margin:0 auto 28px;border-radius:50%;background:#fff;padding:14px;
+    box-shadow:0 0 0 2px var(--gold-500),0 0 0 9px rgba(201,162,39,.16),0 22px 50px rgba(67,14,27,.24),inset 0 0 0 1px rgba(67,14,27,.06);
+    animation:crestIn .8s cubic-bezier(.2,.8,.2,1) both;}
+  .crest-wrap::before{content:'';position:absolute;inset:-18px;border-radius:50%;border:1px dashed rgba(173,133,35,.55);animation:crestSpin 60s linear infinite;}
+  .landing-crest{display:block;width:100%;height:100%;border-radius:50%;object-fit:contain;background:#fff;}
+  .landing-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold-600);font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:10px;}
+  .landing-title{font-family:'Cormorant Garamond',serif;font-weight:700;text-transform:none;letter-spacing:0;font-size:clamp(34px,6.2vw,58px);line-height:1.05;color:var(--maroon-900);max-width:760px;margin:0 auto;}
+  .landing-title .lt-top{display:block;font-size:.62em;letter-spacing:.34em;color:var(--maroon-700);margin-bottom:6px;}
+  .landing-divider{display:flex;align-items:center;justify-content:center;gap:12px;margin:20px auto 4px;max-width:320px;color:var(--gold-500);font-size:11px;}
+  .landing-divider span{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold-500),transparent);}
+  .landing-motto{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold-600);font-size:clamp(19px,3vw,23px);margin-top:10px;}
+  .landing-cta{margin-top:30px;padding:15px 38px;font-size:14px;letter-spacing:.12em;box-shadow:0 10px 24px rgba(255,90,31,.32);transition:transform .15s ease,box-shadow .15s ease;}
+  .landing-cta:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(255,90,31,.4);}
+  .landing-foot{margin-top:40px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);opacity:.8;}
+  .landing-hero > *:not(.crest-wrap){animation:landingUp .7s ease backwards;}
+  .landing-hero > .landing-eyebrow{animation-delay:.1s}.landing-hero > .landing-title{animation-delay:.18s}.landing-hero > .landing-divider{animation-delay:.26s}
+  .landing-hero > .landing-motto{animation-delay:.32s}.landing-hero > .landing-desc{animation-delay:.4s}.landing-hero > .landing-cta{animation-delay:.48s}
+  .landing-hero > .landing-foot{animation-delay:.6s}
+  @keyframes landingUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes crestIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+  @keyframes crestSpin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.crest-wrap,.crest-wrap::before,.landing-hero > *{animation:none!important}}
 
   /* ---------- House Details (redesign) ---------- */
   .house-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
@@ -398,12 +424,16 @@
   <!-- LANDING -->
   <div id="landingView" class="wrap">
     <div class="landing-hero">
-      <img class="landing-crest" src="logo.png" alt="Sri Sathya Sai Institute of Higher Learning crest">
+      <div class="crest-wrap">
+        <img class="landing-crest" src="logo.png" alt="Sri Sathya Sai Institute of Higher Learning crest" decoding="async">
+      </div>
       <div class="landing-eyebrow">◎ NANDIGIRI</div>
-      <h1 class="landing-title">SSSIHL<br>Annual Sports & Cultural Meet</h1>
+      <h1 class="landing-title"><span class="lt-top">SSSIHL</span>Annual Sports &amp; Cultural Meet</h1>
+      <div class="landing-divider"><span></span><i>◆</i><span></span></div>
       <div class="landing-motto">Life is a Game - Play it</div>
-      <p class="landing-desc">A single home for event registration, results and the winners' gallery — track &amp; field events.</p>
-      <button class="btn btn-orange" id="landingLoginBtn" style="margin-top:28px;">Log in →</button>
+      <p class="landing-desc">A single home for event registration, results and the winners' gallery — for every sports and cultural event of the meet.</p>
+      <button class="btn btn-orange landing-cta" id="landingLoginBtn">Log in →</button>
+      <div class="landing-foot">Sri Sathya Sai Institute of Higher Learning · Nandigiri Campus</div>
     </div>
   </div>
 

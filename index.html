@@ -995,7 +995,7 @@
           </div>
 
           <div id="matchResultsSection" class="hidden">
-            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Pick the two houses, then pick the winner. A published group result must have a decided winner — that's what earns the house its championship point. For set-based sports (badminton, volleyball, table tennis…) add a score row per set/half/quarter. For football/handball, enter each match's 1st Half and 2nd Half score directly — Match 2 &amp; 3 also let you add a penalty shootout score if that match was drawn. For basketball, enter each match's four quarter scores (add overtime if it went to OT) and the match's MVP. For cultural group events, there's just one Score box for House A/B — fill it in if there's a numeric score, or skip straight to picking the winner. A "+ Add tiebreaker round" option appears if you need to break a tie.</p>
+            <p class="mono" style="font-size:11px;color:var(--muted);margin:0 0 14px;">Pick the two houses, then pick the winner. A published group result must have a decided winner — that's what earns the house its championship point. For set-based sports (badminton, volleyball, table tennis…) add a score row per set/half/quarter. For football/handball, enter each match's 1st Half and 2nd Half score directly — Match 2 &amp; 3 also let you add a penalty shootout score if that match was drawn. For basketball, enter each match's four quarter scores (add overtime if it went to OT) and the match's MVP. For cricket, pick who won the toss and what they chose, then fill each house's batting and bowling tables (like a live scorecard) and the player of the match — Orange Cap and Purple Cap are calculated automatically across the whole tournament. For cultural group events, there's just one Score box for House A/B — fill it in if there's a numeric score, or skip straight to picking the winner. A "+ Add tiebreaker round" option appears if you need to break a tie.</p>
             <div class="inline-form" style="margin:0 0 14px;">
               <div class="field" style="flex:1;"><label>House A</label>
                 <select id="matchTeamASelect" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;"><option value="">Select house…</option></select>
@@ -2207,10 +2207,126 @@
     const unit = UNIT_LABEL[p.unit] || p.unit || '';
     return escapeHtml(p.value) + (unit ? ' ' + escapeHtml(unit) : '');
   }
+  // ---------- CRICKET scorecard (student view) ----------
+  let ckTabSeq = 0;
+  window.ckTab = function (id, idx) {
+    document.querySelectorAll('[data-ck-pane="' + id + '"]').forEach(p => { p.style.display = p.dataset.idx === String(idx) ? 'block' : 'none'; });
+    document.querySelectorAll('[data-ck-tab="' + id + '"]').forEach(b => {
+      const on = b.dataset.idx === String(idx);
+      b.style.borderBottom = on ? '2px solid #111' : '2px solid transparent';
+      b.style.color = on ? '#111' : 'var(--muted)';
+    });
+  };
+  function ckTotalsS(t) {
+    t = t || {};
+    let runs = Number(t.extras) || 0, wk = 0;
+    (t.batting || []).forEach(b => {
+      runs += Number(b.runs) || 0;
+      const h = String(b.howOut || '').trim().toLowerCase();
+      if (h && h !== 'not out' && h !== 'did not bat' && h !== 'dnb' && !h.startsWith('retired')) wk++;
+    });
+    const started = (t.batting || []).some(b => String(b.howOut || '').trim().toLowerCase() !== 'did not bat');
+    return { runs, wk, overs: t.overs || '', started };
+  }
+  function renderCricketScorecard(match) {
+    const ck = match.cricket;
+    const nameOf = { A: match.teamA || 'House A', B: match.teamB || 'House B' };
+    const tot = { A: ckTotalsS(ck.teams && ck.teams.A), B: ckTotalsS(ck.teams && ck.teams.B) };
+    const tw = ck.toss && ck.toss.winner, dec = ck.toss && ck.toss.decision;
+    let first = null;
+    if (tw && dec) first = ((tw === 'A') === (dec === 'bat')) ? 'A' : 'B';
+    const second = first ? (first === 'A' ? 'B' : 'A') : null;
+    const scoreLine = side => tot[side].started
+      ? `<div style="font-family:'Anton',sans-serif;font-size:26px;line-height:1.1;">${tot[side].runs}/${tot[side].wk}</div>${tot[side].overs ? `<div class="mono" style="font-size:11px;color:var(--muted);">(${escapeHtml(tot[side].overs)})</div>` : ''}`
+      : `<div class="mono" style="font-size:12px;color:var(--muted);">Yet to bat</div>`;
+    const winSide = match.winner ? (match.winner === match.teamA ? 'A' : match.winner === match.teamB ? 'B' : null) : null;
+    let result = ck.note ? `${match.winner} ${ck.note}` : '';
+    if (!result && winSide) {
+      result = (second && winSide === first && tot[first].started && tot[second].started)
+        ? `${match.winner} won by ${tot[first].runs - tot[second].runs} runs` : `${match.winner} won`;
+    }
+    const tossLine = (tw && dec) ? `${nameOf[tw]} won the toss and chose to ${dec === 'bat' ? 'bat' : 'field'} first` : '';
+    const teamBlock = side => `
+      <div style="flex:1;text-align:center;min-width:110px;">
+        <div style="font-weight:700;font-size:14px;margin-bottom:6px;${winSide === side ? 'color:#8a6a12;' : ''}">${escapeHtml(nameOf[side])}${winSide === side ? ' 🏆' : ''}</div>
+        ${scoreLine(side)}
+      </div>`;
+    const id = 'ck' + (++ckTabSeq);
+    const th = "padding:6px 4px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);font-weight:500;text-align:right;";
+    const td = "padding:8px 4px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums;";
+    const pane = (side, idx) => {
+      const t = (ck.teams && ck.teams[side]) || {};
+      const bats = t.batting || [];
+      const played = bats.filter(b => String(b.howOut || '').trim().toLowerCase() !== 'did not bat');
+      const dnb = bats.filter(b => String(b.howOut || '').trim().toLowerCase() === 'did not bat').map(b => b.name);
+      const batRows = played.map(b => {
+        const r = Number(b.runs) || 0, bl = Number(b.balls) || 0;
+        const sr = bl ? (r * 100 / bl).toFixed(2) : '—';
+        return `<tr style="border-top:1px solid var(--line);">
+          <td style="padding:8px 4px;"><div style="font-weight:600;font-size:13.5px;">${escapeHtml(b.name)}</div><div style="font-size:11.5px;color:var(--muted);">${escapeHtml(b.howOut || '')}</div></td>
+          <td style="${td}font-weight:700;">${r}</td><td style="${td}">${bl || '—'}</td><td style="${td}">${Number(b.fours) || 0}</td><td style="${td}">${Number(b.sixes) || 0}</td><td style="${td}">${sr}</td></tr>`;
+      }).join('');
+      const bowls = (t.bowling || []).map(b => {
+        const parts = String(b.overs || '0').split('.');
+        const balls = (parseInt(parts[0], 10) || 0) * 6 + (parseInt(parts[1], 10) || 0);
+        const eco = balls ? ((Number(b.runs) || 0) * 6 / balls).toFixed(2) : '—';
+        return `<tr style="border-top:1px solid var(--line);"><td style="padding:8px 4px;font-weight:600;font-size:13.5px;">${escapeHtml(b.name)}</td>
+          <td style="${td}">${escapeHtml(b.overs || '0')}</td><td style="${td}">${Number(b.maidens) || 0}</td><td style="${td}">${Number(b.runs) || 0}</td><td style="${td}font-weight:700;">${Number(b.wickets) || 0}</td><td style="${td}">${eco}</td></tr>`;
+      }).join('');
+      const T = tot[side];
+      return `<div data-ck-pane="${id}" data-idx="${idx}" style="display:${idx === 0 ? 'block' : 'none'};padding:4px 12px 12px;overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:300px;">
+          <tr><th style="${th}text-align:left;">Batting</th><th style="${th}">R</th><th style="${th}">B</th><th style="${th}">4s</th><th style="${th}">6s</th><th style="${th}">S/R</th></tr>
+          ${batRows || `<tr><td colspan="6" style="padding:10px 4px;color:var(--muted);font-size:12.5px;">${T.started ? '—' : 'Yet to bat'}</td></tr>`}
+        </table>
+        ${played.length ? `<div style="display:flex;justify-content:space-between;padding:8px 4px;border-top:1px solid var(--line);font-size:13px;"><span style="color:var(--muted);">Extras</span><span>${Number(t.extras) || 0}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 4px;border-top:1px solid var(--line);font-size:13.5px;font-weight:700;"><span>Total</span><span>${T.runs}/${T.wk}${T.overs ? ' (' + escapeHtml(T.overs) + ' ov)' : ''}</span></div>` : ''}
+        ${dnb.length ? `<div style="padding:6px 4px;font-size:12px;color:var(--muted);">Did not bat: ${dnb.map(escapeHtml).join(', ')}</div>` : ''}
+        ${bowls ? `<table style="width:100%;border-collapse:collapse;min-width:300px;margin-top:14px;">
+          <tr><th style="${th}text-align:left;">Bowling</th><th style="${th}">O</th><th style="${th}">M</th><th style="${th}">R</th><th style="${th}">W</th><th style="${th}">Econ</th></tr>${bowls}</table>` : ''}
+      </div>`;
+    };
+    // Tabs follow batting order when the toss is known (first innings first)
+    const order = first ? [first, second] : ['A', 'B'];
+    const tabs = order.map((side, idx) => `<button type="button" data-ck-tab="${id}" data-idx="${idx}" onclick="ckTab('${id}',${idx})"
+      style="flex:1;padding:12px 6px;background:none;border:none;border-bottom:${idx === 0 ? '2px solid #111' : '2px solid transparent'};color:${idx === 0 ? '#111' : 'var(--muted)'};font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;">${escapeHtml(nameOf[side])}</button>`).join('');
+    return `
+      <div style="border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden;width:100%;max-width:560px;margin-top:6px;">
+        <div style="padding:16px 14px 12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            ${teamBlock('A')}<div class="mono" style="font-size:11px;color:var(--muted);">vs</div>${teamBlock('B')}
+          </div>
+          ${tossLine ? `<div style="text-align:center;font-size:12.5px;margin-top:12px;">🪙 ${escapeHtml(tossLine)}</div>` : ''}
+          ${result ? `<div style="text-align:center;font-size:13px;font-weight:700;margin-top:6px;">${escapeHtml(result)}</div>` : ''}
+          ${ck.pom ? `<div style="text-align:center;margin-top:10px;"><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#fff7e8;border:1px solid #e8c468;font-size:12px;"><span>⭐</span><span class="mono" style="font-size:10.5px;color:#8a6a12;font-weight:700;">PLAYER OF THE MATCH</span><span style="font-weight:600;">${escapeHtml(ck.pom)}</span></span></div>` : ''}
+        </div>
+        <div style="border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#f5f5f5;padding:8px 14px;" class="mono"><span style="font-size:11px;letter-spacing:.5px;">SCORECARD</span></div>
+        <div style="display:flex;border-bottom:1px solid var(--line);">${tabs}</div>
+        ${order.map((side, idx) => pane(side, idx)).join('')}
+      </div>`;
+  }
+  function renderCricketCaps(caps) {
+    if (!caps || ((!caps.orange || !caps.orange.length) && (!caps.purple || !caps.purple.length))) return '';
+    const list = (arr, key, label, color) => arr.map((p, i) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 0;${i ? 'border-top:1px solid var(--line);' : ''}">
+        <span style="font-size:${i === 0 ? '20px' : '12px'};width:24px;text-align:center;">${i === 0 ? (key === 'runs' ? '🟠' : '🟣') : (i + 1)}</span>
+        <div style="flex:1;min-width:0;"><div style="font-weight:${i === 0 ? 700 : 600};font-size:13.5px;">${escapeHtml(p.name)}</div><div class="mono" style="font-size:10.5px;color:var(--muted);">${escapeHtml(p.team || '')}</div></div>
+        <div style="font-family:'Anton',sans-serif;font-size:${i === 0 ? '22px' : '16px'};color:${i === 0 ? color : 'inherit'};">${p[key]}<span class="mono" style="font-size:10px;color:var(--muted);margin-left:3px;">${label}</span></div>
+      </div>`).join('');
+    const box = (title, bg, body) => `<div style="flex:1;min-width:240px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;">
+      <div style="padding:8px 14px;background:${bg};color:#fff;font-family:'Anton',sans-serif;letter-spacing:.5px;font-size:14px;">${title}</div><div style="padding:6px 14px 8px;">${body}</div></div>`;
+    return `<div style="width:100%;margin-bottom:6px;"><div class="mono" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">🏏 Cricket tournament</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        ${box('ORANGE CAP · MOST RUNS', '#ff6a13', list(caps.orange || [], 'runs', 'runs', '#ff6a13') || '<div class="mono" style="padding:10px 0;font-size:12px;color:var(--muted);">No data yet</div>')}
+        ${box('PURPLE CAP · MOST WICKETS', '#6a2c91', list(caps.purple || [], 'wickets', 'wkts', '#6a2c91') || '<div class="mono" style="padding:10px 0;font-size:12px;color:var(--muted);">No data yet</div>')}
+      </div></div>`;
+  }
+
   function renderMatchScoreboard(match) {
     if (!match || (!match.teamA && !match.teamB)) {
       return '<div class="mono" style="font-size:12.5px;color:var(--muted);">Result to be announced.</div>';
     }
+    if (match.cricket) return renderCricketScorecard(match);
     const isWinnerA = match.winner && match.winner === match.teamA;
     const isWinnerB = match.winner && match.winner === match.teamB;
     // Group the flat periods list back for display. Three label shapes are
@@ -2420,8 +2536,9 @@
       let activeFilter = 'ALL';
       const paintList = () => {
         const shown = data.results.filter(r => activeFilter === 'ALL' || bucketOf(r) === activeFilter);
+        const capsHtml = (state.activeSection === 'SPORTS' && (activeFilter === 'ALL' || activeFilter === 'GROUP')) ? renderCricketCaps(data.caps) : '';
         container.innerHTML = shown.length
-          ? shown.map(renderResultRow).join('')
+          ? capsHtml + shown.map(renderResultRow).join('')
           : '<div class="event-row"><span class="mono" style="color:var(--muted);">No results published in this category yet.</span></div>';
         container.querySelectorAll('.gallery-btn').forEach(btn => {
           btn.addEventListener('click', () => openGalleryModal(btn.dataset.eventName, JSON.parse(btn.dataset.photos)));
@@ -3708,7 +3825,7 @@
   }));
 
   let currentResultsEventCategory = '';
-  let currentResultsScoreVariant = 'sets'; // 'sets' | 'halves' | 'quarters' | 'simple'
+  let currentResultsScoreVariant = 'sets'; // 'sets' | 'halves' | 'quarters' | 'simple' | 'cricket'
   let currentResultsDoublesTeams = []; // grouped partner pairs for the Doubles results dropdown
 
   // Sports that play to a single match score rather than a series of sets
@@ -3729,6 +3846,7 @@
   }
   function scoreVariantFor(section, eventName) {
     if (String(section || '').toUpperCase() === 'CULTURAL') return 'simple';
+    if (String(eventName || '').toLowerCase().includes('cricket')) return 'cricket';
     if (isQuarterSport(eventName)) return 'quarters';
     if (isScoreModeSport(eventName)) return 'halves';
     return 'sets';
@@ -4044,6 +4162,180 @@
     return periods;
   }
 
+  // ---------- CRICKET scorecard editor (admin) ----------
+  // Stored in match.cricket (cricketJson column): toss, player of the match,
+  // and per-house batting / bowling tables. Orange & Purple caps are computed
+  // from these automatically on the server.
+  let cricketRoster = [];
+  const CK_INP = "width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:6px;";
+  function ckNum(cls, ph, v) { return `<input class="${cls}" inputmode="decimal" placeholder="${ph}" value="${escapeHtml(v == null ? '' : String(v))}" style="${CK_INP}text-align:center;padding:7px 4px;">`; }
+  function ckBatRow(b) {
+    b = b || {};
+    const d = document.createElement('div');
+    d.className = 'ck-bat-row';
+    d.style.cssText = 'border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:8px;background:#fff;';
+    d.innerHTML = `
+      <div style="display:flex;gap:6px;margin-bottom:6px;">
+        <input class="ck-name" list="ckPlayersDL" placeholder="Batter name" value="${escapeHtml(b.name || '')}" style="${CK_INP}flex:1.2;">
+        <input class="ck-how" list="ckHowDL" placeholder="c Ishan b Naman / not out" value="${escapeHtml(b.howOut || '')}" style="${CK_INP}flex:1.6;">
+        <button type="button" class="btn btn-outline btn-small ck-del" style="border-color:var(--line);color:var(--graphite);padding:4px 8px;">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+        ${ckNum('ck-runs', 'R', b.runs)}${ckNum('ck-balls', 'B', b.balls)}${ckNum('ck-4s', '4s', b.fours)}${ckNum('ck-6s', '6s', b.sixes)}
+      </div>`;
+    d.querySelector('.ck-del').addEventListener('click', () => d.remove());
+    return d;
+  }
+  function ckBowlRow(b) {
+    b = b || {};
+    const d = document.createElement('div');
+    d.className = 'ck-bowl-row';
+    d.style.cssText = 'border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:8px;background:#fff;';
+    d.innerHTML = `
+      <div style="display:flex;gap:6px;margin-bottom:6px;">
+        <input class="ck-name" list="ckPlayersDL" placeholder="Bowler name" value="${escapeHtml(b.name || '')}" style="${CK_INP}">
+        <button type="button" class="btn btn-outline btn-small ck-del" style="border-color:var(--line);color:var(--graphite);padding:4px 8px;">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+        ${ckNum('ck-overs', 'O', b.overs)}${ckNum('ck-mdn', 'M', b.maidens)}${ckNum('ck-runs', 'R', b.runs)}${ckNum('ck-wkts', 'W', b.wickets)}
+      </div>`;
+    d.querySelector('.ck-del').addEventListener('click', () => d.remove());
+    return d;
+  }
+  function buildCricketPane(side, data) {
+    data = data || {};
+    const pane = document.createElement('div');
+    pane.className = 'ck-pane';
+    pane.dataset.side = side;
+    pane.innerHTML = `
+      <div class="mono" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:4px 0 6px;">Batting</div>
+      <div class="ck-bat-list"></div>
+      <button type="button" class="btn btn-outline btn-small ck-add-bat" style="border-color:var(--line);color:var(--graphite);width:100%;margin-bottom:10px;">+ Add batter</button>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <div style="flex:1;"><div class="mono" style="font-size:10.5px;color:var(--muted);margin-bottom:4px;">Extras</div>${ckNum('ck-extras', '0', data.extras)}</div>
+        <div style="flex:1;"><div class="mono" style="font-size:10.5px;color:var(--muted);margin-bottom:4px;">Overs faced (e.g. 49.2)</div>${ckNum('ck-team-overs', '0', data.overs)}</div>
+      </div>
+      <div class="mono" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:4px 0 6px;">Bowling (this house's bowlers)</div>
+      <div class="ck-bowl-list"></div>
+      <button type="button" class="btn btn-outline btn-small ck-add-bowl" style="border-color:var(--line);color:var(--graphite);width:100%;">+ Add bowler</button>`;
+    const bl = pane.querySelector('.ck-bat-list'), wl = pane.querySelector('.ck-bowl-list');
+    (data.batting || []).forEach(b => bl.appendChild(ckBatRow(b)));
+    (data.bowling || []).forEach(b => wl.appendChild(ckBowlRow(b)));
+    pane.querySelector('.ck-add-bat').addEventListener('click', () => bl.appendChild(ckBatRow()));
+    pane.querySelector('.ck-add-bowl').addEventListener('click', () => wl.appendChild(ckBowlRow()));
+    return pane;
+  }
+  function loadCricketIntoColumns(ck) {
+    ck = ck || {};
+    const wrap = document.getElementById('matchColumns');
+    wrap.innerHTML = '';
+    const box = document.createElement('div');
+    box.dataset.mode = 'cricket';
+    box.style.cssText = 'width:100%;';
+    const SEL = "width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:2px;";
+    box.innerHTML = `
+      <datalist id="ckPlayersDL">${cricketRoster.map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist>
+      <datalist id="ckHowDL"><option value="not out"><option value="did not bat"><option value="retired hurt"><option value="lbw b "><option value="run out ()"><option value="c  b "><option value="st  b "><option value="b "><option value="hit wicket b "></datalist>
+      <div class="inline-form" style="margin:0 0 14px;">
+        <div class="field" style="flex:1;"><label>🪙 Toss won by</label><select id="ckTossWinner" style="${SEL}"></select></div>
+        <div class="field" style="flex:1;"><label>Elected to</label>
+          <select id="ckDecision" style="${SEL}">
+            <option value="">Select…</option><option value="bat">Bat first</option><option value="field">Field first</option>
+          </select></div>
+      </div>
+      <div id="ckBatFirstNote" class="mono" style="font-size:11px;color:var(--muted);margin:-6px 0 12px;"></div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button type="button" class="btn btn-orange btn-small ck-tab" data-side="A"></button>
+        <button type="button" class="btn btn-outline btn-small ck-tab" data-side="B" style="border-color:var(--line);color:var(--graphite);"></button>
+      </div>
+      <div id="ckPanes"></div>
+      <div class="field" style="margin-top:14px;"><label>⭐ Player of the match</label>
+        <input id="ckPom" list="ckPlayersDL" placeholder="Player name" value="${escapeHtml(ck.pom || '')}" style="${CK_INP}"></div>
+      <div class="field" style="margin-top:10px;"><label>Result note (optional — e.g. "won by 5 wickets")</label>
+        <input id="ckNote" placeholder="Leave blank to auto-generate" value="${escapeHtml(ck.note || '')}" style="${CK_INP}"></div>`;
+    wrap.appendChild(box);
+    const panes = box.querySelector('#ckPanes');
+    ['A', 'B'].forEach(side => {
+      const pane = buildCricketPane(side, (ck.teams || {})[side]);
+      if (side === 'B') pane.classList.add('hidden');
+      panes.appendChild(pane);
+    });
+    box.querySelectorAll('.ck-tab').forEach(btn => btn.addEventListener('click', () => {
+      box.querySelectorAll('.ck-tab').forEach(b => {
+        const on = b === btn;
+        b.classList.toggle('btn-orange', on); b.classList.toggle('btn-outline', !on);
+        b.style.borderColor = on ? '' : 'var(--line)'; b.style.color = on ? '' : 'var(--graphite)';
+      });
+      panes.querySelectorAll('.ck-pane').forEach(p => p.classList.toggle('hidden', p.dataset.side !== btn.dataset.side));
+    }));
+    box.querySelector('#ckTossWinner').addEventListener('change', refreshCricketLabels);
+    box.querySelector('#ckDecision').addEventListener('change', refreshCricketLabels);
+    box.dataset.tossWinner = (ck.toss && ck.toss.winner) || '';
+    box.querySelector('#ckDecision').value = (ck.toss && ck.toss.decision) || '';
+    refreshCricketLabels();
+  }
+  // Keeps tab labels / toss options in sync with the House A / House B dropdowns.
+  function refreshCricketLabels() {
+    const box = document.querySelector('#matchColumns [data-mode="cricket"]');
+    if (!box) return;
+    const a = document.getElementById('matchTeamASelect').value.trim() || 'House A';
+    const b = document.getElementById('matchTeamBSelect').value.trim() || 'House B';
+    const tw = box.querySelector('#ckTossWinner');
+    const prev = tw.value || box.dataset.tossWinner || '';
+    tw.innerHTML = `<option value="">Select…</option><option value="A">${escapeHtml(a)}</option><option value="B">${escapeHtml(b)}</option>`;
+    tw.value = prev; box.dataset.tossWinner = '';
+    box.querySelector('.ck-tab[data-side="A"]').textContent = a;
+    box.querySelector('.ck-tab[data-side="B"]').textContent = b;
+    const dec = box.querySelector('#ckDecision').value;
+    const note = box.querySelector('#ckBatFirstNote');
+    if (tw.value && dec) {
+      const first = (tw.value === 'A') === (dec === 'bat') ? a : b;
+      note.textContent = first + ' bat first.';
+    } else note.textContent = '';
+  }
+  document.getElementById('matchTeamASelect').addEventListener('change', refreshCricketLabels);
+  document.getElementById('matchTeamBSelect').addEventListener('change', refreshCricketLabels);
+  function collectCricket() {
+    const box = document.querySelector('#matchColumns [data-mode="cricket"]');
+    if (!box) return null;
+    const val = (el, c) => el.querySelector(c).value.trim();
+    const teams = {};
+    box.querySelectorAll('.ck-pane').forEach(pane => {
+      const batting = Array.from(pane.querySelectorAll('.ck-bat-row')).map(r => ({
+        name: val(r, '.ck-name'), howOut: val(r, '.ck-how'), runs: val(r, '.ck-runs'), balls: val(r, '.ck-balls'),
+        fours: val(r, '.ck-4s'), sixes: val(r, '.ck-6s')
+      })).filter(b => b.name);
+      const bowling = Array.from(pane.querySelectorAll('.ck-bowl-row')).map(r => ({
+        name: val(r, '.ck-name'), overs: val(r, '.ck-overs'), maidens: val(r, '.ck-mdn'), runs: val(r, '.ck-runs'), wickets: val(r, '.ck-wkts')
+      })).filter(b => b.name);
+      teams[pane.dataset.side] = { batting, bowling, extras: val(pane, '.ck-extras'), overs: val(pane, '.ck-team-overs') };
+    });
+    const out = {
+      toss: { winner: box.querySelector('#ckTossWinner').value, decision: box.querySelector('#ckDecision').value },
+      pom: box.querySelector('#ckPom').value.trim(),
+      note: box.querySelector('#ckNote').value.trim(),
+      teams
+    };
+    const empty = !out.toss.winner && !out.toss.decision && !out.pom && !teams.A.batting.length && !teams.B.batting.length && !teams.A.bowling.length && !teams.B.bowling.length;
+    return empty ? null : out;
+  }
+  function ckTotals(t) {
+    t = t || {};
+    let runs = Number(t.extras) || 0, wk = 0;
+    (t.batting || []).forEach(b => {
+      runs += Number(b.runs) || 0;
+      const h = String(b.howOut || '').trim().toLowerCase();
+      if (h && h !== 'not out' && h !== 'did not bat' && h !== 'dnb' && !h.startsWith('retired')) wk++;
+    });
+    return { runs, wk, overs: t.overs || '', started: (t.batting || []).some(b => String(b.howOut || '').toLowerCase() !== 'did not bat') };
+  }
+  function ckSummaryPeriods(ck) {
+    if (!ck) return [];
+    const f = t => { const x = ckTotals(t); return x.started ? `${x.runs}/${x.wk}${x.overs ? ' (' + x.overs + ')' : ''}` : ''; };
+    const a = f(ck.teams.A), b = f(ck.teams.B);
+    return (a || b) ? [{ label: 'Score', scoreA: a, scoreB: b }] : [];
+  }
+
   // ---------- HOUSES (shared cache used by results editor + add-players + Houses tab) ----------
   let housesCache = []; // [{houseId, name}]
   async function loadHousesCache() {
@@ -4102,8 +4394,11 @@
       if (isGroup) {
         const m = savedResults.match || {};
         populateMatchTeamSelects(m.teamA || '', m.teamB || '');
-        document.getElementById('matchColumnsHint').classList.toggle('hidden', currentResultsScoreVariant === 'simple');
-        if (currentResultsScoreVariant === 'quarters') {
+        document.getElementById('matchColumnsHint').classList.toggle('hidden', currentResultsScoreVariant === 'simple' || currentResultsScoreVariant === 'cricket');
+        cricketRoster = Array.from(new Set((regsData.registrations || []).map(r => r.name).filter(Boolean)));
+        if (currentResultsScoreVariant === 'cricket') {
+          loadCricketIntoColumns(m.cricket || null);
+        } else if (currentResultsScoreVariant === 'quarters') {
           loadQuarterPeriodsIntoColumns(m.periods || []);
         } else if (currentResultsScoreVariant === 'halves') {
           loadScorePeriodsIntoColumns(m.periods || []);
@@ -4199,11 +4494,14 @@
       const winner = document.getElementById('matchWinnerSelect').value.trim();
       if (resultsPublished && (!teamA || !teamB)) { setMsg(msg, 'Pick both houses before publishing.', false); return; }
       if (resultsPublished && (!winner || (winner !== teamA && winner !== teamB))) { setMsg(msg, 'Pick a winner before publishing — group events need a decided result.', false); return; }
-      const periods = currentResultsScoreVariant === 'quarters' ? collectQuarterPeriods()
+      let cricket = null;
+      if (currentResultsScoreVariant === 'cricket') cricket = collectCricket();
+      const periods = currentResultsScoreVariant === 'cricket' ? ckSummaryPeriods(cricket)
+        : currentResultsScoreVariant === 'quarters' ? collectQuarterPeriods()
         : currentResultsScoreVariant === 'halves' ? collectScorePeriods()
         : currentResultsScoreVariant === 'simple' ? collectSimpleScorePeriods()
         : collectPeriodsFromMatchColumns();
-      payload.match = { teamA, teamB, winner, periods };
+      payload.match = { teamA, teamB, winner, periods, cricket };
     } else {
       const isDoubles = currentResultsEventCategory === 'DOUBLES';
       payload.positions = [1, 2, 3].map(n => {

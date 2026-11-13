@@ -28,8 +28,8 @@
   /* ---------- hamburger menu + left sidebar (replaces the old inline nav-right buttons) ---------- */
   .hamburger-btn{background:transparent;border:1px solid rgba(245,243,236,.35);border-radius:3px;width:38px;height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;padding:0;}
   .hamburger-btn span{display:block;width:18px;height:2px;background:var(--chalk);border-radius:1px;}
-  .sidebar-backdrop{position:fixed;inset:0;background:rgba(11,37,69,.45);z-index:900;opacity:0;pointer-events:none;transition:opacity .18s ease;}
-  .sidebar-backdrop.open{opacity:1;pointer-events:auto;}
+  .sidebar-backdrop{position:fixed;inset:0;background:rgba(11,37,69,.45);z-index:900;opacity:0;pointer-events:none;transition:opacity .35s ease,backdrop-filter .35s ease;-webkit-backdrop-filter:blur(0);backdrop-filter:blur(0);}
+  .sidebar-backdrop.open{opacity:1;pointer-events:auto;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}
   .app-sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;max-width:82vw;background:var(--court-navy);z-index:901;transform:translateX(-100%);transition:transform .2s ease;display:flex;flex-direction:column;box-shadow:2px 0 18px rgba(0,0,0,.25);}
   .app-sidebar.open{transform:translateX(0);}
   .app-sidebar-head{padding:20px 18px;border-bottom:1px solid rgba(245,243,236,.15);display:flex;align-items:center;justify-content:space-between;}
@@ -237,8 +237,34 @@
   body{-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;}
   ::selection{background:rgba(255,90,31,.25);}
   /* closed side menu must not cast its shadow onto the page edge */
-  .app-sidebar{visibility:hidden;box-shadow:none;transition:transform .2s ease,visibility 0s linear .2s;}
-  .app-sidebar.open{visibility:visible;box-shadow:2px 0 18px rgba(0,0,0,.25);transition:transform .2s ease,visibility 0s;}
+  .app-sidebar{visibility:hidden;box-shadow:none;will-change:transform;transition:transform .4s cubic-bezier(.22,.8,.26,1),box-shadow .4s ease,visibility 0s linear .4s;}
+  .app-sidebar.open{visibility:visible;box-shadow:2px 0 22px rgba(0,0,0,.28);transition:transform .4s cubic-bezier(.22,.8,.26,1),box-shadow .4s ease,visibility 0s;}
+  /* menu items glide in one after another each time the menu opens */
+  @keyframes sbItemIn{from{opacity:0;transform:translateX(-16px);}to{opacity:1;transform:translateX(0);}}
+  .app-sidebar.open .sidebar-user,.app-sidebar.open .sidebar-nav .sidebar-link,.app-sidebar.open .sidebar-foot .sidebar-link{animation:sbItemIn .45s cubic-bezier(.22,.8,.26,1) both;animation-delay:calc(var(--i,0) * 55ms + 90ms);}
+  .app-sidebar .sidebar-user{--i:0;}
+  .sidebar-nav .sidebar-link:nth-child(1){--i:1;} .sidebar-nav .sidebar-link:nth-child(2){--i:2;} .sidebar-nav .sidebar-link:nth-child(3){--i:3;} .sidebar-nav .sidebar-link:nth-child(4){--i:4;} .sidebar-nav .sidebar-link:nth-child(5){--i:5;}
+  .sidebar-foot .sidebar-link{--i:6;}
+  /* same feel as the other buttons: soft hover, small press-down */
+  .sidebar-link{transition:background .18s ease,padding-left .18s ease,color .18s ease;}
+  .sidebar-link:hover{padding-left:24px;background:rgba(245,243,236,.1);}
+  .sidebar-link:active{background:rgba(245,243,236,.18);}
+  .sidebar-link .icon{transition:transform .18s ease;}
+  .sidebar-link:hover .icon{transform:scale(1.15);}
+  .hamburger-btn{transition:background .18s ease,transform .12s ease,border-color .18s ease;}
+  .hamburger-btn:hover{background:rgba(245,243,236,.1);border-color:rgba(245,243,236,.6);}
+  .hamburger-btn:active{transform:scale(.94);}
+  .sidebar-close-btn{transition:transform .2s ease,opacity .2s ease;opacity:.85;}
+  .sidebar-close-btn:hover{transform:rotate(90deg);opacity:1;}
+  .tab{transition:color .15s ease,border-color .15s ease;} .tab:hover{color:var(--graphite);}
+  .stat-tile{border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px 16px;flex:1;min-width:130px;transition:box-shadow .18s,transform .18s;}
+  .stat-tile:hover{box-shadow:0 8px 20px rgba(11,37,69,.09);transform:translateY(-2px);}
+  .stat-tile .n{font-family:'Anton',sans-serif;font-size:30px;line-height:1.1;}
+  .stat-tile .l{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+  .bar-track{height:10px;background:#eee8da;border-radius:99px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--ball-orange);border-radius:99px;transition:width .5s cubic-bezier(.22,.8,.26,1);}
+  .stats-row{cursor:pointer;} .stats-row:hover td{background:#fdfbf6;}
+  @media (prefers-reduced-motion:reduce){.app-sidebar,.sidebar-backdrop{transition-duration:.01s !important;} .app-sidebar.open .sidebar-link,.app-sidebar.open .sidebar-user{animation:none !important;}}
   /* keyboard focus is clearly visible everywhere */
   button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:3px solid rgba(255,90,31,.5);outline-offset:2px;}
   /* consistent rounding + feel */
@@ -501,6 +527,7 @@
   </div>
   <div class="sidebar-nav">
     <a class="sidebar-link" id="navHomeBtn" href="#"><span class="icon">🏠</span> Home</a>
+    <a class="sidebar-link" id="navProfileBtn" href="#"><span class="icon">👤</span> My Profile</a>
     <a class="sidebar-link" id="navAdminBtn" href="#" style="display:none;"><span class="icon">🛠</span> Admin</a>
     <a class="sidebar-link" id="navArchivesBtn" href="#"><span class="icon">🗂</span> Archives <span class="soon-tag">Soon</span></a>
   </div>
@@ -644,6 +671,10 @@
         <div class="event-name">Group Events</div>
         <div class="mono" style="color:var(--muted);">House-vs-house team events &amp; rosters</div>
       </button>
+      <button class="card" id="goMvpBtn" style="text-align:left;cursor:pointer;border:1px solid var(--line);background:#fff;">
+        <div class="event-name">⭐ MVP Wall</div>
+        <div class="mono" style="color:var(--muted);">Player of the match from every sports match</div>
+      </button>
     </div>
   </div>
 
@@ -702,6 +733,22 @@
     <div class="card" id="resultsList" style="margin-top:12px;"></div>
   </div>
 
+  <!-- MY PROFILE -->
+  <div id="profileView" class="wrap hidden">
+    <div style="margin-bottom:16px;"><button class="btn btn-outline btn-small back-btn" data-back-to="sectionHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button></div>
+    <p class="hello" id="profileSeason">Season</p>
+    <h1 class="page-title">My Profile</h1>
+    <div id="profileBody"></div>
+  </div>
+
+  <!-- MVP WALL (sports only) -->
+  <div id="mvpView" class="wrap hidden">
+    <div style="margin-bottom:16px;"><button class="btn btn-outline btn-small back-btn" data-back-to="dashboardHomeView" style="border-color:var(--line);color:var(--graphite);">← Back</button></div>
+    <p class="hello">🏅 Sports</p>
+    <h1 class="page-title">⭐ MVP Wall</h1>
+    <div id="mvpBody"></div>
+  </div>
+
   <!-- ADMIN -->
   <div id="adminView" class="wrap hidden">
     <p class="hello">Admin panel</p>
@@ -714,6 +761,7 @@
       <div class="tab" data-tab="notice">Notice</div>
       <div class="tab" data-tab="results">Results</div>
       <div class="tab" data-tab="houses">Houses</div>
+      <div class="tab" data-tab="stats">Stats</div>
     </div>
 
     <!-- EVENTS TAB -->
@@ -1040,6 +1088,16 @@
     </div>
 
     <!-- HOUSES TAB -->
+    <!-- STATS TAB -->
+    <div class="admin-tab hidden" id="tab-stats">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+        <select id="statsSeasonSelect" style="padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:6px;"></select>
+        <input id="statsSearch" placeholder="Search event…" style="padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:6px;flex:1;min-width:160px;">
+        <button class="btn btn-outline btn-small" id="statsRefreshBtn" style="border-color:var(--line);color:var(--graphite);">↻ Refresh</button>
+      </div>
+      <div id="statsBody"><div class="mono" style="color:var(--muted);font-size:12.5px;">Open this tab to load stats.</div></div>
+    </div>
+
     <div class="admin-tab hidden" id="tab-houses">
       <div class="card mono" style="padding:16px 22px;margin-bottom:20px;font-size:12px;color:var(--muted);" id="houseSettingsSeasonLabel"></div>
 
@@ -1117,7 +1175,8 @@
     'adminSetAdmin', 'adminResetPassword', 'adminEditEvent', 'adminEditNotice',
     'adminDeleteEvent', 'adminDeleteNotice', 'adminRemoveRegistration', 'adminAddRegistration',
     'adminBulkAddRegistrations', 'adminBulkRemoveRegistrations',
-    'adminDeleteEventPhoto', 'adminListEventPhotos', 'adminListNoticePhotos', 'adminListEventsWithStatus'
+    'adminDeleteEventPhoto', 'adminListEventPhotos', 'adminListNoticePhotos', 'adminListEventsWithStatus',
+    'getMyProfile', 'getMvpWall', 'adminGetStats'
   ]);
 
   function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -1248,7 +1307,7 @@
   }
 
   function showView(id) {
-    ['landingView','loginView','forceChangeView','sectionHomeView','dashboardHomeView','groupEventsView','housePointsView','dashboardView','resultsView','adminView'].forEach(v => {
+    ['landingView','loginView','forceChangeView','sectionHomeView','dashboardHomeView','groupEventsView','housePointsView','dashboardView','resultsView','profileView','mvpView','adminView'].forEach(v => {
       document.getElementById(v).classList.toggle('hidden', v !== id);
     });
   }
@@ -1428,6 +1487,217 @@
     showView('landingView');
   });
 
+  // ---------- MY PROFILE ----------
+  document.getElementById('navProfileBtn').addEventListener('click', (e) => {
+    e.preventDefault(); closeSidebar(); openProfile();
+  });
+  async function openProfile() {
+    showView('profileView');
+    const body = document.getElementById('profileBody');
+    body.innerHTML = skeletonRows(3);
+    try {
+      const d = await api('getMyProfile', {});
+      document.getElementById('profileSeason').textContent = 'Season ' + d.season;
+      const p = d.profile;
+      const initials = String(p.name || '?').split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase();
+      const when = (iso) => { const t = new Date(iso); return isNaN(t) ? '' : t.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); };
+      const tile = (n, l) => `<div class="stat-tile"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+      const mc = d.medalCounts;
+      const sec = (title, inner) => `<div class="card" style="padding:18px 20px;margin-top:16px;"><div class="mono" style="font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">${title}</div>${inner}</div>`;
+      const empty = (t) => `<div class="mono" style="font-size:12.5px;color:var(--muted);">${t}</div>`;
+      const regRows = d.registrations.slice().sort((a, b) => String(b.competitionDate).localeCompare(String(a.competitionDate))).map(r => {
+        const status = r.resultsPublished ? 'Result out' : (r.completed ? 'Completed' : 'Upcoming');
+        return `<div class="event-row" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;">
+          <div><div class="event-name" style="font-size:14px;">${escapeHtml(r.name)}</div><div class="mono" style="font-size:11px;color:var(--muted);">${r.section === 'CULTURAL' ? '🎭 Cultural' : '🏅 Sports'}${r.competitionDate && when(r.competitionDate) ? ' · ' + when(r.competitionDate) : ''}${r.house ? ' · ' + escapeHtml(r.house) : ''}</div></div>
+          <span class="pill" style="background:${r.resultsPublished ? '#eef7f1' : 'rgba(0,0,0,.06)'};font-size:10.5px;">${status}</span></div>`;
+      }).join('');
+      const medalRows = d.medals.map(m => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap;">
+          <span style="font-size:20px;">${MEDAL[m.place] || m.place}</span>
+          <div style="flex:1;min-width:140px;"><div style="font-weight:600;font-size:13.5px;">${escapeHtml(m.eventName)}</div><div class="mono" style="font-size:10.5px;color:var(--muted);">${escapeHtml(m.season)}</div></div>
+          ${m.value ? `<span class="mono" style="font-size:11px;font-weight:700;background:#eef7f1;border:1px solid var(--net-mint);border-radius:4px;padding:2px 7px;">${formatMeasurement(m)}</span>` : ''}</div>`).join('');
+      const perfRows = d.performances.map(x => {
+        const right = x.type === 'GROUP'
+          ? `<span class="pill" style="font-size:10.5px;background:${x.outcome === 'Won' ? '#eef7f1' : 'rgba(0,0,0,.06)'};">${x.outcome}${x.vs ? ' vs ' + escapeHtml(x.vs) : ''}</span>`
+          : `<span style="font-size:18px;">${MEDAL[x.place] || x.place}</span>`;
+        return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap;">
+          <div><div style="font-weight:600;font-size:13.5px;">${escapeHtml(x.eventName)}</div><div class="mono" style="font-size:10.5px;color:var(--muted);">${escapeHtml(x.season)} · ${x.section === 'CULTURAL' ? 'Cultural' : 'Sports'}${x.type === 'GROUP' ? ' · Team event' : ''}</div></div>${right}</div>`;
+      }).join('');
+      const mvpRows = d.mvpAwards.map(m => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);"><span style="font-size:18px;">⭐</span><div style="font-weight:600;font-size:13.5px;">${escapeHtml(m.eventName)} <span class="mono" style="font-size:10.5px;color:var(--muted);">· Match ${m.matchNo}</span></div></div>`).join('');
+      body.innerHTML = `
+        <div class="card" style="padding:20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+          <div style="width:64px;height:64px;border-radius:50%;background:var(--court-navy);color:var(--chalk);display:flex;align-items:center;justify-content:center;font-family:'Anton',sans-serif;font-size:24px;flex-shrink:0;">${escapeHtml(initials)}</div>
+          <div style="flex:1;min-width:180px;">
+            <div style="font-family:'Anton',sans-serif;font-size:24px;">${escapeHtml(p.name)}</div>
+            <div class="mono" style="font-size:12px;color:var(--muted);margin-top:2px;">${escapeHtml(p.regNo)}${p.classCourse ? ' · ' + escapeHtml(p.classCourse) : ''}${p.email ? ' · ' + escapeHtml(p.email) : ''}</div>
+          </div>
+          <span class="pill" style="background:${p.house ? '#fff7e8' : 'rgba(0,0,0,.06)'};border:1px solid ${p.house ? '#e8c468' : 'transparent'};font-weight:700;">${p.house ? '🏠 ' + escapeHtml(p.house) + ' House' : 'No house yet'}</span>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
+          ${tile(d.registrations.length, 'Registrations')}
+          ${tile('🥇' + mc.gold + ' 🥈' + mc.silver + ' 🥉' + mc.bronze, 'Medals')}
+          ${tile(d.points, 'House points (' + escapeHtml(d.season) + ')')}
+          ${tile(d.groupWins + '/' + d.groupPlayed, 'Team events won')}
+        </div>
+        <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:8px;">House points: 5 / 3 / 1 for 1st / 2nd / 3rd in Track &amp; Field and Cultural individual events, same as the Results leaderboard.</div>
+        ${sec('My registrations', regRows || empty('You haven’t registered for any event yet.'))}
+        ${sec('Medals', medalRows || empty('No medals yet — your first podium finish will show up here.'))}
+        ${d.mvpAwards.length ? sec('⭐ Player of the match awards', mvpRows) : ''}
+        ${sec('Past performances', perfRows || empty('Published results you took part in will appear here.'))}`;
+    } catch (err) {
+      body.innerHTML = `<div class="card" style="padding:18px;color:#b7401b;">${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  // ---------- MVP WALL (sports) ----------
+  document.getElementById('goMvpBtn').addEventListener('click', openMvpWall);
+  async function openMvpWall() {
+    showView('mvpView');
+    const body = document.getElementById('mvpBody');
+    body.innerHTML = skeletonRows(3);
+    try {
+      const d = await api('getMvpWall', {});
+      if (!d.mvps.length) {
+        body.innerHTML = `<div class="card" style="padding:20px;"><div class="mono" style="color:var(--muted);font-size:12.5px;">No player-of-the-match awards yet. They appear here as soon as a sports match result is published with its best player.</div></div>`;
+        return;
+      }
+      const sports = Array.from(new Set(d.mvps.map(m => m.eventName))).sort();
+      const houses = Array.from(new Set(d.mvps.map(m => m.house).filter(Boolean))).sort();
+      const SEL = "padding:10px 12px;border:1px solid var(--line);background:var(--chalk);font-family:'Inter',sans-serif;font-size:13.5px;border-radius:6px;";
+      const medalFor = (i) => ['🥇', '🥈', '🥉'][i] || (i + 1);
+      body.innerHTML = `
+        <div class="card" style="padding:18px 20px;">
+          <div class="mono" style="font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Most awards</div>
+          ${d.leaders.slice(0, 5).map((l, i) => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;${i ? 'border-top:1px solid var(--line);' : ''}">
+            <span style="width:26px;text-align:center;font-size:${i < 3 ? 20 : 13}px;">${medalFor(i)}</span>
+            <div style="flex:1;min-width:0;"><div style="font-weight:${i === 0 ? 700 : 600};font-size:14px;">${escapeHtml(l.player)}</div><div class="mono" style="font-size:10.5px;color:var(--muted);">${escapeHtml(l.house || '')}${l.house ? ' · ' : ''}${l.sports.map(escapeHtml).join(', ')}</div></div>
+            <div style="font-family:'Anton',sans-serif;font-size:22px;">${l.awards}<span class="mono" style="font-size:10px;color:var(--muted);margin-left:3px;">⭐</span></div></div>`).join('')}
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 4px;">
+          <select id="mvpSportFilter" style="${SEL}"><option value="">All sports</option>${sports.map(s => `<option>${escapeHtml(s)}</option>`).join('')}</select>
+          <select id="mvpHouseFilter" style="${SEL}"><option value="">All houses</option>${houses.map(s => `<option>${escapeHtml(s)}</option>`).join('')}</select>
+        </div>
+        <div id="mvpGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:12px;"></div>`;
+      const paint = () => {
+        const sp = document.getElementById('mvpSportFilter').value, ho = document.getElementById('mvpHouseFilter').value;
+        const shown = d.mvps.filter(m => (!sp || m.eventName === sp) && (!ho || m.house === ho));
+        document.getElementById('mvpGrid').innerHTML = shown.map(m => `
+          <div class="stat-tile" style="min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:22px;">⭐</span><div style="font-weight:700;font-size:15px;">${escapeHtml(m.player)}</div></div>
+            <div class="mono" style="font-size:11px;color:var(--muted);margin-top:6px;">${escapeHtml(m.eventName)} · Match ${m.matchNo}</div>
+            ${m.house ? `<div class="mono" style="font-size:11px;margin-top:4px;">🏠 ${escapeHtml(m.house)}</div>` : ''}
+            ${(m.teamA || m.teamB) ? `<div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:6px;">${escapeHtml(m.teamA)} vs ${escapeHtml(m.teamB)}${m.winner ? ' · 🏆 ' + escapeHtml(m.winner) : ''}</div>` : ''}
+          </div>`).join('') || '<div class="mono" style="color:var(--muted);font-size:12.5px;">Nothing matches that filter.</div>';
+      };
+      document.getElementById('mvpSportFilter').addEventListener('change', paint);
+      document.getElementById('mvpHouseFilter').addEventListener('change', paint);
+      paint();
+    } catch (err) {
+      body.innerHTML = `<div class="card" style="padding:18px;color:#b7401b;">${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  // ---------- ADMIN: STATS TAB ----------
+  let statsData = null;
+  document.getElementById('statsRefreshBtn').addEventListener('click', () => loadStatsTab());
+  document.getElementById('statsSeasonSelect').addEventListener('change', () => loadStatsTab(document.getElementById('statsSeasonSelect').value));
+  document.getElementById('statsSearch').addEventListener('input', () => { if (statsData) paintStats(); });
+  async function loadStatsTab(season) {
+    const body = document.getElementById('statsBody');
+    body.innerHTML = skeletonRows(3);
+    try {
+      statsData = await api('adminGetStats', season ? { season } : {});
+      const sel = document.getElementById('statsSeasonSelect');
+      sel.innerHTML = statsData.seasons.map(s => `<option ${s === statsData.season ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('');
+      paintStats();
+    } catch (err) {
+      body.innerHTML = `<div class="card" style="padding:18px;color:#b7401b;">${escapeHtml(err.message)}</div>`;
+    }
+  }
+  function paintStats() {
+    const d = statsData, body = document.getElementById('statsBody');
+    const q = document.getElementById('statsSearch').value.trim().toLowerCase();
+    const tile = (n, l) => `<div class="stat-tile"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+    const t = d.totals;
+    const pct = t.totalStudents ? Math.round(t.uniqueStudents * 100 / t.totalStudents) : 0;
+    const maxEv = Math.max(1, ...d.events.map(e => e.participants));
+    const houseTotals = {};
+    d.events.forEach(e => Object.keys(e.byHouse).forEach(h => { houseTotals[h] = (houseTotals[h] || 0) + e.byHouse[h]; }));
+    const hKeys = Object.keys(houseTotals).sort((a, b) => houseTotals[b] - houseTotals[a]);
+    const maxH = Math.max(1, ...hKeys.map(h => houseTotals[h]));
+    const top = d.events.slice().sort((a, b) => b.participants - a.participants).filter(e => e.participants).slice(0, 5);
+    const shown = d.events.filter(e => !q || e.name.toLowerCase().includes(q))
+      .sort((a, b) => b.participants - a.participants || a.name.localeCompare(b.name));
+    const status = e => e.resultsPublished ? 'Result out' : e.completed ? 'Completed' : e.active ? 'Open' : 'Closed';
+    body.innerHTML = `
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        ${tile(t.events, 'Events')}${tile(t.registrations, 'Total registrations')}
+        ${tile(t.uniqueStudents + (t.totalStudents ? ' <span style="font-size:15px;color:var(--muted);">/ ' + t.totalStudents + '</span>' : ''), 'Students taking part' + (t.totalStudents ? ' (' + pct + '%)' : ''))}
+        ${tile(t.completed + ' / ' + t.published, 'Completed / results out')}
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:16px;">
+        <div class="card" style="padding:18px 20px;flex:1;min-width:260px;">
+          <div class="mono" style="font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Participation by house</div>
+          ${hKeys.map(h => `<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span style="font-weight:600;">${escapeHtml(h)}</span><span class="mono">${houseTotals[h]} entries${d.houseUnique[h] ? ' · ' + d.houseUnique[h] + ' students' : ''}</span></div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(houseTotals[h] * 100 / maxH)}%"></div></div></div>`).join('') || '<div class="mono" style="font-size:12.5px;color:var(--muted);">No registrations yet.</div>'}
+        </div>
+        <div class="card" style="padding:18px 20px;flex:1;min-width:260px;">
+          <div class="mono" style="font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Most popular events</div>
+          ${top.map((e, i) => `<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span style="font-weight:600;">${i + 1}. ${escapeHtml(e.name)}</span><span class="mono">${e.participants}</span></div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(e.participants * 100 / maxEv)}%;background:var(--court-navy);"></div></div></div>`).join('') || '<div class="mono" style="font-size:12.5px;color:var(--muted);">No registrations yet.</div>'}
+        </div>
+      </div>
+      <div class="card" style="padding:0;margin-top:16px;overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:560px;">
+          <tr style="text-align:left;">
+            <th style="padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;">Event</th>
+            <th style="padding:12px 8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);text-transform:uppercase;">Type</th>
+            <th style="padding:12px 8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);text-transform:uppercase;">Status</th>
+            <th style="padding:12px 8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);text-transform:uppercase;">By house</th>
+            <th style="padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);text-transform:uppercase;text-align:right;">Participants</th></tr>
+          ${shown.map(e => `<tr class="stats-row" data-event-id="${escapeHtml(e.eventId)}" style="border-top:1px solid var(--line);">
+            <td style="padding:12px 14px;font-weight:600;font-size:13.5px;">${escapeHtml(e.name)}<div class="mono" style="font-size:10.5px;color:var(--muted);font-weight:400;">${e.section === 'CULTURAL' ? '🎭 Cultural' : '🏅 Sports'}</div></td>
+            <td style="padding:12px 8px;"><span class="pill cat-${String(e.category).toLowerCase()}" style="font-size:10.5px;">${escapeHtml(String(e.category || '').charAt(0) + String(e.category || '').slice(1).toLowerCase())}</span></td>
+            <td style="padding:12px 8px;font-size:12px;">${status(e)}</td>
+            <td style="padding:12px 8px;font-size:11.5px;color:var(--muted);">${Object.keys(e.byHouse).map(h => escapeHtml(h) + ' ' + e.byHouse[h]).join(' · ') || '—'}</td>
+            <td style="padding:12px 14px;text-align:right;font-family:'Anton',sans-serif;font-size:18px;">${e.participants}</td></tr>`).join('') || '<tr><td colspan="5" style="padding:16px;color:var(--muted);font-size:12.5px;">No events found.</td></tr>'}
+        </table>
+      </div>
+      <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:8px;">Click an event to see exactly who is registered.</div>
+      <div id="statsDetail"></div>`;
+    body.querySelectorAll('.stats-row').forEach(row => row.addEventListener('click', () => openStatsDetail(row.dataset.eventId)));
+  }
+  async function openStatsDetail(eventId) {
+    const box = document.getElementById('statsDetail');
+    const ev = statsData.events.find(e => String(e.eventId) === String(eventId));
+    box.innerHTML = '<div class="card" style="padding:16px;margin-top:16px;"><span class="mono" style="color:var(--muted);">Loading…</span></div>';
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    try {
+      const data = await api('adminListRegistrations', { eventId });
+      const regs = data.registrations || [];
+      box.innerHTML = `<div class="card" style="padding:18px 20px;margin-top:16px;">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
+          <div><div class="event-name">${escapeHtml(ev ? ev.name : 'Event')}</div><div class="mono" style="font-size:11px;color:var(--muted);">${regs.length} participant${regs.length === 1 ? '' : 's'}</div></div>
+          <button class="btn btn-outline btn-small" id="statsCsvBtn" style="border-color:var(--line);color:var(--graphite);">⬇ Download CSV</button>
+        </div>
+        ${regs.length ? `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:420px;font-size:13px;">
+          <tr style="text-align:left;" class="mono"><th style="padding:6px 4px;font-size:10.5px;color:var(--muted);">#</th><th style="padding:6px 4px;font-size:10.5px;color:var(--muted);">NAME</th><th style="padding:6px 4px;font-size:10.5px;color:var(--muted);">REG NO</th><th style="padding:6px 4px;font-size:10.5px;color:var(--muted);">HOUSE / TEAM</th></tr>
+          ${regs.map((r, i) => `<tr style="border-top:1px solid var(--line);"><td style="padding:7px 4px;color:var(--muted);">${i + 1}</td><td style="padding:7px 4px;font-weight:600;">${escapeHtml(r.name)}</td><td style="padding:7px 4px;" class="mono">${escapeHtml(r.regNo)}</td><td style="padding:7px 4px;">${escapeHtml(r.groupLabel || '—')}</td></tr>`).join('')}</table></div>` : '<div class="mono" style="color:var(--muted);font-size:12.5px;">Nobody registered yet.</div>'}
+      </div>`;
+      const csvBtn = document.getElementById('statsCsvBtn');
+      if (csvBtn) csvBtn.addEventListener('click', () => {
+        const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+        const csv = ['Name,Reg No,House/Team'].concat(regs.map(r => [q(r.name), q(r.regNo), q(r.groupLabel)].join(','))).join('\n');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        a.download = (ev ? ev.name : 'event').replace(/[^a-z0-9]+/gi, '_') + '_participants.csv';
+        a.click();
+      });
+    } catch (err) {
+      box.innerHTML = `<div class="card" style="padding:16px;margin-top:16px;color:#b7401b;">${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  // ---------- Match columns: MVP boxes for football / handball / set sports ----------
+  // (cricket and basketball already have their own)
+
   // ---------- DASHBOARD ----------
   async function enterDashboard() {
     document.getElementById('navMenuBtn').classList.remove('hidden');
@@ -1447,6 +1717,7 @@
     const seasonSuffix = currentSeasonCache ? ' ' + currentSeasonCache : '';
     const label = section === 'CULTURAL' ? '🎭 Cultural' + seasonSuffix : '🏅 Sports' + seasonSuffix;
     document.getElementById('dashHomeSection').textContent = label;
+    document.getElementById('goMvpBtn').classList.toggle('hidden', section === 'CULTURAL'); // MVP Wall is sports-only
     syncSwitchSectionButtons();
     renderCategoryFilterBar();
     showView('dashboardHomeView');
@@ -2350,12 +2621,14 @@
     const scoreBuckets = { 1: {}, 2: {}, 3: {} };
     const quarterBuckets = { 1: {}, 2: {}, 3: {} };
     const simpleScores = {};
+    const mvpByMatch = {};
     let isScoreMode = false, isSimpleMode = false, isQuarterMode = false;
     (match.periods || []).forEach(p => {
       const qM = /^M-(\d+)\s*\((Q[1-4]|OT|MVP)\)$/i.exec(String(p.label || '').trim());
       if (qM) {
-        isQuarterMode = true;
-        quarterBuckets[Math.min(3, Math.max(1, parseInt(qM[1], 10)))][qM[2].toLowerCase()] = p;
+        const qn = Math.min(3, Math.max(1, parseInt(qM[1], 10)));
+        if (qM[2].toLowerCase() === 'mvp') { mvpByMatch[qn] = p.scoreA; } else { isQuarterMode = true; }
+        quarterBuckets[qn][qM[2].toLowerCase()] = p;
         return;
       }
       const setM = /^M-(\d+)\s*\(Set-(\d+)\)$/i.exec(String(p.label || '').trim());
@@ -2462,6 +2735,8 @@
         </div>`).join('');
       rows = matchCols ? `<div style="display:flex;gap:26px;flex-wrap:wrap;margin-top:2px;">${matchCols}</div>` : '';
     }
+    const mvpLine = (!isQuarterMode && Object.keys(mvpByMatch).length) ? `
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">${Object.keys(mvpByMatch).sort().map(n => `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#fff7e8;border:1px solid #e8c468;font-size:12px;"><span>⭐</span><span class="mono" style="font-size:10.5px;color:#8a6a12;font-weight:700;">MATCH ${n} MVP</span><span style="font-weight:600;">${escapeHtml(mvpByMatch[n])}</span></span>`).join('')}</div>` : '';
     const winnerBox = match.winner ? `
       <div style="margin-top:10px;padding:8px 12px;background:#fff7e8;border:1px solid #e8c468;border-radius:3px;display:inline-flex;align-items:center;gap:8px;">
         <span style="font-size:15px;">🏆</span>
@@ -2475,6 +2750,7 @@
         <span style="${isWinnerB ? 'color:#8a6a12;' : ''}">${escapeHtml(match.teamB || 'Team B')}</span>
       </div>
       ${rows}
+      ${mvpLine}
       ${winnerBox}
     `;
   }
@@ -3258,6 +3534,7 @@
       if (tab.dataset.tab === 'notice') loadNoticeAdmin();
       if (tab.dataset.tab === 'results') loadResultsAdminTab();
       if (tab.dataset.tab === 'houses') loadHousesAdminTab();
+      if (tab.dataset.tab === 'stats') loadStatsTab();
     });
   });
 
@@ -3898,6 +4175,8 @@
         </div>
         <button type="button" class="btn btn-outline btn-small mc-add-pen" style="border-color:var(--line);color:var(--graphite);width:100%;">+ Add penalties (if drawn)</button>
       ` : ''}
+      <div style="margin-top:10px;"><div class="mono" style="font-size:10.5px;color:var(--muted);margin-bottom:4px;">⭐ Player of the match</div>
+        <input class="mc-mvp" placeholder="Player name (optional)" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;"></div>
     `;
     if (allowPenalty) {
       col.querySelector('.mc-add-pen').addEventListener('click', () => {
@@ -3919,12 +4198,14 @@
     [1, 2, 3].forEach(n => wrap.appendChild(buildScoreMatchColumn(n)));
     const cols = { 1: wrap.querySelector('[data-match-no="1"]'), 2: wrap.querySelector('[data-match-no="2"]'), 3: wrap.querySelector('[data-match-no="3"]') };
     (periods || []).forEach(p => {
-      const m = /^M-(\d+)\s*\((1st Half|2nd Half|Penalty)\)$/i.exec(String(p.label || '').trim());
+      const m = /^M-(\d+)\s*\((1st Half|2nd Half|Penalty|MVP)\)$/i.exec(String(p.label || '').trim());
       if (!m) return;
       const col = cols[Math.min(3, Math.max(1, parseInt(m[1], 10)))];
       if (!col) return;
       const kind = m[2].toLowerCase();
-      if (kind === '1st half') {
+      if (kind === 'mvp') {
+        col.querySelector('.mc-mvp').value = p.scoreA || '';
+      } else if (kind === '1st half') {
         col.querySelector('.mc-h1-a').value = p.scoreA || '';
         col.querySelector('.mc-h1-b').value = p.scoreB || '';
       } else if (kind === '2nd half') {
@@ -3954,6 +4235,8 @@
         const penB = col.querySelector('.mc-pen-b').value.trim();
         if (penA || penB) periods.push({ label: `M-${matchNo} (Penalty)`, scoreA: penA, scoreB: penB });
       }
+      const mvp = col.querySelector('.mc-mvp');
+      if (mvp && mvp.value.trim()) periods.push({ label: `M-${matchNo} (MVP)`, scoreA: mvp.value.trim(), scoreB: '' });
     });
     return periods;
   }
@@ -4115,6 +4398,8 @@
       </div>
       <div class="match-col-sets"></div>
       <button type="button" class="btn btn-outline btn-small mc-add-set" style="border-color:var(--line);color:var(--graphite);width:100%;margin-top:4px;">+ Add set</button>
+      <div style="margin-top:10px;"><div class="mono" style="font-size:10.5px;color:var(--muted);margin-bottom:4px;">⭐ Player of the match</div>
+        <input class="mc-mvp" placeholder="Player name (optional)" style="width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);background:var(--chalk);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-radius:2px;"></div>
     `;
     col.querySelector('.mc-add-set').addEventListener('click', () => {
       addSetRow(col, {});
@@ -4154,6 +4439,12 @@
     const wrap = document.getElementById('matchColumns');
     const cols = { 1: wrap.querySelector('[data-match-no="1"]'), 2: wrap.querySelector('[data-match-no="2"]'), 3: wrap.querySelector('[data-match-no="3"]') };
     (periods || []).forEach(p => {
+      const mv = /^M-(\d+)\s*\(MVP\)$/i.exec(String(p.label || '').trim());
+      if (mv) {
+        const c = cols[Math.min(3, Math.max(1, parseInt(mv[1], 10)))];
+        if (c) c.querySelector('.mc-mvp').value = p.scoreA || '';
+        return;
+      }
       const m = /^M-(\d+)\s*\(Set-(\d+)\)$/i.exec(String(p.label || '').trim());
       const matchNo = m ? Math.min(3, Math.max(1, parseInt(m[1], 10))) : 1;
       addSetRow(cols[matchNo], p);
@@ -4169,6 +4460,8 @@
         if (!scoreA && !scoreB) return;
         periods.push({ label: `M-${matchNo} (Set-${i + 1})`, scoreA, scoreB });
       });
+      const mvp = col.querySelector('.mc-mvp');
+      if (mvp && mvp.value.trim()) periods.push({ label: `M-${matchNo} (MVP)`, scoreA: mvp.value.trim(), scoreB: '' });
     });
     return periods;
   }

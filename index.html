@@ -1610,10 +1610,11 @@
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
           ${tile(d.registrations.length, 'Registrations')}
           ${tile('🥇' + mc.gold + ' 🥈' + mc.silver + ' 🥉' + mc.bronze, 'Medals')}
-          ${tile(d.points, 'House points (' + escapeHtml(d.season) + ')')}
+          ${tile(d.points, 'Individual points')}
+          ${p.house ? tile(d.houseWins, escapeHtml(p.house) + ' house points') : ''}
           ${tile(d.groupWins + '/' + d.groupPlayed, 'Team events won')}
         </div>
-        <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:8px;">House points: 5 / 3 / 1 for 1st / 2nd / 3rd in Track &amp; Field and Cultural individual events, same as the Results leaderboard.</div>
+        <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:8px;">Individual points: 5 / 3 / 1 for 1st / 2nd / 3rd in Track &amp; Field and Cultural individual events (this season), same as the Results leaderboard. House points are the group events your house has won this season.</div>
         ${sec('My registrations', regRows || empty('You haven’t registered for any event yet.'))}
         ${sec('Medals', medalRows || empty('No medals yet — your first podium finish will show up here.'))}
         ${d.mvpAwards.length ? sec('⭐ Player of the match awards', mvpRows) : ''}

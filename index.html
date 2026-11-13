@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sports Sphere 2K26</title>
+<meta name="theme-color" content="#0B2545">
+<meta name="description" content="SSSIHL Nandigiri — Annual Sports &amp; Cultural Meet: event registration, results and winners' gallery.">
+<link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -20,6 +23,7 @@
   nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px;}
   .brand{color:var(--chalk);font-family:'Anton',sans-serif;font-size:20px;}
   .brand span{color:var(--ball-orange);}
+  .brand div{white-space:nowrap;}
 
   /* ---------- hamburger menu + left sidebar (replaces the old inline nav-right buttons) ---------- */
   .hamburger-btn{background:transparent;border:1px solid rgba(245,243,236,.35);border-radius:3px;width:38px;height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;padding:0;}
@@ -228,6 +232,59 @@
   .toast-link{display:inline-block;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ball-orange);text-decoration:none;font-weight:600;cursor:pointer;}
   .toast-photo-btn{padding:0;border:1px solid rgba(245,243,236,.3);border-radius:3px;background:none;cursor:pointer;overflow:hidden;line-height:0;}
 
+  /* ---------- Quality / polish layer ---------- */
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;}
+  body{-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;}
+  ::selection{background:rgba(255,90,31,.25);}
+  /* closed side menu must not cast its shadow onto the page edge */
+  .app-sidebar{visibility:hidden;box-shadow:none;transition:transform .2s ease,visibility 0s linear .2s;}
+  .app-sidebar.open{visibility:visible;box-shadow:2px 0 18px rgba(0,0,0,.25);transition:transform .2s ease,visibility 0s;}
+  /* keyboard focus is clearly visible everywhere */
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:3px solid rgba(255,90,31,.5);outline-offset:2px;}
+  /* consistent rounding + feel */
+  .btn{border-radius:8px;transition:background .15s,transform .12s,box-shadow .15s,border-color .15s;}
+  .btn:active:not(:disabled){transform:translateY(1px);}
+  .btn:disabled{opacity:.6;cursor:not-allowed;}
+  .card{border-radius:12px;}
+  .pill{border-radius:999px;padding:4px 10px;}
+  .pill.cat-relay{background:rgba(140,82,255,.14);color:#6a3ec9;}
+  .event-row{transition:background .15s;}
+  .event-row:hover{background:#fdfbf6;}
+  .field input,.field select,.field textarea{border-radius:8px;}
+  /* brand + crest in the top bar */
+  nav .brand{display:flex;align-items:center;gap:10px;}
+  .brand-crest{width:34px;height:34px;border-radius:50%;background:#fff;padding:2px;object-fit:contain;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(201,162,39,.9);}
+  /* soft glows fade out at their edges instead of ending in a hard line */
+  .landing-hero::before,#loginView::before,.home-hero::before{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 38%,#000 62%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 38%,#000 62%,transparent 100%);}
+  /* smooth screen changes */
+  .wrap[id$="View"]:not(.hidden){animation:viewIn .32s ease backwards;}
+  @keyframes viewIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.wrap[id$="View"]:not(.hidden){animation:none}html{scroll-behavior:auto}}
+  /* phones: comfortable tap targets */
+  @media (max-width:640px){.btn{min-height:40px}.btn-small{min-height:34px}.event-row{padding:16px 16px;}}
+
+  /* ---------- Home menus (Sports / Cultural / House, Registrations / Results / Group) ---------- */
+  .home-hero{position:relative;isolation:isolate;}
+  .home-hero::before{content:'';position:absolute;z-index:-1;left:50%;top:-10px;width:min(900px,140vw);height:420px;transform:translateX(-50%);
+    background:radial-gradient(ellipse 46% 52% at 50% 30%,rgba(201,162,39,.16),transparent 70%),radial-gradient(ellipse 70% 62% at 50% 6%,rgba(126,36,52,.08),transparent 75%);}
+  /* line the heading and the back/switch row up with the cards */
+  .home-hero > *{max-width:640px;margin-left:auto;margin-right:auto;}
+  .home-hero .hello{color:var(--gold-600);font-weight:600;letter-spacing:.22em;}
+  .home-hero .page-title{margin-bottom:6px;color:var(--maroon-900);}
+  .home-hero .page-title::after{content:'';display:block;width:64px;height:3px;border-radius:3px;margin-top:12px;background:linear-gradient(90deg,var(--gold-500),var(--ball-orange));}
+  .home-stack{margin-top:30px;}
+  .home-stack .card{position:relative;overflow:hidden;border-radius:14px;border:1px solid rgba(173,133,35,.3) !important;background:linear-gradient(180deg,#fff,#fdfbf6) !important;
+    padding:26px 74px 26px 32px !important;box-shadow:0 3px 14px rgba(67,14,27,.06);transition:box-shadow .18s,transform .18s,border-color .18s;}
+  .home-stack .card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(180deg,var(--maroon-700),var(--gold-500));transition:width .18s;}
+  .home-stack .card::after{content:'→';position:absolute;right:24px;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:var(--maroon-100);color:var(--maroon-700);font-size:18px;transition:background .18s,color .18s,transform .18s;}
+  .home-stack .card:hover{transform:translateY(-3px);border-color:var(--gold-500) !important;box-shadow:0 14px 30px rgba(67,14,27,.14);}
+  .home-stack .card:hover::before{width:8px;}
+  .home-stack .card:hover::after{background:var(--ball-orange);color:#fff;transform:translate(4px,-50%);}
+  .home-stack .card .event-name{color:var(--maroon-900);}
+  .home-stack .card .mono{color:var(--muted);}
+  @media (max-width:640px){.home-stack .card{padding:20px 62px 20px 22px !important;}.home-stack .card::after{right:16px;width:34px;height:34px;}}
+
   /* ---------- Landing ---------- */
   :root{
     --maroon-900:#430E1B; --maroon-700:#7E2434; --maroon-600:#96354A; --maroon-100:#F3DFE1;
@@ -264,6 +321,38 @@
   @keyframes crestIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
   @keyframes crestSpin{to{transform:rotate(360deg)}}
   @media (prefers-reduced-motion:reduce){.crest-wrap,.crest-wrap::before,.landing-hero > *{animation:none!important}}
+
+  /* ---------- Login ---------- */
+  #loginView{position:relative;isolation:isolate;}
+  #loginView::before{content:'';position:absolute;z-index:-1;left:50%;top:-20px;width:min(900px,140vw);height:520px;transform:translateX(-50%);
+    background:radial-gradient(ellipse 46% 52% at 50% 34%,rgba(201,162,39,.22),transparent 70%),radial-gradient(ellipse 70% 62% at 50% 8%,rgba(126,36,52,.12),transparent 75%);}
+  #loginView::after{content:'';position:absolute;z-index:-1;inset:0;opacity:.45;pointer-events:none;
+    background-image:radial-gradient(rgba(173,133,35,.22) 1px,transparent 1.4px);background-size:26px 26px;
+    -webkit-mask-image:radial-gradient(ellipse 55% 50% at 50% 30%,#000,transparent 75%);mask-image:radial-gradient(ellipse 55% 50% at 50% 30%,#000,transparent 75%);}
+  #loginView .center-box{position:relative;max-width:420px;margin:84px auto 48px;padding:58px 34px 28px;border-radius:16px;border:1px solid rgba(173,133,35,.32);
+    box-shadow:0 22px 54px rgba(67,14,27,.15);animation:loginUp .6s ease backwards;}
+  #loginView .center-box::before{content:'';position:absolute;left:24px;right:24px;top:0;height:3px;border-radius:0 0 4px 4px;background:linear-gradient(90deg,var(--maroon-700),var(--gold-500),var(--maroon-700));}
+  .login-crest{position:absolute;left:50%;top:-46px;transform:translateX(-50%);width:92px;height:92px;border-radius:50%;background:#fff;padding:7px;
+    box-shadow:0 0 0 2px var(--gold-500),0 0 0 7px rgba(201,162,39,.16),0 12px 28px rgba(67,14,27,.22);}
+  .login-crest img{display:block;width:100%;height:100%;border-radius:50%;object-fit:contain;background:#fff;}
+  .login-home{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--muted);text-decoration:none;display:inline-block;margin-bottom:10px;}
+  .login-home:hover{color:var(--maroon-700);}
+  .login-title{font-family:'Cormorant Garamond',serif;font-weight:700;text-transform:none;letter-spacing:0;font-size:34px;line-height:1.05;color:var(--maroon-900);text-align:center;margin:2px 0 6px;}
+  .login-sub{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.06em;color:var(--muted);text-align:center;margin:0 0 6px;}
+  .login-divider{display:flex;align-items:center;justify-content:center;gap:10px;margin:12px auto 22px;max-width:200px;color:var(--gold-500);font-size:9px;}
+  .login-divider span{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold-500),transparent);}
+  #loginView .field label{color:var(--maroon-900);font-weight:600;}
+  #loginView .field input{padding:13px 14px;border-radius:10px;border:1.5px solid var(--line);background:#fbfaf6;transition:border-color .15s ease,box-shadow .15s ease,background .15s ease;}
+  #loginView .field input:focus{border-color:var(--ball-orange);background:#fff;box-shadow:0 0 0 4px rgba(255,90,31,.13);}
+  .pw-wrap{position:relative;}
+  .pw-wrap input{padding-right:70px!important;}
+  .pw-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--maroon-700);padding:6px 8px;border-radius:6px;}
+  .pw-toggle:hover{background:var(--maroon-100);}
+  #loginView #loginBtn{margin-top:6px;padding:14px;border-radius:10px;font-size:14px;letter-spacing:.14em;box-shadow:0 10px 22px rgba(255,90,31,.3);transition:transform .15s ease,box-shadow .15s ease;}
+  #loginView #loginBtn:hover{transform:translateY(-2px);box-shadow:0 14px 28px rgba(255,90,31,.38);}
+  .login-help{font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:var(--muted);text-align:center;margin:20px 0 0;padding-top:16px;border-top:1px dashed rgba(173,133,35,.4);}
+  @keyframes loginUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){#loginView .center-box{animation:none}}
 
   /* ---------- House Details (redesign) ---------- */
   .house-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
@@ -395,7 +484,7 @@
   <div class="wrap">
     <div style="display:flex;align-items:center;gap:12px;">
       <button class="hamburger-btn hidden" id="navMenuBtn" aria-label="Menu"><span></span><span></span><span></span></button>
-      <div class="brand" id="navBrand" style="cursor:pointer;">Nandigiri<span>SportsSphere</span>2K26</div>
+      <div class="brand" id="navBrand" style="cursor:pointer;"><img class="brand-crest" src="logo.png" alt="" onerror="this.remove()"><div>Nandigiri<span>SportsSphere</span>2K26</div></div>
     </div>
   </div>
 </nav>
@@ -440,20 +529,25 @@
   <!-- LOGIN -->
   <div id="loginView" class="wrap hidden">
     <div class="card center-box">
-      <a href="#" id="loginBackHome" class="mono" style="font-size:11px;color:var(--muted);text-decoration:none;display:inline-block;margin-bottom:16px;">← Home</a>
-      <h2 style="font-size:24px;margin-bottom:6px;">Log in</h2>
-      <p class="mono" style="font-size:12px;color:var(--muted);margin:0 0 22px;">Use your registration number</p>
+      <div class="login-crest"><img src="logo.png" alt="" decoding="async"></div>
+      <a href="#" id="loginBackHome" class="login-home">← Home</a>
+      <h2 class="login-title">Welcome</h2>
+      <p class="login-sub">Log in with your registration number</p>
+      <div class="login-divider"><span></span><i>◆</i><span></span></div>
       <div class="field">
         <label>Registration Number</label>
-        <input type="text" id="loginRegNo" placeholder="e.g. 234207">
+        <input type="text" id="loginRegNo" placeholder="e.g. 234207" autocomplete="username" inputmode="numeric">
       </div>
       <div class="field">
         <label>Password</label>
-        <input type="password" id="loginPassword" placeholder="Default: omsrisairam">
+        <div class="pw-wrap">
+          <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password">
+          <button type="button" class="pw-toggle" id="loginPwToggle" aria-label="Show password">Show</button>
+        </div>
       </div>
       <button class="btn btn-orange" style="width:100%;" id="loginBtn">Log in</button>
       <div class="msg" id="loginMsg"></div>
-      <p class="mono" style="font-size:11px;color:var(--muted);margin-top:18px;">Forgot your password? See the sports coordinator in person — they can reset it for you.</p>
+      <p class="login-help">First time? Ask the sports coordinator for your starting password.<br>Forgot your password? See the sports coordinator in person — they can reset it for you.</p>
     </div>
   </div>
 
@@ -1237,6 +1331,12 @@
     }
   }));
 
+  document.getElementById('loginPwToggle').addEventListener('click', () => {
+    const pw = document.getElementById('loginPassword');
+    const show = pw.type === 'password';
+    pw.type = show ? 'text' : 'password';
+    document.getElementById('loginPwToggle').textContent = show ? 'Hide' : 'Show';
+  });
   ['loginRegNo', 'loginPassword'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); document.getElementById('loginBtn').click(); }

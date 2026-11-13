@@ -147,6 +147,22 @@
   .top-loader.active{opacity:1;}
 
   /* modal */
+
+  /* ---------- in-page dialogs (replace the browser's alert / confirm pop-ups) ---------- */
+  .dlg-overlay{position:fixed;inset:0;background:rgba(11,37,69,.55);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;opacity:0;pointer-events:none;transition:opacity .22s ease;}
+  .dlg-overlay.open{opacity:1;pointer-events:auto;}
+  .dlg-box{background:#fff;width:100%;max-width:400px;border-radius:16px;padding:26px 24px 20px;box-shadow:0 24px 60px rgba(0,0,0,.28);transform:translateY(14px) scale(.96);transition:transform .28s cubic-bezier(.22,.8,.26,1);text-align:center;}
+  .dlg-overlay.open .dlg-box{transform:none;}
+  .dlg-icon{width:54px;height:54px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:26px;background:#fff3ec;}
+  .dlg-icon.danger{background:#fdecea;}
+  .dlg-title{font-family:'Anton',sans-serif;font-size:21px;letter-spacing:.3px;margin:0 0 8px;}
+  .dlg-msg{font-size:14px;line-height:1.5;color:var(--graphite);margin:0 0 20px;white-space:pre-wrap;word-break:break-word;max-height:40vh;overflow:auto;}
+  .dlg-msg.pre{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--chalk);border:1px solid var(--line);border-radius:8px;padding:10px;}
+  .dlg-actions{display:flex;gap:10px;justify-content:center;}
+  .dlg-actions .btn{flex:1;max-width:170px;}
+  .btn-danger-solid{background:#c0392b;color:#fff;border:1px solid #c0392b;}
+  .btn-danger-solid:hover{background:#a93226;}
+  @media (prefers-reduced-motion:reduce){.dlg-overlay,.dlg-box{transition-duration:.01s !important;}}
   .modal-overlay{position:fixed;inset:0;background:rgba(11,37,69,.55);display:flex;align-items:center;justify-content:center;z-index:300;padding:20px;}
   .modal-overlay.hidden{display:none;}
   .modal-box{background:#fff;max-width:480px;width:100%;max-height:80vh;display:flex;flex-direction:column;border-radius:2px;overflow:hidden;}
@@ -440,6 +456,18 @@
       <button id="lightboxNextBtn" style="background:rgba(255,255,255,.12);border:none;color:#fff;font-size:20px;width:42px;height:42px;border-radius:50%;cursor:pointer;flex-shrink:0;margin-left:10px;">›</button>
     </div>
     <div id="lightboxCount" class="mono" style="color:#c9cfda;font-size:12px;margin-top:12px;letter-spacing:.5px;"></div>
+  </div>
+</div>
+
+<div class="dlg-overlay" id="appDialog" role="dialog" aria-modal="true" aria-labelledby="appDialogTitle">
+  <div class="dlg-box">
+    <div class="dlg-icon" id="appDialogIcon">ℹ️</div>
+    <h3 class="dlg-title" id="appDialogTitle"></h3>
+    <p class="dlg-msg" id="appDialogMsg"></p>
+    <div class="dlg-actions">
+      <button class="btn btn-outline" id="appDialogCancel" style="border-color:var(--line);color:var(--graphite);">Cancel</button>
+      <button class="btn btn-orange" id="appDialogOk">OK</button>
+    </div>
   </div>
 </div>
 
@@ -1317,6 +1345,53 @@
     el.className = 'msg ' + (ok ? 'ok' : 'err');
   }
 
+  // ---------- IN-PAGE DIALOGS (replace alert()/confirm()) ----------
+  // showAlert(msg, {title, icon, pre})  -> Promise<void>
+  // showConfirm(msg, {title, okLabel, cancelLabel, danger}) -> Promise<boolean>
+  // Destructive wording (delete / remove / reset) automatically gets a red button.
+  let dlgResolve = null;
+  function dlgOpen({ title, msg, icon, okLabel, cancelLabel, danger, pre, confirmMode }) {
+    const ov = document.getElementById('appDialog');
+    document.getElementById('appDialogTitle').textContent = title;
+    const m = document.getElementById('appDialogMsg');
+    m.textContent = msg;
+    m.classList.toggle('pre', !!pre);
+    const ic = document.getElementById('appDialogIcon');
+    ic.textContent = icon; ic.classList.toggle('danger', !!danger);
+    const ok = document.getElementById('appDialogOk'), cancel = document.getElementById('appDialogCancel');
+    ok.textContent = okLabel;
+    ok.className = 'btn ' + (danger ? 'btn-danger-solid' : 'btn-orange');
+    cancel.textContent = cancelLabel;
+    cancel.style.display = confirmMode ? '' : 'none';
+    ov.classList.add('open');
+    setTimeout(() => (confirmMode && danger ? cancel : ok).focus(), 40);
+    return new Promise(res => { dlgResolve = res; });
+  }
+  function dlgClose(value) {
+    document.getElementById('appDialog').classList.remove('open');
+    const r = dlgResolve; dlgResolve = null;
+    if (r) r(value);
+  }
+  function showAlert(msg, opts) {
+    opts = opts || {};
+    return dlgOpen({ title: opts.title || 'Notice', msg: String(msg), icon: opts.icon || 'ℹ️', okLabel: opts.okLabel || 'Got it', pre: opts.pre, confirmMode: false }).then(() => undefined);
+  }
+  function showConfirm(msg, opts) {
+    opts = opts || {};
+    const danger = opts.danger !== undefined ? opts.danger : /delete|remove|reset|unregister/i.test(String(msg));
+    return dlgOpen({
+      title: opts.title || (danger ? 'Are you sure?' : 'Please confirm'), msg: String(msg), icon: opts.icon || (danger ? '⚠️' : '❓'),
+      okLabel: opts.okLabel || (danger ? 'Yes, continue' : 'Continue'), cancelLabel: opts.cancelLabel || 'Cancel', danger, confirmMode: true
+    });
+  }
+  document.getElementById('appDialogOk').addEventListener('click', () => dlgClose(true));
+  document.getElementById('appDialogCancel').addEventListener('click', () => dlgClose(false));
+  document.getElementById('appDialog').addEventListener('click', (e) => { if (e.target.id === 'appDialog') dlgClose(document.getElementById('appDialogCancel').style.display === 'none'); });
+  document.addEventListener('keydown', (e) => {
+    if (!dlgResolve) return;
+    if (e.key === 'Escape') { e.preventDefault(); dlgClose(document.getElementById('appDialogCancel').style.display === 'none'); }
+  });
+
   // ---------- CUSTOM INPUT PROMPT (replaces window.prompt for a nicer UI) ----------
   // Returns a Promise<string|null> — resolves with the trimmed value, or null if
   // the user cancelled / closed the modal / left it blank on submit-without-value.
@@ -1448,7 +1523,7 @@
 
   document.getElementById('navArchivesBtn').addEventListener('click', (e) => {
     e.preventDefault();
-    alert('Archives is coming soon.');
+    showAlert('Archives is on its way. Past seasons, records and photo albums will live here soon — check back later.', { title: 'Archives — coming soon', icon: '🗂' });
   });
 
   document.getElementById('navLogoutBtn').addEventListener('click', (e) => {
@@ -2162,7 +2237,7 @@
           const action = btn.dataset.action === 'register' ? 'registerEvent' : 'unregisterEvent';
           const payload = { eventId: btn.dataset.id };
           if (action === 'unregisterEvent' && btn.dataset.category === 'DOUBLES') {
-            if (!confirm('This will unregister both you and your partner from this doubles event. Continue?')) return;
+            if (!(await showConfirm('This will unregister both you and your partner from this doubles event. Continue?'))) return;
           }
           if (action === 'registerEvent' && btn.dataset.category === 'GROUP') {
             const groupLabel = await showInputPrompt({
@@ -3255,14 +3330,14 @@
 
       body.querySelectorAll('[data-remove-reg]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
-          if (!confirm(btn.dataset.removeTeamId ? 'This will remove both partners from this doubles event. Continue?' : 'Remove this registration?')) return;
+          if (!(await showConfirm(btn.dataset.removeTeamId ? 'This will remove both partners from this doubles event. Continue?' : 'Remove this registration?'))) return;
           try {
             await api('adminRemoveRegistration', { eventId: currentModalEventId, regNo: btn.dataset.removeReg });
             const data = await api('adminListRegistrations', { eventId: currentModalEventId });
             showRegsModal(eventName, data.registrations, currentModalEventId);
             await loadAdminEvents(); // registration counts elsewhere may depend on this
           } catch (err) {
-            alert(err.message);
+            showAlert(err.message, { title: 'Something went wrong', icon: '⚠️' });
           }
         }));
       });
@@ -3283,14 +3358,14 @@
 
       body.querySelectorAll('[data-remove-reg]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
-          if (!confirm(btn.dataset.removeTeamId ? 'This will remove both partners from this doubles event. Continue?' : 'Remove this registration?')) return;
+          if (!(await showConfirm(btn.dataset.removeTeamId ? 'This will remove both partners from this doubles event. Continue?' : 'Remove this registration?'))) return;
           try {
             await api('adminRemoveRegistration', { eventId: currentModalEventId, regNo: btn.dataset.removeReg });
             const data = await api('adminListRegistrations', { eventId: currentModalEventId });
             showRegsModal(eventName, data.registrations, currentModalEventId);
             await loadAdminEvents(); // registration counts elsewhere may depend on this
           } catch (err) {
-            alert(err.message);
+            showAlert(err.message, { title: 'Something went wrong', icon: '⚠️' });
           }
         }));
       });
@@ -3423,7 +3498,7 @@
     const regNos = document.getElementById('bulkRegNosInput').value.trim();
     if (!regNos) { setMsg(msg, 'Paste at least one registration number.', false); return; }
     if (!currentModalEventId) { setMsg(msg, 'No event selected.', false); return; }
-    if (!confirm('Remove all these registrations from this event?')) return;
+    if (!(await showConfirm('Remove all these registrations from this event?'))) return;
     try {
       const result = await api('adminBulkRemoveRegistrations', { eventId: currentModalEventId, regNos });
       document.getElementById('bulkRegNosInput').value = '';
@@ -3514,7 +3589,7 @@
       btn.textContent = 'Copied!';
       setTimeout(() => { btn.textContent = original; }, 1500);
     } catch (e) {
-      alert(text); // clipboard blocked (e.g. local file:// in some browsers) — fall back
+      showAlert(text, { title: 'Copy this list', icon: '📋', pre: true }); // clipboard blocked (e.g. local file:// in some browsers) — fall back
     }
   });
 
@@ -3768,7 +3843,7 @@
       });
       container.querySelectorAll('[data-notice-delete]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
-          if (!confirm('Delete this notice?')) return;
+          if (!(await showConfirm('Delete this notice?'))) return;
           await api('adminDeleteNotice', { noticeId: btn.dataset.noticeDelete });
           await renderNoticesList();
         }));
@@ -3811,7 +3886,7 @@
         : '<span class="mono" style="font-size:11px;color:var(--muted);">No photos yet.</span>';
       grid.querySelectorAll('[data-delete-notice-photo]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
-          if (!confirm('Delete this photo?')) return;
+          if (!(await showConfirm('Delete this photo?'))) return;
           await api('adminDeleteEventPhoto', { photoId: btn.dataset.deleteNoticePhoto }); // same delete fn works for both owners
           await loadNoticePhotoGrid(noticeId);
         }));
@@ -3982,7 +4057,7 @@
       </div>`).join('');
     box.querySelectorAll('.delete-house-btn').forEach(btn => {
       btn.addEventListener('click', withLoading(btn, async () => {
-        if (!confirm('Remove this house? Past results already published keep their recorded winner text, but it will drop out of dropdowns for new results.')) return;
+        if (!(await showConfirm('Remove this house? Past results already published keep their recorded winner text, but it will drop out of dropdowns for new results.'))) return;
         await api('adminDeleteHouse', { houseId: btn.dataset.houseId });
         await loadHousesCache();
         renderHousesList();
@@ -4858,7 +4933,7 @@
         </div>`).join('');
       grid.querySelectorAll('[data-delete-photo]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
-          if (!confirm('Delete this photo?')) return;
+          if (!(await showConfirm('Delete this photo?'))) return;
           await api('adminDeleteEventPhoto', { photoId: btn.dataset.deletePhoto });
           await loadPhotoGrid(eventId);
         }));
@@ -5083,7 +5158,7 @@
       });
       container.querySelectorAll('[data-delete]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
-          if (!confirm('Delete this event and all its registrations?')) return;
+          if (!(await showConfirm('Delete this event and all its registrations?'))) return;
           await api('adminDeleteEvent', { eventId: btn.dataset.delete });
           await loadAdminEvents();
         }));
@@ -5272,7 +5347,7 @@
 
   document.getElementById('addAllStandardBtn').addEventListener('click', withLoading(document.getElementById('addAllStandardBtn'), async () => {
     const msg = document.getElementById('templateEventMsg');
-    if (!confirm("Create this season's copy of every standard event that doesn't exist yet? Dates will be left to be decided.")) return;
+    if (!(await showConfirm("Create this season's copy of every standard event that doesn't exist yet? Dates will be left to be decided."))) return;
     try {
       const res = await api('adminCreateSeasonEventsFromLibrary', {});
       setMsg(msg, res.count ? `Added ${res.count} event${res.count === 1 ? '' : 's'} for ${res.season}: ${res.added.join(', ')}.` : 'Nothing to add — every standard event already exists this season.', true);
@@ -5284,7 +5359,7 @@
     const sel = document.getElementById('templateEventSelect');
     const t = eventTemplatesCache.find(x => x.templateId === sel.value);
     if (!t) { setMsg(msg, 'Pick an event from the library first.', false); return; }
-    if (!confirm(`Remove "${t.name}" from the library? It won't be offered in future seasons (events already created are not affected).`)) return;
+    if (!(await showConfirm(`Remove "${t.name}" from the library? It won't be offered in future seasons (events already created are not affected).`))) return;
     try {
       await api('adminDeleteEventTemplate', { templateId: t.templateId });
       sel.value = '';
@@ -5404,7 +5479,7 @@
 
       tbody.querySelectorAll('[data-reset]').forEach(btn => {
         btn.addEventListener('click', withLoading(btn, async () => {
-          if (!confirm('Reset password to default (omsrisairam) for ' + btn.dataset.reset + '?')) return;
+          if (!(await showConfirm('Reset password to default (omsrisairam) for ' + btn.dataset.reset + '?'))) return;
           await api('adminResetPassword', { regNo: btn.dataset.reset });
           await loadAdminUsers();
         }));
